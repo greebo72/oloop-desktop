@@ -5,6 +5,13 @@ if a stream needs something that is not defined here, it adds it itself and
 mentions it in the report — but it must not change an existing signature that
 another stream already coded against.
 
+> **Status 2026-10-20:** The three parallel streams are done and merged into
+> `master` (commit `bf8e2cd`). The branches `feature/stream-a-tasklist`,
+> `feature/stream-b-settings` and `feature/stream-c-dialogs` and their
+> worktrees under `.claude/worktrees/` have been deleted — their content is in
+> `master`. The table below is kept as a record of who owned what; the
+> ownership rules apply again to the next round of parallel streams.
+
 ## File ownership
 
 | Stream | Owns (may create/modify) | Must not touch |
