@@ -1,0 +1,216 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OloopApp.App"
+             xmlns:local="using:OloopApp"
+             RequestedThemeVariant="Dark">
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <!-- ============================================================
+         Material You Dark – palette on #12131C
+         ============================================================ -->
+    <Application.Resources>
+
+        <!-- Core surfaces -->
+        <Color x:Key="OloopBgColor">#12131C</Color>
+        <Color x:Key="SurfaceColor">#1A1C2B</Color>
+        <Color x:Key="SurfaceHighColor">#212335</Color>
+        <Color x:Key="SurfaceHighestColor">#2A2D42</Color>
+
+        <!-- Primary (Material You lavender) -->
+        <Color x:Key="PrimaryColor">#D0BCFF</Color>
+        <Color x:Key="OnPrimaryColor">#382E5A</Color>
+
+        <!-- Secondary / outline / text -->
+        <Color x:Key="SecondaryColor">#BFC6DC</Color>
+        <Color x:Key="OutlineColor">#494D65</Color>
+        <Color x:Key="OutlineVariantColor">#2E3145</Color>
+        <Color x:Key="TextPrimaryColor">#E3E2E9</Color>
+        <Color x:Key="TextSecondaryColor">#C4C6D6</Color>
+        <Color x:Key="TextMutedColor">#9598AE</Color>
+
+        <!-- Task type colors (fg / bg tint) -->
+        <Color x:Key="TypeTodoColor">#FFD7A1</Color>
+        <Color x:Key="TypeTodoBgColor">#362D1E</Color>
+        <Color x:Key="TypeQuestionColor">#A5D6E0</Color>
+        <Color x:Key="TypeQuestionBgColor">#1E3038</Color>
+        <Color x:Key="TypeDecisionColor">#A5C8FF</Color>
+        <Color x:Key="TypeDecisionBgColor">#1F2A3E</Color>
+        <Color x:Key="TypeFeatureColor">#D0BCFF</Color>
+        <Color x:Key="TypeFeatureBgColor">#2E2742</Color>
+        <Color x:Key="TypeBugColor">#FFB4AB</Color>
+        <Color x:Key="TypeBugBgColor">#3B2420</Color>
+        <Color x:Key="TypeClosedColor">#A6D8B4</Color>
+        <Color x:Key="TypeClosedBgColor">#21332A</Color>
+
+        <!-- Brushes -->
+        <SolidColorBrush x:Key="OloopBgBrush" Color="{StaticResource OloopBgColor}" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+        <SolidColorBrush x:Key="SurfaceHighBrush" Color="{StaticResource SurfaceHighColor}" />
+        <SolidColorBrush x:Key="SurfaceHighestBrush" Color="{StaticResource SurfaceHighestColor}" />
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+        <SolidColorBrush x:Key="OnPrimaryBrush" Color="{StaticResource OnPrimaryColor}" />
+        <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
+        <SolidColorBrush x:Key="OutlineBrush" Color="{StaticResource OutlineColor}" />
+        <SolidColorBrush x:Key="OutlineVariantBrush" Color="{StaticResource OutlineVariantColor}" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+        <SolidColorBrush x:Key="TypeTodoBrush" Color="{StaticResource TypeTodoColor}" />
+        <SolidColorBrush x:Key="TypeTodoBgBrush" Color="{StaticResource TypeTodoBgColor}" />
+        <SolidColorBrush x:Key="TypeQuestionBrush" Color="{StaticResource TypeQuestionColor}" />
+        <SolidColorBrush x:Key="TypeQuestionBgBrush" Color="{StaticResource TypeQuestionBgColor}" />
+        <SolidColorBrush x:Key="TypeDecisionBrush" Color="{StaticResource TypeDecisionColor}" />
+        <SolidColorBrush x:Key="TypeDecisionBgBrush" Color="{StaticResource TypeDecisionBgColor}" />
+        <SolidColorBrush x:Key="TypeFeatureBrush" Color="{StaticResource TypeFeatureColor}" />
+        <SolidColorBrush x:Key="TypeFeatureBgBrush" Color="{StaticResource TypeFeatureBgColor}" />
+        <SolidColorBrush x:Key="TypeBugBrush" Color="{StaticResource TypeBugColor}" />
+        <SolidColorBrush x:Key="TypeBugBgBrush" Color="{StaticResource TypeBugBgColor}" />
+        <SolidColorBrush x:Key="TypeClosedBrush" Color="{StaticResource TypeClosedColor}" />
+        <SolidColorBrush x:Key="TypeClosedBgBrush" Color="{StaticResource TypeClosedBgColor}" />
+        <SolidColorBrush x:Key="CodeBlockBgBrush" Color="#0C0D14" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <!-- Default typography -->
+        <Style Selector="TextBlock">
+            <Setter Property="FontFamily" Value="Inter" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+
+        <!-- Type scale -->
+        <Style Selector="TextBlock.TitleH1">
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.TitleH2">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.TextSecondary">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.TextMuted">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <!-- Card container (CornerRadius 12, Material You surface) -->
+        <Style Selector="Border.Card">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="ClipToBounds" Value="True" />
+        </Style>
+        <Style Selector="Border.Card:pointerover">
+            <Setter Property="Background" Value="{StaticResource SurfaceHighBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <!-- Status chip / pill -->
+        <Style Selector="Border.Chip">
+            <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.Chip TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+        </Style>
+        <Style Selector="Border.Chip-Todo">
+            <Setter Property="Background" Value="{StaticResource TypeTodoBgBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Todo TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TypeTodoBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Question">
+            <Setter Property="Background" Value="{StaticResource TypeQuestionBgBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Question TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TypeQuestionBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Decision">
+            <Setter Property="Background" Value="{StaticResource TypeDecisionBgBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Decision TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TypeDecisionBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Feature">
+            <Setter Property="Background" Value="{StaticResource TypeFeatureBgBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Feature TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TypeFeatureBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Bug">
+            <Setter Property="Background" Value="{StaticResource TypeBugBgBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Bug TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TypeBugBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Closed">
+            <Setter Property="Background" Value="{StaticResource TypeClosedBgBrush}" />
+        </Style>
+        <Style Selector="Border.Chip-Closed TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TypeClosedBrush}" />
+        </Style>
+
+        <!-- Buttons -->
+        <Style Selector="Button">
+            <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="Inter" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="Padding" Value="14,8" />
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="{StaticResource OutlineVariantBrush}" />
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="Background" Value="{StaticResource OutlineVariantBrush}" />
+        </Style>
+        <Style Selector="Button.ButtonPrimary">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource OnPrimaryBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.ButtonPrimary:pointerover">
+            <Setter Property="Background" Value="#DCCBFF" />
+        </Style>
+        <Style Selector="Button.ButtonTonal">
+            <Setter Property="Background" Value="{StaticResource SurfaceHighBrush}" />
+        </Style>
+
+        <!-- Search box -->
+        <Style Selector="TextBox.SearchBox">
+            <Setter Property="Background" Value="{StaticResource SurfaceHighBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="Inter" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="CaretBrush" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Watermark" Value="Tasks, Projekte, Labels suchen…" />
+            <Setter Property="WatermarkForeground" Value="{StaticResource TextMutedBrush}" />
+        </Style>
+
+        <!-- Code block (CLI commands, PowerShell/Bash) -->
+        <Style Selector="Border.CodeBlock">
+            <Setter Property="Background" Value="{StaticResource CodeBlockBgBrush}" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="BorderBrush" Value="{StaticResource OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Border.CodeBlock TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Code, JetBrains Mono, Consolas, monospace" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+    </Application.Styles>
+</Application>
