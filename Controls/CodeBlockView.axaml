@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OloopApp.Controls.CodeBlockView">
+
+    <Border Classes="CodeBlock">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+
+            <TextBlock x:Name="LanguageText"
+                       Grid.Row="0" Grid.Column="0"
+                       FontSize="11"
+                       TextWrapping="NoWrap"
+                       IsVisible="False" />
+
+            <Button x:Name="CopyButton"
+                    Grid.Row="0" Grid.Column="1"
+                    Classes="Icon"
+                    VerticalAlignment="Top"
+                    ToolTip.Tip="Copy code"
+                    Click="OnCopyClick">
+                <PathIcon Data="{StaticResource IconCopy}" />
+            </Button>
+
+            <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="CodeText" TextWrapping="NoWrap" />
+            </ScrollViewer>
+
+        </Grid>
+    </Border>
+</UserControl>

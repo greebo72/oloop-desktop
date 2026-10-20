@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OloopApp.ViewModels"
+             xmlns:controls="using:OloopApp.Controls"
+             x:Class="OloopApp.Views.TaskListView"
+             x:DataType="vm:TaskListViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="12,4,12,16" Spacing="8">
+
+            <!-- Groups -->
+            <ItemsControl ItemsSource="{Binding Groups}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TaskGroupViewModel">
+                        <StackPanel Spacing="2">
+
+                            <TextBlock Text="{Binding Title}"
+                                       Classes="SectionHeader"
+                                       Margin="4,10,0,4"
+                                       IsVisible="{Binding HasTitle}" />
+
+                            <ItemsControl ItemsSource="{Binding Rows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TaskRowViewModel">
+                                        <Border Classes="Card" Padding="0" Margin="0,0,0,4">
+                                            <Button Background="Transparent"
+                                                    Padding="12"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Command="{Binding $parent[ItemsControl].((vm:TaskGroupViewModel)DataContext).SelectCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                                                    <!-- Type icon on the type container -->
+                                                    <Border Classes="IconContainer"
+                                                            Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}">
+                                                        <PathIcon Data="{Binding IconKey, Converter={x:Static controls:ResourceGeometryConverter.Instance}}"
+                                                                  Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
+                                                    </Border>
+
+                                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Title}"
+                                                                   Classes="TitleMedium"
+                                                                   MaxLines="2"
+                                                                   TextWrapping="Wrap"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                            <TextBlock Text="{Binding TypeName}" Classes="BodyMedium" />
+                                                            <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                                            <TextBlock Text="{Binding LabelsText}" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding Age}"
+                                                               Classes="Muted"
+                                                               VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Button>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Empty state -->
+            <Border Classes="Card" IsVisible="{Binding IsEmpty}" Padding="20">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="No tasks" Classes="TitleMedium" />
+                    <TextBlock Classes="BodyMedium"
+                               Text="Nothing of this project matches the current search and filter." />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

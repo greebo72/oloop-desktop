@@ -51,10 +51,17 @@
         <Panel Grid.Row="2">
             <views:DashboardView DataContext="{Binding Dashboard}"
                                 IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsDashboard}" />
-            <TextBlock Text="Projektansicht kommt in Schritt 3"
-                       IsVisible="{Binding !IsDashboard}"
-                       Foreground="{StaticResource OutlineBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+            <!-- The split view is only created when a project is open: its
+                 view model would be null otherwise. -->
+            <ContentControl IsVisible="{Binding !IsDashboard}"
+                            Content="{Binding Split}">
+                <ContentControl.DataTemplates>
+                    <DataTemplate x:DataType="vm:ProjectSplitViewModel">
+                        <views:ProjectSplitView />
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
         </Panel>
 
     </Grid>

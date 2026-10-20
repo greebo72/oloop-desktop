@@ -1,0 +1,113 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.SettingsDialog"
+        x:DataType="vm:SettingsViewModel"
+        Title="Settings"
+        Width="520"
+        SizeToContent="Height"
+        MinWidth="460"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <!-- Opaque surface: a dialog must never show the window behind it. -->
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
+        <StackPanel Spacing="18">
+
+            <!-- ============================================================
+                 Header
+                 ============================================================ -->
+            <StackPanel Spacing="2">
+                <TextBlock Text="Settings" Classes="TitleLarge" />
+                <TextBlock Classes="BodyMedium"
+                           Text="Where oloop keeps the projects and who is written into the tasks." />
+            </StackPanel>
+
+            <!-- ============================================================
+                 Data folder
+                 ============================================================ -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="Data folder" Classes="LabelMedium" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBox Grid.Column="0"
+                             Text="{Binding DataRoot, Mode=OneWay}"
+                             IsReadOnly="True"
+                             PlaceholderText="No data folder chosen" />
+                    <Button Grid.Column="1" Classes="Outlined" Click="OnBrowseDataRootClick"
+                            VerticalAlignment="Stretch">
+                        Browse…
+                    </Button>
+                </Grid>
+                <TextBlock Classes="Muted"
+                           Text="The folder with one subfolder per project. Everything oloop knows lives there." />
+            </StackPanel>
+
+            <!-- ============================================================
+                 Actor
+                 ============================================================ -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="Actor name *" Classes="LabelMedium" />
+                <TextBox Text="{Binding Actor, Mode=TwoWay}"
+                         PlaceholderText="Your name" />
+                <TextBlock Classes="Muted"
+                           Text="Required. It is written into createdBy and updatedBy of every task." />
+            </StackPanel>
+
+            <!-- ============================================================
+                 List preferences
+                 ============================================================ -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="Task list" Classes="LabelMedium" />
+
+                <CheckBox Content="Show closed tasks"
+                          IsChecked="{Binding ShowClosed, Mode=TwoWay}" />
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Group by" Classes="BodyMedium"
+                               VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="0" Grid.Column="1"
+                              HorizontalAlignment="Stretch"
+                              ItemsSource="{Binding GroupingModes}"
+                              SelectedItem="{Binding Grouping, Mode=TwoWay}" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Stale since (days)" Classes="BodyMedium"
+                               VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="1"
+                                   HorizontalAlignment="Stretch"
+                                   Minimum="0" Maximum="3650" Increment="1"
+                                   FormatString="0.##"
+                                   PlaceholderText="off"
+                                   Value="{Binding StaleDaysValue, Mode=TwoWay}" />
+                </Grid>
+
+                <TextBlock Classes="Muted"
+                           Text="Stale since hides the tasks that were not touched for that many days. Leave it empty to switch the filter off." />
+            </StackPanel>
+
+            <!-- ============================================================
+                 Error
+                 ============================================================ -->
+            <Border Classes="Field" Padding="12,8"
+                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource StatusOpenBrush}" />
+                    <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============================================================
+                 Actions. Exactly one filled primary element on the screen.
+                 ============================================================ -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Classes="Text" Click="OnCancelClick" Content="Cancel" />
+                <Button Classes="Primary" Click="OnSaveClick" Content="Save"
+                        IsEnabled="{Binding CanSave}" />
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</Window>

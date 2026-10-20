@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OloopApp.ViewModels"
+             xmlns:controls="using:OloopApp.Controls"
+             x:Class="OloopApp.Views.TaskDetailView"
+             x:DataType="vm:TaskDetailViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="24,8,24,24" Spacing="16">
+
+            <!-- Type chip and status -->
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+
+                <Border Classes="Chip"
+                        Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="{Binding IconKey, Converter={x:Static controls:ResourceGeometryConverter.Instance}}"
+                                  Width="14" Height="14"
+                                  Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
+                        <TextBlock Text="{Binding TypeName}"
+                                   Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8"
+                             Fill="{StaticResource StatusOpenBrush}"
+                             IsVisible="{Binding !IsClosed}" />
+                    <Ellipse Width="8" Height="8"
+                             Fill="{StaticResource OutlineBrush}"
+                             IsVisible="{Binding IsClosed}" />
+                    <TextBlock Text="{Binding StatusLabel}" Classes="LabelMedium" />
+                </StackPanel>
+
+            </StackPanel>
+
+            <!-- Title -->
+            <TextBlock Text="{Binding Title}" Classes="HeadlineSmall" TextWrapping="Wrap" />
+
+            <!-- Labels -->
+            <ItemsControl ItemsSource="{Binding Labels}" IsVisible="{Binding HasLabels}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Border Classes="Chip Outlined" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding}" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Description -->
+            <ContentControl Content="{Binding DescriptionView}" IsVisible="{Binding HasDescription}" />
+
+            <!-- Meta -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding CreatedText}" Classes="Muted" />
+                <TextBlock Text="{Binding UpdatedText}" Classes="Muted" />
+            </StackPanel>
+
+            <!-- Comments -->
+            <StackPanel Spacing="8" IsVisible="{Binding HasComments}">
+                <TextBlock Text="Comments" Classes="SectionHeader" />
+                <ItemsControl ItemsSource="{Binding Comments}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CommentViewModel">
+                            <Border Classes="Card" Padding="12" Margin="0,0,0,6">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding CreatedText}" Classes="Muted" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

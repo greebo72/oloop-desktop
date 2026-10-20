@@ -12,6 +12,9 @@ public partial class ProjectSplitViewModel : ViewModelBase
     {
         Project = project;
         Shell = shell;
+        TaskList = new TaskListViewModel(project, shell);
+
+        TaskList.PropertyChanged += OnTaskListPropertyChanged;
     }
 
     /// <summary>The project this view belongs to.</summary>
@@ -23,8 +26,21 @@ public partial class ProjectSplitViewModel : ViewModelBase
     /// <summary>The project name.</summary>
     public string Name => Project.Name;
 
-    /// <summary>Reloads the task data. The list and the detail are filled in step 3.</summary>
+    /// <summary>The task list of the left pane.</summary>
+    public TaskListViewModel TaskList { get; }
+
+    /// <summary>Reloads the task data of the list.</summary>
     public void Refresh()
     {
+        TaskList.Refresh();
+    }
+
+    /// <summary>Whether a task is shown in the detail pane.</summary>
+    public bool HasSelection => TaskList.HasSelection;
+
+    private void OnTaskListPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TaskListViewModel.HasSelection))
+            OnPropertyChanged(nameof(HasSelection));
     }
 }

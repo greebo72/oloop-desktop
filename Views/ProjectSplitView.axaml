@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OloopApp.ViewModels"
+             xmlns:views="using:OloopApp.Views"
+             x:Class="OloopApp.Views.ProjectSplitView"
+             x:DataType="vm:ProjectSplitViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ============================================================
+             Header: project, counts, grouping, filters
+             ============================================================ -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16" Margin="16,8,16,12">
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Name}" Classes="TitleLarge" />
+                <TextBlock Text="{Binding TaskList.OpenCount, StringFormat='{}{0} open'}"
+                           Classes="BodyMedium" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding TaskList.TotalCount, StringFormat='{}{0} total'}"
+                           Classes="Muted" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <PathIcon Data="{StaticResource IconGroup}" Width="16" Height="16"
+                              Foreground="{StaticResource OnSurfaceVariantBrush}" />
+                    <ComboBox ItemsSource="{Binding TaskList.GroupingOptions}"
+                              SelectedItem="{Binding TaskList.SelectedGrouping, Mode=TwoWay}"
+                              MinWidth="140">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:GroupingOption">
+                                <TextBlock Text="{Binding Label}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <PathIcon Data="{StaticResource IconFilter}" Width="16" Height="16"
+                              Foreground="{StaticResource OnSurfaceVariantBrush}" />
+                    <ComboBox ItemsSource="{Binding TaskList.StaleDaysOptions}"
+                              SelectedItem="{Binding TaskList.SelectedStaleDays, Mode=TwoWay}"
+                              MinWidth="120">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:StaleDaysOption">
+                                <TextBlock Text="{Binding Label}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <CheckBox Content="Show closed"
+                          IsChecked="{Binding TaskList.ShowClosed, Mode=TwoWay}"
+                          VerticalAlignment="Center" />
+
+            </StackPanel>
+
+        </Grid>
+
+        <!-- ============================================================
+             List left, detail right
+             ============================================================ -->
+        <Grid Grid.Row="1" ColumnDefinitions="420,*">
+
+            <views:TaskListView Grid.Column="0" DataContext="{Binding TaskList}" />
+
+            <Border Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{StaticResource OutlineVariantBrush}">
+                <Panel>
+                    <!-- The detail is only created when a task is selected. -->
+                    <ContentControl Content="{Binding TaskList.Selected}">
+                        <ContentControl.DataTemplates>
+                            <DataTemplate x:DataType="vm:TaskDetailViewModel">
+                                <views:TaskDetailView />
+                            </DataTemplate>
+                        </ContentControl.DataTemplates>
+                    </ContentControl>
+                    <StackPanel Spacing="6"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding !HasSelection}">
+                        <TextBlock Text="Select a task" Classes="TitleMedium" HorizontalAlignment="Center" />
+                        <TextBlock Text="Pick a task from the list to see its details." Classes="BodyMedium" />
+                    </StackPanel>
+                </Panel>
+            </Border>
+
+        </Grid>
+
+    </Grid>
+</UserControl>

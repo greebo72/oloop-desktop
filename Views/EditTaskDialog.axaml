@@ -1,0 +1,89 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.EditTaskDialog"
+        x:DataType="vm:EditTaskViewModel"
+        Title="Edit task"
+        Width="560" SizeToContent="Height"
+        MinWidth="480"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Window.Styles>
+        <!-- The type of a task is immutable, so it is shown as a chip. -->
+        <Style Selector="Border.TypeChip">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </Window.Styles>
+
+    <!-- The dialog background is opaque on purpose: a transparent popup would
+         let the window behind it bleed through. -->
+    <Border Background="{StaticResource SurfaceBrush}" Padding="20,16,20,16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+
+            <!-- ============================================================
+                 Header with the type of the task
+                 ============================================================ -->
+            <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+                <TextBlock Text="Edit task" Classes="TitleLarge" />
+                <Border Classes="TypeChip"
+                        Background="{DynamicResource {Binding BackgroundKey}}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="{DynamicResource {Binding IconKey}}" Width="14" Height="14"
+                                  Foreground="{DynamicResource {Binding ForegroundKey}}" />
+                        <TextBlock Text="{Binding TypeName}" Classes="LabelMedium"
+                                   Foreground="{DynamicResource {Binding ForegroundKey}}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ============================================================
+                 Title
+                 ============================================================ -->
+            <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,14">
+                <TextBlock Text="Title" Classes="SectionHeader" />
+                <TextBox Text="{Binding Title, Mode=TwoWay}"
+                         PlaceholderText="What has to be done?"
+                         MaxLength="300" />
+                <TextBlock Text="{Binding TitleError}" Classes="Muted"
+                           IsVisible="{Binding TitleError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
+            <!-- ============================================================
+                 Description (Markdown)
+                 ============================================================ -->
+            <StackPanel Grid.Row="2" Spacing="6" Margin="0,0,0,14">
+                <TextBlock Text="Description" Classes="SectionHeader" />
+                <TextBox Text="{Binding Description, Mode=TwoWay}"
+                         PlaceholderText="Markdown is supported."
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         MinLines="3" MaxLines="10"
+                         VerticalContentAlignment="Top" />
+            </StackPanel>
+
+            <!-- ============================================================
+                 Labels
+                 ============================================================ -->
+            <StackPanel Grid.Row="3" Spacing="6" Margin="0,0,0,18">
+                <TextBlock Text="Labels" Classes="SectionHeader" />
+                <TextBox Text="{Binding LabelsText, Mode=TwoWay}"
+                         PlaceholderText="comma separated, e.g. ui, backend" />
+            </StackPanel>
+
+            <!-- ============================================================
+                 Actions — exactly one filled primary button on the screen
+                 ============================================================ -->
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Right">
+                <Button Classes="Text" Content="Cancel" Click="OnCancelClick" />
+                <Button Classes="Primary" Content="Save" Click="OnSaveClick"
+                        IsEnabled="{Binding CanSave}" />
+            </StackPanel>
+
+        </Grid>
+    </Border>
+</Window>
