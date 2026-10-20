@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using Avalonia.Controls;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OloopApp.Controls;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Models;
@@ -9,6 +11,10 @@ namespace OloopApp.ViewModels;
 /// <summary>
 /// The right pane of the split view: everything about one task — the type,
 /// the status, the description and the comments.
+///
+/// The pane is read-only in the sense that it never writes on its own: every
+/// change goes through the shell, which owns the write path and asks the
+/// user what to do when the file on disk has changed.
 /// </summary>
 public partial class TaskDetailViewModel : ViewModelBase
 {
@@ -70,6 +76,11 @@ public partial class TaskDetailViewModel : ViewModelBase
             Comments.Add(new CommentViewModel(comment));
 
         HasComments = Comments.Count > 0;
+
+        EditCommand = new AsyncRelayCommand(EditAsync);
+        CloseCommand = new AsyncRelayCommand(() => SetClosedAsync(true));
+        ReopenCommand = new AsyncRelayCommand(() => SetClosedAsync(false));
+        AddCommentCommand = new AsyncRelayCommand(AddCommentAsync);
     }
 
     /// <summary>The task behind the detail.</summary>
@@ -131,6 +142,50 @@ public partial class TaskDetailViewModel : ViewModelBase
 
     /// <summary>Whether the task has comments.</summary>
     public bool HasComments { get; }
+
+    /// <summary>The text of the comment field.</summary>
+    [ObservableProperty]
+    private string _commentText = "";
+
+    /// <summary>Whether the comment field has text that can be written.</summary>
+    public bool CanAddComment => !string.IsNullOrWhiteSpace(CommentText);
+
+    /// <summary>Opens the edit dialog for this task.</summary>
+    public IAsyncRelayCommand EditCommand { get; }
+
+    /// <summary>Closes the task.</summary>
+    public IAsyncRelayCommand CloseCommand { get; }
+
+    /// <summary>Reopens the task.</summary>
+    public IAsyncRelayCommand ReopenCommand { get; }
+
+    /// <summary>Appends the comment of the comment field to the task.</summary>
+    public IAsyncRelayCommand AddCommentCommand { get; }
+
+    partial void OnCommentTextChanged(string value)
+        => OnPropertyChanged(nameof(CanAddComment));
+
+    private async Task EditAsync()
+        => await Shell.OpenEditTaskAsync(Task, Project);
+
+    private async Task SetClosedAsync(bool closed)
+    {
+        // The shell reloads the data root after the write, and the list
+        // rebuilds the detail of the selected task from the fresh data.
+        await Shell.SetTaskClosedAsync(Task, Project, closed);
+    }
+
+    private async Task AddCommentAsync()
+    {
+        var body = CommentText?.Trim() ?? "";
+        if (body.Length == 0)
+            return;
+
+        if (!await Shell.AddCommentAsync(Task, Project, body))
+            return;
+
+        CommentText = "";
+    }
 
     private static string BuildStamp(string prefix, string timestamp, string actor)
     {

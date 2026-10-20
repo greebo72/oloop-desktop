@@ -157,8 +157,16 @@ public partial class TaskListViewModel : ViewModelBase
         OpenCount = filtered.Count(t => !t.IsClosed);
         IsEmpty = filtered.Count == 0;
 
-        if (Selected is { } selected && filtered.All(t => t.Id != selected.Task.Id))
-            Selected = null;
+        // The detail of the selected task is rebuilt from the fresh data, so
+        // it never shows the version from before the last write. A task that
+        // the filter no longer shows loses the selection.
+        if (Selected is { } selected)
+        {
+            var fresh = filtered.FirstOrDefault(t => t.Id == selected.Task.Id);
+            Selected = fresh is null
+                ? null
+                : new TaskDetailViewModel(fresh, Project, Shell);
+        }
 
         Groups.Clear();
         foreach (var group in TaskGrouping.Group(filtered, Grouping))

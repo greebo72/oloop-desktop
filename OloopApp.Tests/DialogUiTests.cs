@@ -20,8 +20,8 @@ public class DialogUiTests
     private static HeadlessUnitTestSession Session { get; } =
         HeadlessUnitTestSession.GetOrStartForAssembly(typeof(DialogUiTests).Assembly);
 
-    private static void OnUiThread(Action action) =>
-        Session.Dispatch(action, CancellationToken.None);
+    private static async Task OnUiThread(Action action) =>
+        await Session.Dispatch(action, CancellationToken.None);
 
     private static IEnumerable<T> Descendants<T>(Visual root) where T : Visual
     {
@@ -60,9 +60,9 @@ public class DialogUiTests
     };
 
     [Fact]
-    public void NewTaskDialog_Opens()
+    public async Task NewTaskDialog_Opens()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var vm = new NewTaskViewModel(Project());
             var dialog = new NewTaskDialog(vm);
@@ -89,9 +89,9 @@ public class DialogUiTests
     }
 
     [Fact]
-    public void NewTaskDialog_Has_An_Opaque_Background()
+    public async Task NewTaskDialog_Has_An_Opaque_Background()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var dialog = new NewTaskDialog(new NewTaskViewModel(Project()));
 
@@ -113,9 +113,9 @@ public class DialogUiTests
     }
 
     [Fact]
-    public void NewTaskDialog_Type_Row_Switches_The_Selected_Type()
+    public async Task NewTaskDialog_Type_Row_Switches_The_Selected_Type()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var vm = new NewTaskViewModel(Project());
             var dialog = new NewTaskDialog(vm);
@@ -148,9 +148,9 @@ public class DialogUiTests
     }
 
     [Fact]
-    public void NewTaskDialog_Create_Is_Disabled_Without_A_Title()
+    public async Task NewTaskDialog_Create_Is_Disabled_Without_A_Title()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var vm = new NewTaskViewModel(Project());
             var dialog = new NewTaskDialog(vm);
@@ -171,9 +171,9 @@ public class DialogUiTests
     }
 
     [Fact]
-    public void EditTaskDialog_Opens_Prefilled()
+    public async Task EditTaskDialog_Opens_Prefilled()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var vm = new EditTaskViewModel(SampleTask());
             var dialog = new EditTaskDialog(vm);
@@ -199,9 +199,9 @@ public class DialogUiTests
     }
 
     [Fact]
-    public void ConflictDialog_Opens_And_Offers_All_Three_Choices()
+    public async Task ConflictDialog_Opens_And_Offers_All_Three_Choices()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var vm = new ConflictViewModel(SampleTask(), "the task changed on disk");
             var dialog = new ConflictDialog(vm);
@@ -230,9 +230,9 @@ public class DialogUiTests
     }
 
     [Fact]
-    public void NewTaskDialog_Resolves_The_Type_Icons_And_Brushes()
+    public async Task NewTaskDialog_Resolves_The_Type_Icons_And_Brushes()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var vm = new NewTaskViewModel(Project());
             var dialog = new NewTaskDialog(vm);
@@ -270,9 +270,9 @@ public class DialogUiTests
     }
 
     [Fact]
-    public void EditTaskDialog_Resolves_The_Type_Icon_And_Brush()
+    public async Task EditTaskDialog_Resolves_The_Type_Icon_And_Brush()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var dialog = new EditTaskDialog(new EditTaskViewModel(SampleTask()));
 

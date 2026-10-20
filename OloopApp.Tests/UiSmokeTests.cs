@@ -19,8 +19,8 @@ public class UiSmokeTests
     private static HeadlessUnitTestSession Session { get; } =
         HeadlessUnitTestSession.GetOrStartForAssembly(typeof(UiSmokeTests).Assembly);
 
-    private static void OnUiThread(Action action) =>
-        Session.Dispatch(action, CancellationToken.None);
+    private static async Task OnUiThread(Action action) =>
+        await Session.Dispatch(action, CancellationToken.None);
 
     private static IEnumerable<T> Descendants<T>(Visual root) where T : Visual
     {
@@ -35,9 +35,9 @@ public class UiSmokeTests
     }
 
     [Fact]
-    public void MainWindow_Opens()
+    public async Task MainWindow_Opens()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var window = new MainWindow { DataContext = new MainViewModel() };
             window.Show();
@@ -48,9 +48,9 @@ public class UiSmokeTests
     }
 
     [Fact]
-    public void Theme_Resolves_Every_Token_The_Views_Use()
+    public async Task Theme_Resolves_Every_Token_The_Views_Use()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var window = new MainWindow { DataContext = new MainViewModel() };
             window.Show();
@@ -93,9 +93,9 @@ public class UiSmokeTests
     }
 
     [Fact]
-    public void Dashboard_Shows_A_Card_Per_Project()
+    public async Task Dashboard_Shows_A_Card_Per_Project()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var shell = new MainViewModel();
             var window = new MainWindow { DataContext = shell };
@@ -127,9 +127,9 @@ public class UiSmokeTests
     }
 
     [Fact]
-    public void Dashboard_Renders_Project_Rows()
+    public async Task Dashboard_Renders_Project_Rows()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var shell = new MainViewModel();
             var window = new MainWindow { DataContext = shell };

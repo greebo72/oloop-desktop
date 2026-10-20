@@ -9,10 +9,22 @@
         <StackPanel Margin="16,8,16,16" Spacing="8">
 
             <!-- Header -->
-            <StackPanel Spacing="2" Margin="0,4,0,8">
-                <TextBlock Text="Projects" Classes="TitleLarge" />
-                <TextBlock Text="{Binding Summary}" Classes="BodyMedium" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,8">
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="Projects" Classes="TitleLarge" />
+                    <TextBlock Text="{Binding Summary}" Classes="BodyMedium" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Classes="Outlined"
+                        VerticalAlignment="Center"
+                        Click="OnNewProjectClick"
+                        ToolTip.Tip="Create a project in the data folder">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="{StaticResource IconAdd}" Width="16" Height="16" />
+                        <TextBlock Text="New project" />
+                    </StackPanel>
+                </Button>
+            </Grid>
 
             <!-- Empty state -->
             <Border Classes="Card" IsVisible="{Binding IsEmpty}" Padding="24">

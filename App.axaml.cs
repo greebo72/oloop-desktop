@@ -18,10 +18,16 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var main = new MainViewModel();
-            desktop.MainWindow = new MainWindow
+            var window = new MainWindow
             {
                 DataContext = main,
             };
+
+            desktop.MainWindow = window;
+
+            // The dialogs are shown as windows of the main window, so the
+            // service needs the window — and the window is only there now.
+            main.Dialogs = new DialogService(() => desktop.MainWindow);
 
             // Load the data root in the background so the window shows up right away.
             _ = main.RefreshAsync();

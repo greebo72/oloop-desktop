@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:OloopApp.ViewModels"
+        xmlns:controls="using:OloopApp.Controls"
         x:Class="OloopApp.Views.NewTaskDialog"
         x:DataType="vm:NewTaskViewModel"
         Title="New task"
@@ -58,12 +59,12 @@
                                     AutomationProperties.Name="{Binding Name}">
                                 <StackPanel Spacing="6">
                                     <Border Classes="IconContainer"
-                                            Background="{DynamicResource {Binding BackgroundKey}}"
-                                            BorderBrush="{DynamicResource {Binding ForegroundKey}}"
+                                            Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}"
+                                            BorderBrush="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}"
                                             BorderThickness="{Binding SelectionThickness}"
                                             Opacity="{Binding ContainerOpacity}">
-                                        <PathIcon Data="{DynamicResource {Binding IconKey}}"
-                                                  Foreground="{DynamicResource {Binding ForegroundKey}}" />
+                                        <PathIcon Data="{Binding IconKey, Converter={x:Static controls:ResourceGeometryConverter.Instance}}"
+                                                  Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
                                     </Border>
                                     <TextBlock Text="{Binding Name}" Classes="LabelSmall"
                                                HorizontalAlignment="Center" />

@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:OloopApp.ViewModels"
+        xmlns:controls="using:OloopApp.Controls"
         x:Class="OloopApp.Views.EditTaskDialog"
         x:DataType="vm:EditTaskViewModel"
         Title="Edit task"
@@ -31,12 +32,13 @@
             <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
                 <TextBlock Text="Edit task" Classes="TitleLarge" />
                 <Border Classes="TypeChip"
-                        Background="{DynamicResource {Binding BackgroundKey}}">
+                        Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="{DynamicResource {Binding IconKey}}" Width="14" Height="14"
-                                  Foreground="{DynamicResource {Binding ForegroundKey}}" />
+                        <PathIcon Data="{Binding IconKey, Converter={x:Static controls:ResourceGeometryConverter.Instance}}"
+                                  Width="14" Height="14"
+                                  Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
                         <TextBlock Text="{Binding TypeName}" Classes="LabelMedium"
-                                   Foreground="{DynamicResource {Binding ForegroundKey}}" />
+                                   Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
                     </StackPanel>
                 </Border>
             </StackPanel>

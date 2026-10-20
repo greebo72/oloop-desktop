@@ -21,8 +21,8 @@ public class SplitViewUiTests
     private static HeadlessUnitTestSession Session { get; } =
         HeadlessUnitTestSession.GetOrStartForAssembly(typeof(SplitViewUiTests).Assembly);
 
-    private static void OnUiThread(Action action) =>
-        Session.Dispatch(action, CancellationToken.None);
+    private static async Task OnUiThread(Action action) =>
+        await Session.Dispatch(action, CancellationToken.None);
 
     private static IEnumerable<T> Descendants<T>(Visual root) where T : Visual
     {
@@ -68,9 +68,9 @@ public class SplitViewUiTests
     };
 
     [Fact]
-    public void The_Split_View_Opens_The_Task_List_And_The_Detail()
+    public async Task The_Split_View_Opens_The_Task_List_And_The_Detail()
     {
-        OnUiThread(() =>
+        await OnUiThread(() =>
         {
             var shell = new MainViewModel();
             var window = new MainWindow { DataContext = shell };

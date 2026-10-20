@@ -8,14 +8,48 @@ namespace OloopApp.ViewModels;
 
 /// <summary>
 /// The shell of the app: the top bar, the navigation between the dashboard
-/// and a project, the settings and the search.
+/// and a project, the settings, the search and every write to the data root.
+///
+/// The shell owns the write path. The dialogs only collect the input, the
+/// shell performs the write and handles a refused write (a conflict) by
+/// asking the user what to do.
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
+    private const string NoDataRoot = "No data folder set. Open the settings to choose one.";
+    private const string NoActor = "No actor name set. Open the settings to choose one.";
+
     private readonly OloopSettings _settings = OloopSettings.Load();
+    private OloopStore? _store;
+    private string? _storeRoot;
+
+    /// <summary>
+    /// Creates the shell. The dialog service is set by the app after the
+    /// window exists; until then the commands do nothing.
+    /// </summary>
+    public MainViewModel()
+    {
+        _dataRoot = _settings.ResolveDataRoot() ?? "";
+        _actor = _settings.ResolveActor();
+
+        Dashboard = new DashboardViewModel();
+
+        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
+        OpenProjectCommand = new RelayCommand<ProjectCardViewModel>(OpenProject);
+        BackToDashboardCommand = new RelayCommand(BackToDashboard);
+        SettingsCommand = new AsyncRelayCommand(OpenSettingsAsync);
+        NewProjectCommand = new AsyncRelayCommand(OpenNewProjectAsync);
+        NewTaskCommand = new AsyncRelayCommand(OpenNewTaskAsync);
+    }
+
+    /// <summary>
+    /// The dialogs of the app. The app replaces this with the real service
+    /// once the window exists.
+    /// </summary>
+    public IDialogService Dialogs { get; set; } = NullDialogService.Instance;
 
     /// <summary>The dashboard with the project cards.</summary>
-    public DashboardViewModel Dashboard { get; } = new();
+    public DashboardViewModel Dashboard { get; }
 
     /// <summary>The task list and detail of the open project. Null on the dashboard.</summary>
     [ObservableProperty]
@@ -50,16 +84,6 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Whether the dashboard is shown (no project open).</summary>
     public bool IsDashboard => Split is null;
 
-    public MainViewModel()
-    {
-        _dataRoot = _settings.ResolveDataRoot() ?? "";
-        _actor = _settings.ResolveActor();
-
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        OpenProjectCommand = new RelayCommand<ProjectCardViewModel>(OpenProject);
-        BackToDashboardCommand = new RelayCommand(BackToDashboard);
-    }
-
     /// <summary>Reloads the data root.</summary>
     public AsyncRelayCommand RefreshCommand { get; }
 
@@ -68,6 +92,15 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>Returns to the dashboard.</summary>
     public RelayCommand BackToDashboardCommand { get; }
+
+    /// <summary>Opens the settings dialog.</summary>
+    public AsyncRelayCommand SettingsCommand { get; }
+
+    /// <summary>Opens the new project dialog.</summary>
+    public AsyncRelayCommand NewProjectCommand { get; }
+
+    /// <summary>Opens the new task dialog for the open project.</summary>
+    public AsyncRelayCommand NewTaskCommand { get; }
 
     /// <summary>
     /// Loads the data root. A missing root is not an error — the app shows an
@@ -81,7 +114,7 @@ public partial class MainViewModel : ViewModelBase
             var root = DataRoot?.Trim() ?? "";
             if (root.Length == 0)
             {
-                StatusMessage = "No data folder set. Open the settings to choose one.";
+                StatusMessage = NoDataRoot;
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
                 Tasks.Clear();
@@ -123,7 +156,318 @@ public partial class MainViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
-            OnPropertyChanged(nameof(IsDashboard));
+        }
+    }
+
+    // ---------------- Dialogs ----------------
+
+    /// <summary>
+    /// Opens the settings. When the user saves them, the new data root and
+    /// actor are taken over and the data root is reloaded.
+    /// </summary>
+    public async Task OpenSettingsAsync()
+    {
+        var viewModel = new SettingsViewModel(_settings);
+        if (!await Dialogs.ShowSettingsAsync(viewModel))
+            return;
+
+        // The dialog wrote the values into the settings instance.
+        DataRoot = _settings.ResolveDataRoot() ?? "";
+        Actor = _settings.ResolveActor();
+
+        await RefreshAsync();
+    }
+
+    /// <summary>
+    /// Opens the new project dialog and adds the created project to the
+    /// dashboard.
+    /// </summary>
+    public async Task OpenNewProjectAsync()
+    {
+        var store = Store;
+        if (store is null)
+        {
+            StatusMessage = NoDataRoot;
+            return;
+        }
+
+        var viewModel = new NewProjectViewModel(store, Actor?.Trim() ?? "");
+        var project = await Dialogs.ShowNewProjectAsync(viewModel);
+        if (project is null)
+            return;
+
+        await RefreshAsync();
+    }
+
+    /// <summary>
+    /// Opens the new task dialog for the open project and writes the task.
+    /// </summary>
+    public async Task OpenNewTaskAsync()
+    {
+        if (Split is null)
+            return;
+
+        await OpenNewTaskAsync(Split.Project);
+    }
+
+    /// <summary>
+    /// Opens the new task dialog for the given project and writes the task.
+    /// </summary>
+    public async Task<bool> OpenNewTaskAsync(OloopProject project)
+    {
+        var viewModel = new NewTaskViewModel(project);
+        if (!await Dialogs.ShowNewTaskAsync(viewModel))
+            return false;
+
+        var created = await CreateTaskAsync(
+            project, viewModel.Type, viewModel.TrimmedTitle,
+            viewModel.TrimmedDescription, viewModel.Labels);
+
+        if (created)
+            StatusMessage = $"Task '{viewModel.TrimmedTitle}' created.";
+
+        return created;
+    }
+
+    /// <summary>
+    /// Opens the edit task dialog for the given task and writes the change.
+    /// </summary>
+    public async Task<bool> OpenEditTaskAsync(OloopTask task, OloopProject project)
+    {
+        var viewModel = new EditTaskViewModel(task);
+        if (!await Dialogs.ShowEditTaskAsync(viewModel))
+            return false;
+
+        if (!viewModel.IsDirty)
+            return false;
+
+        var edited = await EditTaskAsync(
+            task, project, viewModel.TrimmedTitle,
+            viewModel.TrimmedDescription, viewModel.Labels);
+
+        if (edited)
+            StatusMessage = $"Task '{viewModel.TrimmedTitle}' saved.";
+
+        return edited;
+    }
+
+    // ---------------- Writes ----------------
+
+    /// <summary>Creates a task in the given project.</summary>
+    public async Task<bool> CreateTaskAsync(
+        OloopProject project,
+        TaskType type,
+        string title,
+        string description,
+        IReadOnlyList<string> labels)
+    {
+        var store = Store;
+        if (store is null)
+        {
+            StatusMessage = NoDataRoot;
+            return false;
+        }
+
+        var actor = Actor?.Trim() ?? "";
+        if (actor.Length == 0)
+        {
+            StatusMessage = NoActor;
+            return false;
+        }
+
+        try
+        {
+            await store.CreateTaskAsync(project, type, title, description, labels, actor);
+            await RefreshAsync();
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or OloopFormatException)
+        {
+            StatusMessage = $"The change could not be written: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>Changes title, description and labels of a task.</summary>
+    public Task<bool> EditTaskAsync(
+        OloopTask task,
+        OloopProject project,
+        string title,
+        string description,
+        IReadOnlyList<string> labels)
+    {
+        var store = Store;
+        if (store is null)
+        {
+            StatusMessage = NoDataRoot;
+            return Task.FromResult(false);
+        }
+
+        var actor = Actor?.Trim() ?? "";
+        if (actor.Length == 0)
+        {
+            StatusMessage = NoActor;
+            return Task.FromResult(false);
+        }
+
+        return MutateAsync(store, task, baseTask =>
+            store.EditTaskAsync(baseTask, project, title, description, labels, actor));
+    }
+
+    /// <summary>Closes or reopens a task.</summary>
+    public Task<bool> SetTaskClosedAsync(OloopTask task, OloopProject project, bool closed)
+    {
+        var store = Store;
+        if (store is null)
+        {
+            StatusMessage = NoDataRoot;
+            return Task.FromResult(false);
+        }
+
+        var actor = Actor?.Trim() ?? "";
+        if (actor.Length == 0)
+        {
+            StatusMessage = NoActor;
+            return Task.FromResult(false);
+        }
+
+        return MutateAsync(store, task, baseTask =>
+            store.SetStatusAsync(baseTask, project, closed, actor));
+    }
+
+    /// <summary>Appends a comment to a task.</summary>
+    public Task<bool> AddCommentAsync(OloopTask task, OloopProject project, string body)
+    {
+        var store = Store;
+        if (store is null)
+        {
+            StatusMessage = NoDataRoot;
+            return Task.FromResult(false);
+        }
+
+        var actor = Actor?.Trim() ?? "";
+        if (actor.Length == 0)
+        {
+            StatusMessage = NoActor;
+            return Task.FromResult(false);
+        }
+
+        return MutateAsync(store, task, baseTask =>
+            store.AddCommentAsync(baseTask, project, body, actor));
+    }
+
+    /// <summary>
+    /// Changes an existing task and reloads the data root afterwards, so the
+    /// list shows what is on disk.
+    ///
+    /// A refused write (the file changed on disk in the meantime) is handed to
+    /// the conflict dialog: the user reloads, overwrites or cancels.
+    /// </summary>
+    private async Task<bool> MutateAsync(
+        OloopStore store,
+        OloopTask task,
+        Func<OloopTask, Task<OloopTask>> write)
+    {
+        try
+        {
+            await write(task);
+            await RefreshAsync();
+            return true;
+        }
+        catch (OloopConflictException conflict)
+        {
+            return await HandleConflictAsync(store, task, conflict, write);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or OloopFormatException)
+        {
+            StatusMessage = $"The change could not be written: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Asks the user what to do when the store refused a write because the
+    /// file changed on disk.
+    /// </summary>
+    private async Task<bool> HandleConflictAsync(
+        OloopStore store,
+        OloopTask task,
+        OloopConflictException conflict,
+        Func<OloopTask, Task<OloopTask>> write)
+    {
+        var choice = await Dialogs.ShowConflictAsync(new ConflictViewModel(task, conflict));
+
+        switch (choice)
+        {
+            case ConflictChoice.Reload:
+                await RefreshAsync();
+                StatusMessage = "The task was reloaded from disk.";
+                return false;
+
+            case ConflictChoice.Overwrite:
+                return await OverwriteAsync(store, task, write);
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Writes the change over the version on disk: the file is read again and
+    /// the change is applied on top of that version.
+    /// </summary>
+    private async Task<bool> OverwriteAsync(
+        OloopStore store,
+        OloopTask task,
+        Func<OloopTask, Task<OloopTask>> write)
+    {
+        try
+        {
+            var snapshot = await store.LoadAsync();
+            var onDisk = snapshot.Tasks.FirstOrDefault(t => t.Id == task.Id);
+            if (onDisk is null)
+            {
+                StatusMessage = "The task is no longer in the data folder.";
+                await RefreshAsync();
+                return false;
+            }
+
+            // The change is applied on the version from disk, so the write
+            // does not trip over the changed updatedAt again.
+            await write(onDisk);
+            await RefreshAsync();
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or OloopFormatException)
+        {
+            StatusMessage = $"The change could not be written: {ex.Message}";
+            return false;
+        }
+    }
+
+    // ---------------- Helpers ----------------
+
+    /// <summary>
+    /// The store for the current data root. Null when no data root is set.
+    /// </summary>
+    private OloopStore? Store
+    {
+        get
+        {
+            var root = DataRoot?.Trim() ?? "";
+            if (root.Length == 0)
+                return null;
+
+            if (_store is null || _storeRoot != root)
+            {
+                _store = new OloopStore(root);
+                _storeRoot = root;
+            }
+
+            return _store;
         }
     }
 
@@ -133,20 +477,13 @@ public partial class MainViewModel : ViewModelBase
             return;
 
         Split = new ProjectSplitViewModel(card.Project, this);
-        OnPropertyChanged(nameof(IsDashboard));
     }
 
     private void BackToDashboard()
     {
         Split = null;
-        OnPropertyChanged(nameof(IsDashboard));
     }
 
-    /// <summary>Saves the settings file.</summary>
-    public void SaveSettings()
-    {
-        _settings.DataRoot = DataRoot?.Trim();
-        _settings.Actor = Actor?.Trim() ?? "";
-        _settings.Save();
-    }
+    partial void OnSplitChanged(ProjectSplitViewModel? value)
+        => OnPropertyChanged(nameof(IsDashboard));
 }
