@@ -1,0 +1,114 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============================================================
+         oloop — Material 3 dark theme.
+         Token values come from the M3 handoff of the oloop spec
+         (seed #4C5C92, dark scheme).
+         ============================================================ -->
+
+    <!-- Surfaces -->
+    <Color x:Key="SurfaceColor">#121318</Color>
+    <Color x:Key="SurfaceContainerLowColor">#1B1B21</Color>
+    <Color x:Key="SurfaceContainerColor">#1F1F25</Color>
+    <Color x:Key="SurfaceContainerHighColor">#292A2F</Color>
+    <Color x:Key="SurfaceContainerHighestColor">#34343A</Color>
+
+    <!-- Primary -->
+    <Color x:Key="PrimaryColor">#B5C4FF</Color>
+    <Color x:Key="OnPrimaryColor">#1D2D61</Color>
+    <Color x:Key="PrimaryContainerColor">#344479</Color>
+    <Color x:Key="OnPrimaryContainerColor">#DCE1FF</Color>
+
+    <!-- Secondary / tertiary -->
+    <Color x:Key="SecondaryContainerColor">#414659</Color>
+    <Color x:Key="OnSecondaryContainerColor">#DFE1F9</Color>
+    <Color x:Key="TertiaryContainerColor">#5B3D57</Color>
+    <Color x:Key="OnTertiaryContainerColor">#FFD7F5</Color>
+
+    <!-- Text -->
+    <Color x:Key="OnSurfaceColor">#E3E1E9</Color>
+    <Color x:Key="OnSurfaceVariantColor">#C6C5D0</Color>
+
+    <!-- Outlines -->
+    <Color x:Key="OutlineColor">#90909A</Color>
+    <Color x:Key="OutlineVariantColor">#46464F</Color>
+
+    <!-- Status -->
+    <Color x:Key="StatusOpenColor">#A2D398</Color>
+
+    <!-- Type containers. Todo = primaryContainer, feature = tertiaryContainer;
+         the rest get their own tonal containers. -->
+    <Color x:Key="TypeTodoColor">#DCE1FF</Color>
+    <Color x:Key="TypeTodoBgColor">#344479</Color>
+    <Color x:Key="TypeQuestionColor">#A5D6E0</Color>
+    <Color x:Key="TypeQuestionBgColor">#1E3038</Color>
+    <Color x:Key="TypeDecisionColor">#FFD7A1</Color>
+    <Color x:Key="TypeDecisionBgColor">#362D1E</Color>
+    <Color x:Key="TypeFeatureColor">#FFD7F5</Color>
+    <Color x:Key="TypeFeatureBgColor">#5B3D57</Color>
+    <Color x:Key="TypeBugColor">#FFB4AB</Color>
+    <Color x:Key="TypeBugBgColor">#3B2420</Color>
+    <Color x:Key="TypeClosedColor">#C6C5D0</Color>
+    <Color x:Key="TypeClosedBgColor">#292A2F</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="SurfaceContainerLowBrush" Color="{StaticResource SurfaceContainerLowColor}" />
+    <SolidColorBrush x:Key="SurfaceContainerBrush" Color="{StaticResource SurfaceContainerColor}" />
+    <SolidColorBrush x:Key="SurfaceContainerHighBrush" Color="{StaticResource SurfaceContainerHighColor}" />
+    <SolidColorBrush x:Key="SurfaceContainerHighestBrush" Color="{StaticResource SurfaceContainerHighestColor}" />
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="OnPrimaryBrush" Color="{StaticResource OnPrimaryColor}" />
+    <SolidColorBrush x:Key="PrimaryContainerBrush" Color="{StaticResource PrimaryContainerColor}" />
+    <SolidColorBrush x:Key="OnPrimaryContainerBrush" Color="{StaticResource OnPrimaryContainerColor}" />
+    <SolidColorBrush x:Key="SecondaryContainerBrush" Color="{StaticResource SecondaryContainerColor}" />
+    <SolidColorBrush x:Key="OnSecondaryContainerBrush" Color="{StaticResource OnSecondaryContainerColor}" />
+    <SolidColorBrush x:Key="TertiaryContainerBrush" Color="{StaticResource TertiaryContainerColor}" />
+    <SolidColorBrush x:Key="OnTertiaryContainerBrush" Color="{StaticResource OnTertiaryContainerColor}" />
+    <SolidColorBrush x:Key="OnSurfaceBrush" Color="{StaticResource OnSurfaceColor}" />
+    <SolidColorBrush x:Key="OnSurfaceVariantBrush" Color="{StaticResource OnSurfaceVariantColor}" />
+    <SolidColorBrush x:Key="OutlineBrush" Color="{StaticResource OutlineColor}" />
+    <SolidColorBrush x:Key="OutlineVariantBrush" Color="{StaticResource OutlineVariantColor}" />
+    <SolidColorBrush x:Key="StatusOpenBrush" Color="{StaticResource StatusOpenColor}" />
+    <SolidColorBrush x:Key="TypeTodoBrush" Color="{StaticResource TypeTodoColor}" />
+    <SolidColorBrush x:Key="TypeTodoBgBrush" Color="{StaticResource TypeTodoBgColor}" />
+    <SolidColorBrush x:Key="TypeQuestionBrush" Color="{StaticResource TypeQuestionColor}" />
+    <SolidColorBrush x:Key="TypeQuestionBgBrush" Color="{StaticResource TypeQuestionBgColor}" />
+    <SolidColorBrush x:Key="TypeDecisionBrush" Color="{StaticResource TypeDecisionColor}" />
+    <SolidColorBrush x:Key="TypeDecisionBgBrush" Color="{StaticResource TypeDecisionBgColor}" />
+    <SolidColorBrush x:Key="TypeFeatureBrush" Color="{StaticResource TypeFeatureColor}" />
+    <SolidColorBrush x:Key="TypeFeatureBgBrush" Color="{StaticResource TypeFeatureBgColor}" />
+    <SolidColorBrush x:Key="TypeBugBrush" Color="{StaticResource TypeBugColor}" />
+    <SolidColorBrush x:Key="TypeBugBgBrush" Color="{StaticResource TypeBugBgColor}" />
+    <SolidColorBrush x:Key="TypeClosedBrush" Color="{StaticResource TypeClosedColor}" />
+    <SolidColorBrush x:Key="TypeClosedBgBrush" Color="{StaticResource TypeClosedBgColor}" />
+    <SolidColorBrush x:Key="CodeBlockBgBrush" Color="#0C0D14" />
+
+    <!-- ============================================================
+         Material Symbols Rounded geometry (outlined, weight 400).
+         Inline paths, so no icon font is needed.
+         ============================================================ -->
+
+    <Geometry x:Key="IconChecklist">M11 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6M8 10h4M8 14h4M17 2l3 3-4 4-3-3z</Geometry>
+    <Geometry x:Key="IconHelp">M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01</Geometry>
+    <Geometry x:Key="IconGavel">M14 2v6l-6 6H2l6-6h6zM12 14l8 8M17 3l4 4-3 3-4-4zM3 21h8</Geometry>
+    <Geometry x:Key="IconBuild">M22 7l-8.5 8.5-5-5L17 2zM3 21l6-6M15 4l5 5</Geometry>
+    <Geometry x:Key="IconBugReport">M8 6a4 4 0 0 1 8 0M6 10h12v4a6 6 0 0 1-12 0zM3 12h3M18 12h3M4 6l2 2M20 6l-2 2M12 2v4</Geometry>
+    <Geometry x:Key="IconFolder">M3 5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z</Geometry>
+    <Geometry x:Key="IconSearch">M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M20 20l-4-4</Geometry>
+    <Geometry x:Key="IconRefresh">M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5</Geometry>
+    <Geometry x:Key="IconSettings">M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 15a1.6 1.6 0 0 0-1.5-1H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7.5a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z</Geometry>
+    <Geometry x:Key="IconAdd">M12 5v14M5 12h14</Geometry>
+    <Geometry x:Key="IconBack">M20 12H4M10 6l-6 6 6 6</Geometry>
+    <Geometry x:Key="IconClose">M6 6l12 12M18 6L6 18</Geometry>
+    <Geometry x:Key="IconCopy">M9 9h10v12H9zM5 15V3h10v2</Geometry>
+    <Geometry x:Key="IconSend">M4 12l16-8-6 16-2-6z</Geometry>
+    <Geometry x:Key="IconMoreVert">M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4M12 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4M12 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4</Geometry>
+    <Geometry x:Key="IconEdit">M4 20h4L20 8l-4-4L4 16zM14 6l4 4</Geometry>
+    <Geometry x:Key="IconTaskAlt">M4 6h16v12H4zM8 12l3 3 5-6</Geometry>
+    <Geometry x:Key="IconFilter">M3 5h18l-7 8v6l-4 2v-8z</Geometry>
+    <Geometry x:Key="IconGroup">M3 6h18M3 12h18M3 18h12</Geometry>
+    <Geometry x:Key="IconVisibility">M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6</Geometry>
+    <Geometry x:Key="IconWarning">M12 3l10 18H2zM12 10v5M12 18h.01</Geometry>
+</ResourceDictionary>

@@ -17,10 +17,14 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var main = new MainViewModel();
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainViewModel(),
+                DataContext = main,
             };
+
+            // Load the data root in the background so the window shows up right away.
+            _ = main.RefreshAsync();
         }
 
         base.OnFrameworkInitializationCompleted();

@@ -1,0 +1,310 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============================================================
+         Typography. M3 scale: hierarchy comes from size and color,
+         not from bold.
+         ============================================================ -->
+
+    <Style Selector="TextBlock">
+        <Setter Property="FontFamily" Value="Inter" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <Style Selector="TextBlock.TitleLarge">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <Style Selector="TextBlock.TitleMedium">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
+    <Style Selector="TextBlock.HeadlineSmall">
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <Style Selector="TextBlock.BodyMedium">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.BodyLarge">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="LineHeight" Value="24" />
+    </Style>
+
+    <Style Selector="TextBlock.LabelMedium">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
+    <Style Selector="TextBlock.LabelSmall">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.SectionHeader">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.Muted">
+        <Setter Property="Foreground" Value="{StaticResource OutlineBrush}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <!-- ============================================================
+         Surfaces
+         ============================================================ -->
+
+    <Style Selector="Border.Card">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerBrush}" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <Style Selector="Border.Card:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Border.Field">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerBrush}" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <!-- ============================================================
+         Chips. Radius 8 (M3 chip), 24 dp high.
+         ============================================================ -->
+
+    <Style Selector="Border.Chip">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighestBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="MinHeight" Value="24" />
+    </Style>
+
+    <Style Selector="Border.Chip TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
+    <Style Selector="Border.Chip.Outlined">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource OutlineVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Border.Chip.Outlined TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+    </Style>
+
+    <Style Selector="Border.Chip-Todo">
+        <Setter Property="Background" Value="{StaticResource TypeTodoBgBrush}" />
+    </Style>
+    <Style Selector="Border.Chip-Todo TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TypeTodoBrush}" />
+    </Style>
+
+    <Style Selector="Border.Chip-Question">
+        <Setter Property="Background" Value="{StaticResource TypeQuestionBgBrush}" />
+    </Style>
+    <Style Selector="Border.Chip-Question TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TypeQuestionBrush}" />
+    </Style>
+
+    <Style Selector="Border.Chip-Decision">
+        <Setter Property="Background" Value="{StaticResource TypeDecisionBgBrush}" />
+    </Style>
+    <Style Selector="Border.Chip-Decision TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TypeDecisionBrush}" />
+    </Style>
+
+    <Style Selector="Border.Chip-Feature">
+        <Setter Property="Background" Value="{StaticResource TypeFeatureBgBrush}" />
+    </Style>
+    <Style Selector="Border.Chip-Feature TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TypeFeatureBrush}" />
+    </Style>
+
+    <Style Selector="Border.Chip-Bug">
+        <Setter Property="Background" Value="{StaticResource TypeBugBgBrush}" />
+    </Style>
+    <Style Selector="Border.Chip-Bug TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TypeBugBrush}" />
+    </Style>
+
+    <Style Selector="Border.Chip-Closed">
+        <Setter Property="Background" Value="{StaticResource TypeClosedBgBrush}" />
+    </Style>
+    <Style Selector="Border.Chip-Closed TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TypeClosedBrush}" />
+    </Style>
+
+    <!-- ============================================================
+         Buttons. Fully rounded, 40 dp high.
+         ============================================================ -->
+
+    <Style Selector="Button">
+        <Setter Property="Background" Value="{StaticResource SecondaryContainerBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnSecondaryContainerBrush}" />
+        <Setter Property="FontFamily" Value="Inter" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="MinHeight" Value="40" />
+    </Style>
+
+    <Style Selector="Button:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighestBrush}" />
+    </Style>
+
+    <Style Selector="Button:pressed">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+    </Style>
+
+    <Style Selector="Button:disabled">
+        <Setter Property="Opacity" Value="0.38" />
+    </Style>
+
+    <!-- The only filled primary button on a screen. -->
+    <Style Selector="Button.Primary">
+        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+    <Style Selector="Button.Primary:pointerover">
+        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+
+    <!-- Outlined button (e.g. "Close task"). -->
+    <Style Selector="Button.Outlined">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.Outlined:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+    </Style>
+
+    <!-- Text button (dialog actions). -->
+    <Style Selector="Button.Text">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="Button.Text:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+    </Style>
+
+    <!-- Icon button. -->
+    <Style Selector="Button.Icon">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="20" />
+    </Style>
+    <Style Selector="Button.Icon:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}" />
+    </Style>
+
+    <!-- Extended FAB "New task". -->
+    <Style Selector="Button.Fab">
+        <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="20,14" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+    </Style>
+    <Style Selector="Button.Fab:pointerover">
+        <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}" />
+        <Setter Property="Opacity" Value="0.92" />
+    </Style>
+
+    <!-- ============================================================
+         Inputs
+         ============================================================ -->
+
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}" />
+        <Setter Property="FontFamily" Value="Inter" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="CaretBrush" Value="{StaticResource OnSurfaceBrush}" />
+    </Style>
+
+    <Style Selector="TextBox:focus">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerBrush}" />
+    </Style>
+
+    <!-- Search field: 48 dp pill on surfaceContainerHighest. -->
+    <Style Selector="TextBox.SearchBox">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighestBrush}" />
+        <Setter Property="CornerRadius" Value="24" />
+        <Setter Property="MinHeight" Value="44" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="PlaceholderText" Value="Tasks, Projekte, Labels suchen…" />
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="MinHeight" Value="36" />
+    </Style>
+
+    <!-- ============================================================
+         Rows and code blocks
+         ============================================================ -->
+
+    <Style Selector="Border.CodeBlock">
+        <Setter Property="Background" Value="{StaticResource CodeBlockBgBrush}" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="BorderBrush" Value="{StaticResource OutlineVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Border.CodeBlock TextBlock">
+        <Setter Property="FontFamily" Value="Cascadia Code, JetBrains Mono, Consolas, monospace" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+
+    <Style Selector="Border.Divider">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighestBrush}" />
+    </Style>
+
+    <!-- The 40x40 leading icon container of a task row. -->
+    <Style Selector="Border.IconContainer">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.IconContainer PathIcon">
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Height" Value="20" />
+    </Style>
+</Styles>

@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OloopApp.ViewModels"
+             xmlns:models="using:OloopApp.Core.Models"
+             x:Class="OloopApp.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="16,8,16,16" Spacing="8">
+
+            <!-- Header -->
+            <StackPanel Spacing="2" Margin="0,4,0,8">
+                <TextBlock Text="Projects" Classes="TitleLarge" />
+                <TextBlock Text="{Binding Summary}" Classes="BodyMedium" />
+            </StackPanel>
+
+            <!-- Empty state -->
+            <Border Classes="Card" IsVisible="{Binding IsEmpty}" Padding="24">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="No projects yet" Classes="TitleMedium" />
+                    <TextBlock Classes="BodyMedium"
+                               Text="Create a project to get a folder in the data folder. Tasks live in that folder." />
+                </StackPanel>
+            </Border>
+
+            <!-- Project rows -->
+            <ItemsControl ItemsSource="{Binding Projects}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ProjectCardViewModel">
+                        <Border Classes="Card" Margin="0,0,0,4" Padding="12">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                                <!-- Leading folder icon on primaryContainer -->
+                                <Border Grid.Column="0" Classes="IconContainer"
+                                        Background="{StaticResource PrimaryContainerBrush}">
+                                    <PathIcon Data="{StaticResource IconFolder}"
+                                              Foreground="{StaticResource OnPrimaryContainerBrush}" />
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" Classes="TitleMedium" />
+                                    <TextBlock Text="{Binding UpdatedText}" Classes="BodyMedium" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding OpenOfTotal}" Classes="LabelMedium"
+                                               Foreground="{StaticResource OnSurfaceVariantBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Files that could not be read -->
+            <ItemsControl ItemsSource="{Binding Unreadable}" IsVisible="{Binding Unreadable.Count}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:UnreadableFile">
+                        <Border Classes="Card" Margin="0,4,0,0" Padding="12"
+                                Background="{StaticResource SurfaceContainerHighBrush}">
+                            <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconWarning}" Width="14" Height="14"
+                                              Foreground="{StaticResource StatusOpenBrush}" />
+                                    <TextBlock Text="Unreadable file" Classes="LabelMedium" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Path}" Classes="Muted" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Reason}" Classes="Muted" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

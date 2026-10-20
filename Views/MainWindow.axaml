@@ -1,11 +1,60 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:OloopApp.ViewModels"
+        xmlns:views="using:OloopApp.Views"
         x:Class="OloopApp.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="oloop"
         Width="1280" Height="820"
-        Background="#12131C">
+        MinWidth="900" MinHeight="600"
+        Background="{StaticResource SurfaceBrush}">
 
-    <TextBlock Text="oloop" Foreground="#E3E1E9" Margin="24" />
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- ============================================================
+             Top app bar
+             ============================================================ -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16"
+              Margin="16,12,16,8">
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button Classes="Icon" Command="{Binding BackToDashboardCommand}"
+                        IsVisible="{Binding !IsDashboard}" ToolTip.Tip="Back to projects">
+                    <PathIcon Data="{StaticResource IconBack}" />
+                </Button>
+                <TextBlock Text="oloop" Classes="TitleLarge" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBox Grid.Column="1" Classes="SearchBox"
+                     Text="{Binding SearchText, Mode=TwoWay}"
+                     PlaceholderText="Tasks, Projekte, Labels suchen…"
+                     MaxWidth="420" HorizontalAlignment="Center" />
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                <Button Classes="Icon" Command="{Binding RefreshCommand}" ToolTip.Tip="Reload (F5)">
+                    <PathIcon Data="{StaticResource IconRefresh}" />
+                </Button>
+                <Button Classes="Icon" ToolTip.Tip="Settings">
+                    <PathIcon Data="{StaticResource IconSettings}" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Status line -->
+        <TextBlock Grid.Row="1" Text="{Binding StatusMessage}" Classes="Muted"
+                   Margin="16,0,16,4" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        <!-- ============================================================
+             Content
+             ============================================================ -->
+        <Panel Grid.Row="2">
+            <views:DashboardView DataContext="{Binding Dashboard}"
+                                IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsDashboard}" />
+            <TextBlock Text="Projektansicht kommt in Schritt 3"
+                       IsVisible="{Binding !IsDashboard}"
+                       Foreground="{StaticResource OutlineBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Panel>
+
+    </Grid>
 </Window>
