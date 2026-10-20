@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.VisualTree;
@@ -7,6 +8,7 @@ using OloopApp.Core.Models;
 using OloopApp.ViewModels;
 using OloopApp.Views;
 using Xunit;
+using TaskStatus = OloopApp.Core.Models.TaskStatus;
 
 namespace OloopApp.Tests;
 

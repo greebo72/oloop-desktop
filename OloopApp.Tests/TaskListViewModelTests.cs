@@ -3,6 +3,7 @@ using OloopApp.Core.Io;
 using OloopApp.Core.Models;
 using OloopApp.ViewModels;
 using Xunit;
+using TaskStatus = OloopApp.Core.Models.TaskStatus;
 
 namespace OloopApp.Tests;
 

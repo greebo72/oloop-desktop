@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -159,7 +160,7 @@ public static class MarkdownRenderer
     private static Control CreateList(ListBlock list)
     {
         var panel = new StackPanel { Spacing = 4 };
-        var number = list.IsOrdered ? Math.Max(1, list.OrderedStart) : 0;
+        var number = list.IsOrdered ? ParseOrderedStart(list.OrderedStart) : 0;
 
         foreach (var item in list)
         {
@@ -385,4 +386,13 @@ public static class MarkdownRenderer
 
     /// <summary>One piece of a line: the text and how it is formatted.</summary>
     private readonly record struct Segment(string Text, bool Bold, bool Italic, bool Code, bool Link);
+
+    /// <summary>
+    /// The start number of an ordered list. Markdig keeps it as a string, so
+    /// an unparsable value falls back to 1.
+    /// </summary>
+    private static int ParseOrderedStart(string? raw)
+    {
+        return int.TryParse(raw, out var value) ? value : 1;
+    }
 }
