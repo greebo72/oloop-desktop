@@ -5,5 +5,5 @@ namespace OloopApp.ViewModels;
 public partial class MainViewModel : ViewModelBase
 {
     [ObservableProperty]
-    public partial string Greeting { get; set; } = "Welcome to Avalonia!";
+    private string _greeting = "Welcome to Avalonia!";
 }
