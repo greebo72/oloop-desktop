@@ -1,0 +1,36 @@
+name: drift
+
+# The format drift check compares this client with the reference Python CLI.
+# It needs that CLI, so it is a separate job: the normal test run works
+# without it and skips the drift tests.
+#
+# The CLI comes from its published release, not from a branch — the check
+# compares against the version the other clients use.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install the reference CLI
+        run: pip install https://github.com/greebo72/oloop-cli/releases/download/v0.1.0/oloop-0.1.0-py3-none-any.whl
+      - name: Build
+        run: dotnet build --configuration Release
+      - name: Test with the reference CLI on the PATH
+        run: dotnet test OloopApp.Tests/OloopApp.Tests.csproj --configuration Release --no-build
