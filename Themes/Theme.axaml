@@ -111,4 +111,5 @@
     <Geometry x:Key="IconGroup">M3 6h18M3 12h18M3 18h12</Geometry>
     <Geometry x:Key="IconVisibility">M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6</Geometry>
     <Geometry x:Key="IconWarning">M12 3l10 18H2zM12 10v5M12 18h.01</Geometry>
+    <Geometry x:Key="IconSilent">M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M12 6v6l4 2</Geometry>
 </ResourceDictionary>

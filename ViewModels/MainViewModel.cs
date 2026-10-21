@@ -47,6 +47,8 @@ public partial class MainViewModel : ViewModelBase
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         OpenProjectCommand = new RelayCommand<ProjectCardViewModel>(OpenProject);
         BackToDashboardCommand = new RelayCommand(BackToDashboard);
+        OpenSilentCommand = new RelayCommand(OpenSilent);
+        ToggleSilentCommand = new RelayCommand(ToggleSilent);
 
         Dashboard = new DashboardViewModel();
         // The project cards on the dashboard open the project through this
@@ -86,6 +88,13 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>The dashboard with the project cards.</summary>
     public DashboardViewModel Dashboard { get; }
 
+    /// <summary>
+    /// The "silent since" view: the tasks of all projects that have been
+    /// quiet for a long time. Null when the view is not open.
+    /// </summary>
+    [ObservableProperty]
+    private SilentTasksViewModel? _silent;
+
     /// <summary>The task list and detail of the open project. Null on the dashboard.</summary>
     [ObservableProperty]
     private ProjectSplitViewModel? _split;
@@ -117,7 +126,16 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<OloopProject> Projects { get; } = [];
 
     /// <summary>Whether the dashboard is shown (no project open).</summary>
-    public bool IsDashboard => Split is null;
+    public bool IsDashboard => Split is null && Silent is null;
+
+    /// <summary>Whether the "silent since" view is shown.</summary>
+    public bool IsSilent => Silent is not null;
+
+    /// <summary>
+    /// Whether something is open next to the dashboard: a project or the
+    /// "silent since" view. The back button is only shown then.
+    /// </summary>
+    public bool HasSubView => Split is not null || Silent is not null;
 
     /// <summary>Reloads the data root.</summary>
     public AsyncRelayCommand RefreshCommand { get; }
@@ -127,6 +145,18 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>Returns to the dashboard.</summary>
     public RelayCommand BackToDashboardCommand { get; }
+
+    /// <summary>
+    /// Opens the "silent since" view: the tasks of all projects that have
+    /// been quiet for a long time.
+    /// </summary>
+    public RelayCommand OpenSilentCommand { get; }
+
+    /// <summary>
+    /// Opens the "silent since" view, or closes it when it is already open.
+    /// The button in the top bar is a toggle.
+    /// </summary>
+    public RelayCommand ToggleSilentCommand { get; }
 
     /// <summary>Opens the settings dialog.</summary>
     public AsyncRelayCommand SettingsCommand { get; }
@@ -168,6 +198,7 @@ public partial class MainViewModel : ViewModelBase
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
                 Tasks.Clear();
+                Silent?.Refresh();
                 return;
             }
 
@@ -178,6 +209,7 @@ public partial class MainViewModel : ViewModelBase
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
                 Tasks.Clear();
+                Silent?.Refresh();
                 return;
             }
 
@@ -200,6 +232,7 @@ public partial class MainViewModel : ViewModelBase
                 : $"{snapshot.Unreadable.Count} file(s) could not be read.";
 
             Split?.Refresh();
+            Silent?.Refresh();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -404,10 +437,14 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     public async Task EditSelectedTaskAsync()
     {
-        if (Split is null)
+        if (Split is not null)
+        {
+            await Split.TaskList.EditSelectedAsync();
             return;
+        }
 
-        await Split.TaskList.EditSelectedAsync();
+        if (Silent?.Selected is { } selected)
+            await OpenEditTaskAsync(selected.Task, selected.Project);
     }
 
     // ---------------- Writes ----------------
@@ -636,16 +673,57 @@ public partial class MainViewModel : ViewModelBase
         if (card is null)
             return;
 
+        // Only one view at a time: the project and the "silent since" view
+        // share the right pane.
+        Silent = null;
         Split = new ProjectSplitViewModel(card.Project, this);
     }
 
     private void BackToDashboard()
     {
         Split = null;
+        Silent = null;
+    }
+
+    /// <summary>
+    /// Opens the "silent since" view. The project view is closed — only one
+    /// of them is on the screen.
+    /// </summary>
+    private void OpenSilent()
+    {
+        Split = null;
+        Silent = new SilentTasksViewModel(this);
+    }
+
+    /// <summary>
+    /// Opens the "silent since" view, or closes it when it is already open.
+    /// </summary>
+    private void ToggleSilent()
+    {
+        if (Silent is not null)
+        {
+            BackToDashboard();
+            return;
+        }
+
+        OpenSilent();
     }
 
     partial void OnSplitChanged(ProjectSplitViewModel? value)
-        => OnPropertyChanged(nameof(IsDashboard));
+        => RaiseViewStateChanged();
+
+    partial void OnSilentChanged(SilentTasksViewModel? value)
+        => RaiseViewStateChanged();
+
+    /// <summary>
+    /// Raises the properties that say which view is on the screen.
+    /// </summary>
+    private void RaiseViewStateChanged()
+    {
+        OnPropertyChanged(nameof(IsDashboard));
+        OnPropertyChanged(nameof(IsSilent));
+        OnPropertyChanged(nameof(HasSubView));
+    }
 
     partial void OnSearchTextChanged(string value)
         => Dashboard.SearchText = value;

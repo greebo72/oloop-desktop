@@ -20,7 +20,7 @@
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                 <Button Classes="Icon" Command="{Binding BackToDashboardCommand}"
-                        IsVisible="{Binding !IsDashboard}" ToolTip.Tip="Back to projects">
+                        IsVisible="{Binding HasSubView}" ToolTip.Tip="Back to projects">
                     <PathIcon Data="{StaticResource IconBack}" />
                 </Button>
                 <TextBlock Text="oloop" Classes="TitleLarge" VerticalAlignment="Center" />
@@ -33,6 +33,12 @@
                      MaxWidth="420" HorizontalAlignment="Center" />
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                <!-- The "silent since" view: the tasks of all projects
+                     that have been quiet for a long time. -->
+                <Button Classes="Icon" Command="{Binding ToggleSilentCommand}"
+                        ToolTip.Tip="Silent since — the tasks nobody touched for a while">
+                    <PathIcon Data="{StaticResource IconSilent}" />
+                </Button>
                 <Button Classes="Icon" Command="{Binding RefreshCommand}" ToolTip.Tip="Reload (F5)">
                     <PathIcon Data="{StaticResource IconRefresh}" />
                 </Button>
@@ -60,6 +66,17 @@
                 <ContentControl.DataTemplates>
                     <DataTemplate x:DataType="vm:ProjectSplitViewModel">
                         <views:ProjectSplitView />
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
+
+            <!-- The "silent since" view: the tasks of all projects that
+                 have been quiet for a long time. -->
+            <ContentControl IsVisible="{Binding IsSilent}"
+                            Content="{Binding Silent}">
+                <ContentControl.DataTemplates>
+                    <DataTemplate x:DataType="vm:SilentTasksViewModel">
+                        <views:SilentTasksView />
                     </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>

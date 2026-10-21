@@ -57,7 +57,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (shell.Split is not null)
+            if (shell.HasSubView)
             {
                 shell.BackToDashboardCommand.Execute(null);
                 e.Handled = true;
