@@ -32,14 +32,37 @@ public partial class MainViewModel : ViewModelBase
         _dataRoot = _settings.ResolveDataRoot() ?? "";
         _actor = _settings.ResolveActor();
 
-        Dashboard = new DashboardViewModel();
-
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         OpenProjectCommand = new RelayCommand<ProjectCardViewModel>(OpenProject);
         BackToDashboardCommand = new RelayCommand(BackToDashboard);
+
+        Dashboard = new DashboardViewModel();
+        // The project cards on the dashboard open the project through this
+        // command — without it they would be dead.
+        Dashboard.OpenProjectCommand = OpenProjectCommand;
+
+        // Without a data folder the dashboard shows the empty state right
+        // away — before the first refresh, too.
+        Dashboard.HasNoDataRoot = _dataRoot.Length == 0;
+        Dashboard.IsEmpty = _dataRoot.Length == 0;
+
         SettingsCommand = new AsyncRelayCommand(OpenSettingsAsync);
         NewProjectCommand = new AsyncRelayCommand(OpenNewProjectAsync);
         NewTaskCommand = new AsyncRelayCommand(OpenNewTaskAsync);
+        EditTaskCommand = new AsyncRelayCommand(EditSelectedTaskAsync);
+        ClearSearchCommand = new RelayCommand(ClearSearch);
+    }
+
+    /// <summary>Clears the search field.</summary>
+    public RelayCommand ClearSearchCommand { get; }
+
+    /// <summary>
+    /// Empties the search. The dashboard and the task list follow, because
+    /// the search text is shared.
+    /// </summary>
+    private void ClearSearch()
+    {
+        SearchText = "";
     }
 
     /// <summary>
@@ -103,6 +126,18 @@ public partial class MainViewModel : ViewModelBase
     public AsyncRelayCommand NewTaskCommand { get; }
 
     /// <summary>
+    /// Opens the edit dialog for the selected task. Does nothing when no task
+    /// is selected.
+    /// </summary>
+    public AsyncRelayCommand EditTaskCommand { get; }
+
+    /// <summary>
+    /// The task that is currently shown in the detail pane, or null when no
+    /// project is open or no task is selected.
+    /// </summary>
+    public OloopTask? SelectedTask => Split?.TaskList.Selected?.Task;
+
+    /// <summary>
     /// Loads the data root. A missing root is not an error — the app shows an
     /// empty state and the settings dialog.
     /// </summary>
@@ -114,7 +149,10 @@ public partial class MainViewModel : ViewModelBase
             var root = DataRoot?.Trim() ?? "";
             if (root.Length == 0)
             {
-                StatusMessage = NoDataRoot;
+                // The empty card of the dashboard says it — a second line
+                // with the same words would only be noise.
+                StatusMessage = "";
+                Dashboard.HasNoDataRoot = true;
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
                 Tasks.Clear();
@@ -124,6 +162,7 @@ public partial class MainViewModel : ViewModelBase
             if (!Directory.Exists(root))
             {
                 StatusMessage = $"The data folder '{root}' does not exist.";
+                Dashboard.HasNoDataRoot = true;
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
                 Tasks.Clear();
@@ -142,6 +181,7 @@ public partial class MainViewModel : ViewModelBase
                 Tasks.Add(task);
 
             Dashboard.Update(snapshot);
+            Dashboard.HasNoDataRoot = false;
 
             StatusMessage = snapshot.Unreadable.Count == 0
                 ? ""
@@ -249,6 +289,21 @@ public partial class MainViewModel : ViewModelBase
             StatusMessage = $"Task '{viewModel.TrimmedTitle}' saved.";
 
         return edited;
+    }
+
+    /// <summary>
+    /// Opens the edit dialog for the task that is shown in the detail pane.
+    /// </summary>
+    public async Task EditSelectedTaskAsync()
+    {
+        if (Split is null)
+            return;
+
+        var selected = Split.TaskList.Selected;
+        if (selected is null)
+            return;
+
+        await OpenEditTaskAsync(selected.Task, selected.Project);
     }
 
     // ---------------- Writes ----------------
@@ -486,4 +541,10 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnSplitChanged(ProjectSplitViewModel? value)
         => OnPropertyChanged(nameof(IsDashboard));
+
+    partial void OnSearchTextChanged(string value)
+        => Dashboard.SearchText = value;
+
+    partial void OnDataRootChanged(string value)
+        => Dashboard.HasNoDataRoot = string.IsNullOrWhiteSpace(value);
 }

@@ -67,11 +67,12 @@
             </ItemsControl>
 
             <!-- Empty state -->
-            <Border Classes="Card" IsVisible="{Binding IsEmpty}" Padding="20">
+            <Border Name="EmptyStateCard" Classes="Card"
+                    IsVisible="{Binding IsEmpty}" Padding="20">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="No tasks" Classes="TitleMedium" />
-                    <TextBlock Classes="BodyMedium"
-                               Text="Nothing of this project matches the current search and filter." />
+                    <TextBlock Text="{Binding EmptyTitle}" Classes="TitleMedium" />
+                    <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                               Text="{Binding EmptyText}" />
                 </StackPanel>
             </Border>
 

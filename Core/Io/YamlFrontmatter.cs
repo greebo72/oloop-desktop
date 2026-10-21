@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 
@@ -27,6 +28,15 @@ public abstract class YamlNode
     public sealed class Sequence(List<YamlNode> items) : YamlNode
     {
         public IReadOnlyList<YamlNode> Items { get; } = items;
+    }
+
+    /// <summary>
+    /// An explicit null value. It is distinct from a scalar whose text is
+    /// "null": that one is a string and has to be quoted.
+    /// </summary>
+    public sealed class NullNode : YamlNode
+    {
+        public static NullNode Instance { get; } = new();
     }
 
     /// <summary>
@@ -164,7 +174,7 @@ public static class YamlFrontmatter
 
         switch (value)
         {
-            case YamlNode.Scalar { IsPlainNull: true }:
+            case YamlNode.NullNode:
                 lines.Add($"{pad}{key}: null");
                 break;
 
@@ -217,7 +227,7 @@ public static class YamlFrontmatter
 
     private static string RenderInline(YamlNode value) => value switch
     {
-        YamlNode.Scalar { IsPlainNull: true } => "null",
+        YamlNode.NullNode => "null",
         YamlNode.Raw raw => raw.Value,
         YamlNode.Scalar scalar => Quote(scalar.Value),
         _ => throw new OloopFormatException("unsupported YAML value"),
@@ -227,6 +237,15 @@ public static class YamlFrontmatter
     /// Quotes a scalar so no value is ever read back as a number, a date or a
     /// null. Plain scalars that are safe stay unquoted, matching the reference
     /// clients (the Kotlin client always double-quotes).
+    ///
+    /// The set of "unsafe" values is the one of YAML 1.1, because that is what
+    /// the reference clients parse with (PyYAML resolves <c>on</c>, <c>off</c>,
+    /// <c>yes</c> and <c>no</c> as booleans). A title like "on" would otherwise
+    /// be read back as <c>true</c> and break the format.
+    ///
+    /// A value is also quoted when a plain scalar would not survive the
+    /// parser: a line break or a tab ends the scalar, and an indicator at the
+    /// start (<c>#</c>, <c>&gt;</c>, <c>*</c>, …) starts a different node.
     /// </summary>
     public static string Quote(string value)
     {
@@ -237,19 +256,12 @@ public static class YamlFrontmatter
             || value.Contains(": ")
             || value.EndsWith(':')
             || value.Contains(" #")
-            || value.StartsWith("- ")
-            || value.StartsWith('#')
-            || "null".Equals(value, StringComparison.OrdinalIgnoreCase)
-            || value == "~"
-            || value is "true" or "false" or "True" or "False"
-            || "yes".Equals(value, StringComparison.OrdinalIgnoreCase)
-            || "no".Equals(value, StringComparison.OrdinalIgnoreCase)
-            || value.Any(c => c is ':' or '{' or '}' or '[' or ']' or ',' or '&' or '*'
-                                  or '!' or '|' or '>' or '%' or '@' or '`' or '"' or '\'')
-            || double.TryParse(value, System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out _)
-            || long.TryParse(value, System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out _);
+            || StartsWithIndicator(value)
+            || IsYaml11Bool(value)
+            || IsYaml11Null(value)
+            || IsYaml11Number(value)
+            || IsYaml11Timestamp(value)
+            || value.Any(c => c is '\n' or '\r' or '\t' || char.IsControl(c));
 
         if (!needsQuotes)
             return value;
@@ -276,4 +288,95 @@ public static class YamlFrontmatter
         sb.Append('"');
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Whether the value starts with a character that would turn a plain
+    /// scalar into a different node: a comment, an anchor, a tag, a block
+    /// scalar, a flow collection or a reserved character.
+    ///
+    /// A dash, a question mark and a colon only count when they are followed
+    /// by a space or stand alone — otherwise they are part of the text
+    /// (<c>-x</c>, <c>http://host</c>).
+    /// </summary>
+    private static bool StartsWithIndicator(string value)
+    {
+        char first = value[0];
+
+        if (first is '#' or '&' or '*' or '!' or '|' or '>' or '%' or '@' or '`'
+            or '"' or '\'' or '{' or '}' or '[' or ']' or ',')
+        {
+            return true;
+        }
+
+        if (first is '-' or '?' or ':')
+        {
+            return value.Length == 1 || value[1] == ' ';
+        }
+
+        return false;
+    }
+
+    // ---------------- YAML 1.1 ----------------
+    //
+    // The reference clients parse the frontmatter with YAML 1.1 semantics
+    // (PyYAML, SnakeYAML). A plain scalar that YAML 1.1 resolves to another
+    // type has to be quoted, otherwise the value changes when the file is
+    // read back — the exact thing the spec forbids.
+    //
+    // The patterns below are the implicit resolvers of YAML 1.1, taken
+    // verbatim from PyYAML (yaml/resolver.py). They are not an
+    // approximation: a value the resolver does not match stays a string, and
+    // a value it does match has to be quoted.
+
+    /// <summary>
+    /// The boolean resolver: yes/no, true/false and on/off, in the three
+    /// capitalizations the resolver accepts.
+    /// </summary>
+    private static readonly Regex Yaml11BoolPattern = new(
+        @"^(?:yes|Yes|YES|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF)\z",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>The null resolver: <c>~</c> and the three spellings of null.</summary>
+    private static readonly Regex Yaml11NullPattern = new(
+        @"^(?:~|null|Null|NULL)\z",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// The integer resolver: plain decimals, the binary, octal and
+    /// hexadecimal notations, the underscore separators and the sexagesimal
+    /// notation.
+    /// </summary>
+    private static readonly Regex Yaml11IntPattern = new(
+        @"^(?:[-+]?0b[0-1_]+|[-+]?0[0-7_]+|[-+]?(?:0|[1-9][0-9_]*)|[-+]?0x[0-9a-fA-F_]+|[-+]?[1-9][0-9_]*(?::[0-5]?[0-9])+)\z",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// The float resolver: decimals, the exponent notation (with an explicit
+    /// sign), the sexagesimal notation with a fraction, infinity and NaN.
+    /// </summary>
+    private static readonly Regex Yaml11FloatPattern = new(
+        @"^(?:[-+]?(?:[0-9][0-9_]*)\.[0-9_]*(?:[eE][-+][0-9]+)?|\.[0-9][0-9_]*(?:[eE][-+][0-9]+)?|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*|[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))\z",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// The timestamp resolver: a bare date and a date with a time. The
+    /// reference clients keep timestamps as strings, but a client with a
+    /// different resolver would not — so a date-like value is quoted anyway.
+    /// </summary>
+    private static readonly Regex Yaml11TimestampPattern = new(
+        @"^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}(?:[Tt]|[ \t]+)[0-9]{1,2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]*)?(?:[ \t]*(?:Z|[-+][0-9]{1,2}(?::[0-9]{2})?))?)\z",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    /// <summary>Whether YAML 1.1 resolves the value to a boolean.</summary>
+    private static bool IsYaml11Bool(string value) => Yaml11BoolPattern.IsMatch(value);
+
+    /// <summary>Whether YAML 1.1 resolves the value to null.</summary>
+    private static bool IsYaml11Null(string value) => Yaml11NullPattern.IsMatch(value);
+
+    /// <summary>Whether YAML 1.1 resolves the value to a number.</summary>
+    private static bool IsYaml11Number(string value)
+        => Yaml11IntPattern.IsMatch(value) || Yaml11FloatPattern.IsMatch(value);
+
+    /// <summary>Whether YAML 1.1 resolves the value to a timestamp.</summary>
+    private static bool IsYaml11Timestamp(string value) => Yaml11TimestampPattern.IsMatch(value);
 }

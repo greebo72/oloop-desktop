@@ -123,6 +123,25 @@ public partial class TaskListViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Whether the project has no tasks at all — as opposed to having tasks
+    /// that the filter hides.
+    /// </summary>
+    public bool HasNoTasks => TotalCount == 0;
+
+    /// <summary>
+    /// The title of the empty state: "No tasks yet" when the project is
+    /// empty, "Nothing matches" when the filter hides the tasks.
+    /// </summary>
+    public string EmptyTitle => HasNoTasks ? "No tasks yet" : "Nothing matches";
+
+    /// <summary>
+    /// The text of the empty state: it says what to do about it.
+    /// </summary>
+    public string EmptyText => HasNoTasks
+        ? "This project has no tasks yet. Create one to get started."
+        : "The search and the filters hide every task of this project.";
+
     /// <summary>Whether a task is shown in the detail pane.</summary>
     public bool HasSelection => Selected is not null;
 
@@ -156,6 +175,10 @@ public partial class TaskListViewModel : ViewModelBase
 
         OpenCount = filtered.Count(t => !t.IsClosed);
         IsEmpty = filtered.Count == 0;
+
+        OnPropertyChanged(nameof(HasNoTasks));
+        OnPropertyChanged(nameof(EmptyTitle));
+        OnPropertyChanged(nameof(EmptyText));
 
         // The detail of the selected task is rebuilt from the fresh data, so
         // it never shows the version from before the last write. A task that

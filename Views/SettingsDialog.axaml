@@ -87,6 +87,32 @@
             </StackPanel>
 
             <!-- ============================================================
+                 Shortcuts
+                 ============================================================ -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="Shortcuts" Classes="LabelMedium" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowSpacing="4">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+F" Classes="BodyMedium" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Focus the search" Classes="Muted" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+N" Classes="BodyMedium" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="New task in the open project" Classes="Muted" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+E" Classes="BodyMedium" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="Edit the selected task" Classes="Muted" />
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+," Classes="BodyMedium" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="These settings" Classes="Muted" />
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Escape" Classes="BodyMedium" />
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="Clear the search, or back to the projects" Classes="Muted" />
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="F5" Classes="BodyMedium" />
+                    <TextBlock Grid.Row="5" Grid.Column="1" Text="Reload the data folder" Classes="Muted" />
+                </Grid>
+            </StackPanel>
+
+            <!-- ============================================================
                  Error
                  ============================================================ -->
             <Border Classes="Field" Padding="12,8"

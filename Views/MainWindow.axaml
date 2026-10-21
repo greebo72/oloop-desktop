@@ -36,7 +36,7 @@
                 <Button Classes="Icon" Command="{Binding RefreshCommand}" ToolTip.Tip="Reload (F5)">
                     <PathIcon Data="{StaticResource IconRefresh}" />
                 </Button>
-                <Button Classes="Icon" Command="{Binding SettingsCommand}" ToolTip.Tip="Settings">
+                <Button Classes="Icon" Command="{Binding SettingsCommand}" ToolTip.Tip="Settings (Ctrl+,)">
                     <PathIcon Data="{StaticResource IconSettings}" />
                 </Button>
             </StackPanel>

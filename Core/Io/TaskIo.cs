@@ -244,7 +244,7 @@ public static class TaskIo
             new("title", new YamlNode.Scalar(task.Title, ScalarStyle.Plain)),
             new("status", new YamlNode.Scalar(task.Status.ToString(), ScalarStyle.Plain)),
             new("imagePath", task.ImagePath is null
-                ? new YamlNode.Scalar("null", ScalarStyle.Plain)
+                ? YamlNode.NullNode.Instance
                 : new YamlNode.Scalar(task.ImagePath, ScalarStyle.Plain)),
             new("labels", new YamlNode.Sequence(
                 task.Labels.Select(l => (YamlNode)new YamlNode.Scalar(l, ScalarStyle.Plain)).ToList())),

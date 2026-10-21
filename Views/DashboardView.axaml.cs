@@ -22,6 +22,16 @@ public partial class DashboardView : UserControl
     }
 
     /// <summary>
+    /// Opens the settings. It is the way out of the empty state when no data
+    /// folder is set.
+    /// </summary>
+    private async void OnSettingsClick(object? sender, RoutedEventArgs e)
+    {
+        if (Shell is { } shell)
+            await shell.OpenSettingsAsync();
+    }
+
+    /// <summary>
     /// The shell of the app. The dashboard is bound to the dashboard view
     /// model, so the shell is reached through the window.
     /// </summary>

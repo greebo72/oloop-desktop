@@ -14,9 +14,12 @@
                     <TextBlock Text="Projects" Classes="TitleLarge" />
                     <TextBlock Text="{Binding Summary}" Classes="BodyMedium" />
                 </StackPanel>
+                <!-- Without a data folder there is nothing to create a
+                     project in yet — the settings come first. -->
                 <Button Grid.Column="1"
                         Classes="Outlined"
                         VerticalAlignment="Center"
+                        IsVisible="{Binding !HasNoDataRoot}"
                         Click="OnNewProjectClick"
                         ToolTip.Tip="Create a project in the data folder">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -26,12 +29,38 @@
                 </Button>
             </Grid>
 
-            <!-- Empty state -->
-            <Border Classes="Card" IsVisible="{Binding IsEmpty}" Padding="24">
-                <StackPanel Spacing="6">
-                    <TextBlock Text="No projects yet" Classes="TitleMedium" />
-                    <TextBlock Classes="BodyMedium"
-                               Text="Create a project to get a folder in the data folder. Tasks live in that folder." />
+            <!-- Empty state: no data folder, or no project in it. -->
+            <Border Name="EmptyStateCard" Classes="Card"
+                    IsVisible="{Binding ShowEmptyState}" Padding="24">
+                <StackPanel Spacing="8">
+                    <PathIcon Data="{StaticResource IconFolder}" Width="32" Height="32"
+                              HorizontalAlignment="Left"
+                              Foreground="{StaticResource OnSurfaceVariantBrush}" />
+                    <TextBlock Text="{Binding EmptyTitle}" Classes="TitleMedium" />
+                    <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                               Text="{Binding EmptyText}" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <!-- Without a data folder there is nothing to create
+                             a project in yet — the settings come first. -->
+                        <Button Classes="Outlined"
+                                IsVisible="{Binding HasNoDataRoot}"
+                                Click="OnSettingsClick">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconSettings}" Width="16" Height="16" />
+                                <TextBlock Text="Open settings" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Classes="Outlined"
+                                IsVisible="{Binding !HasNoDataRoot}"
+                                Click="OnNewProjectClick">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconAdd}" Width="16" Height="16" />
+                                <TextBlock Text="New project" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
@@ -39,50 +68,68 @@
             <ItemsControl ItemsSource="{Binding Projects}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ProjectCardViewModel">
-                        <Border Classes="Card" Margin="0,0,0,4" Padding="12">
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
-                                <!-- Leading folder icon on primaryContainer -->
-                                <Border Grid.Column="0" Classes="IconContainer"
-                                        Background="{StaticResource PrimaryContainerBrush}">
-                                    <PathIcon Data="{StaticResource IconFolder}"
-                                              Foreground="{StaticResource OnPrimaryContainerBrush}" />
-                                </Border>
+                        <Border Classes="Card" Margin="0,0,0,4" Padding="0">
+                            <!-- The card opens the project. Without a command
+                                 the card would be a dead element. -->
+                            <Button Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="12"
+                                    HorizontalContentAlignment="Stretch"
+                                    Command="{Binding OpenCommand}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip.Tip="Open the project">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                                    <!-- Leading folder icon on primaryContainer -->
+                                    <Border Grid.Column="0" Classes="IconContainer"
+                                            Background="{StaticResource PrimaryContainerBrush}">
+                                        <PathIcon Data="{StaticResource IconFolder}"
+                                                  Foreground="{StaticResource OnPrimaryContainerBrush}" />
+                                    </Border>
 
-                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Name}" Classes="TitleMedium" />
-                                    <TextBlock Text="{Binding UpdatedText}" Classes="BodyMedium" />
-                                </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" Classes="TitleMedium" />
+                                        <TextBlock Text="{Binding UpdatedText}" Classes="BodyMedium" />
+                                    </StackPanel>
 
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding OpenOfTotal}" Classes="LabelMedium"
-                                               Foreground="{StaticResource OnSurfaceVariantBrush}" />
-                                </StackPanel>
-                            </Grid>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding OpenOfTotal}" Classes="LabelMedium"
+                                                   Foreground="{StaticResource OnSurfaceVariantBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Files that could not be read -->
-            <ItemsControl ItemsSource="{Binding Unreadable}" IsVisible="{Binding Unreadable.Count}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="models:UnreadableFile">
-                        <Border Classes="Card" Margin="0,4,0,0" Padding="12"
-                                Background="{StaticResource SurfaceContainerHighBrush}">
-                            <StackPanel Spacing="2">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <PathIcon Data="{StaticResource IconWarning}" Width="14" Height="14"
-                                              Foreground="{StaticResource StatusOpenBrush}" />
-                                    <TextBlock Text="Unreadable file" Classes="LabelMedium" />
+            <!-- Files that could not be read. They are never written to. -->
+            <StackPanel IsVisible="{Binding HasUnreadable}" Spacing="4" Margin="0,8,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource StatusOpenBrush}" />
+                    <TextBlock Text="{Binding UnreadableSummary}" Classes="SectionHeader" />
+                </StackPanel>
+
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
+                           Text="These files are left untouched. Fix them in the data folder and reload to see them." />
+
+                <ItemsControl ItemsSource="{Binding Unreadable}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:UnreadableFile">
+                            <Border Classes="Card" Margin="0,4,0,0" Padding="12"
+                                    Background="{StaticResource SurfaceContainerHighBrush}">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Path}" Classes="LabelMedium"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Reason}" Classes="Muted" TextWrapping="Wrap" />
                                 </StackPanel>
-                                <TextBlock Text="{Binding Path}" Classes="Muted" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Reason}" Classes="Muted" />
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

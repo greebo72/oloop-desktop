@@ -119,24 +119,30 @@ public static class ProjectIo
         return value;
     }
 
-    /// <summary>Serializes a project back to the file format.</summary>
+    /// <summary>
+    /// Serializes a project back to the file format.
+    ///
+    /// The optional reference fields are omitted when they are not set: the
+    /// schema types them as a string, not as a nullable one, so a
+    /// <c>referencePath: null</c> would be rejected by the reference clients.
+    /// </summary>
     public static string Write(OloopProject project)
     {
-        var map = new YamlNode.Mapping(
-        [
+        var entries = new List<KeyValuePair<string, YamlNode>>
+        {
             new("formatVersion", new YamlNode.Raw(project.FormatVersion.ToString(CultureInfo.InvariantCulture))),
             new("id", new YamlNode.Scalar(project.Id, ScalarStyle.Plain)),
             new("name", new YamlNode.Scalar(project.Name, ScalarStyle.Plain)),
             new("createdAt", new YamlNode.Scalar(project.CreatedAt, ScalarStyle.Plain)),
-            new("referencePath", project.ReferencePath is null
-                ? new YamlNode.Scalar("null", ScalarStyle.Plain)
-                : new YamlNode.Scalar(project.ReferencePath, ScalarStyle.Plain)),
-            new("referenceHost", project.ReferenceHost is null
-                ? new YamlNode.Scalar("null", ScalarStyle.Plain)
-                : new YamlNode.Scalar(project.ReferenceHost, ScalarStyle.Plain)),
-        ]);
+        };
 
-        return $"---\n{YamlFrontmatter.Render(map)}\n---\n";
+        if (!string.IsNullOrWhiteSpace(project.ReferencePath))
+            entries.Add(new("referencePath", new YamlNode.Scalar(project.ReferencePath, ScalarStyle.Plain)));
+
+        if (!string.IsNullOrWhiteSpace(project.ReferenceHost))
+            entries.Add(new("referenceHost", new YamlNode.Scalar(project.ReferenceHost, ScalarStyle.Plain)));
+
+        return $"---\n{YamlFrontmatter.Render(new YamlNode.Mapping(entries))}\n---\n";
     }
 
     /// <summary>

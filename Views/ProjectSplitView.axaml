@@ -75,12 +75,16 @@
                             </DataTemplate>
                         </ContentControl.DataTemplates>
                     </ContentControl>
-                    <StackPanel Spacing="6"
+                    <StackPanel Spacing="8"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 IsVisible="{Binding !HasSelection}">
+                        <PathIcon Data="{StaticResource IconTaskAlt}" Width="32" Height="32"
+                                  HorizontalAlignment="Center"
+                                  Foreground="{StaticResource OnSurfaceVariantBrush}" />
                         <TextBlock Text="Select a task" Classes="TitleMedium" HorizontalAlignment="Center" />
-                        <TextBlock Text="Pick a task from the list to see its details." Classes="BodyMedium" />
+                        <TextBlock Text="Pick a task from the list to see its details."
+                                   Classes="BodyMedium" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Panel>
             </Border>

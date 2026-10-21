@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Models;
 
@@ -8,6 +9,9 @@ namespace OloopApp.ViewModels;
 public partial class ProjectCardViewModel : ViewModelBase
 {
     public required OloopProject Project { get; init; }
+
+    /// <summary>Opens the project in the split view.</summary>
+    public IRelayCommand? OpenCommand { get; init; }
 
     /// <summary>The project name.</summary>
     public string Name => Project.Name;
