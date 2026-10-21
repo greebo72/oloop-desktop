@@ -18,7 +18,7 @@ another stream already coded against.
 |---|---|---|
 | A — Task list + detail | `ViewModels/TaskListViewModel.cs`, `ViewModels/TaskGroupViewModel.cs`, `ViewModels/TaskDetailViewModel.cs`, `ViewModels/CommentViewModel.cs`, `Views/TaskListView.axaml(.cs)`, `Views/TaskDetailView.axaml(.cs)`, `Views/ProjectSplitView.axaml(.cs)`, `Controls/MarkdownRenderer.cs`, `Controls/CodeBlockView.axaml(.cs)`, `Views/MainWindow.axaml`, `ViewModels/ProjectSplitViewModel.cs` | anything of B and C |
 | B — Settings + new project | `ViewModels/SettingsViewModel.cs`, `ViewModels/NewProjectViewModel.cs`, `Views/SettingsDialog.axaml(.cs)`, `Views/NewProjectDialog.axaml(.cs)`, `Core/Io/OloopSettings.cs` | `Views/MainWindow.axaml`, `ViewModels/MainViewModel.cs` |
-| C — Task dialogs | `ViewModels/NewTaskViewModel.cs`, `ViewModels/EditTaskViewModel.cs`, `ViewModels/ConflictViewModel.cs`, `Views/NewTaskDialog.axaml(.cs)`, `Views/EditTaskDialog.axaml(.cs)`, `Views/ConflictDialog.axaml(.cs)` | `Views/MainWindow.axaml`, `ViewModels/MainViewModel.cs` |
+| C — Task dialogs | `ViewModels/NewTaskViewModel.cs`, `ViewModels/EditTaskViewModel.cs`, `ViewModels/ConflictViewModel.cs`, `Views/NewTaskDialog.axaml(.cs)`, `Views/ConflictDialog.axaml(.cs)` | `Views/MainWindow.axaml`, `ViewModels/MainViewModel.cs` |
 
 `ViewModels/MainViewModel.cs`, `ViewModels/TaskRowViewModel.cs`,
 `Views/DashboardView.axaml` and everything under `Core/` are already
