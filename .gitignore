@@ -5,3 +5,7 @@ obj/
 
 # Git worktrees of the parallel streams
 .claude/worktrees/
+
+# Build output of the packaging step
+dist/
+publish/

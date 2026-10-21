@@ -1,0 +1,66 @@
+<p align="center">
+  <img src="Assets/oloop-256.png" alt="oloop logo" width="96" height="96" align="left">
+</p>
+
+Desktop client for [oloop](https://github.com/greebo72/oloop-spec), a local cross-project tracker for todos, questions, decisions, features and bugs. It reads and writes the same Markdown files with YAML frontmatter as the [oloop CLI](https://github.com/greebo72/oloop-cli) and the [Android client](https://github.com/greebo72/oloop-android).
+
+<br clear="all">
+
+## Why this exists
+
+oloop keeps your open points — todos, questions, decisions, features, bugs — as plain Markdown files in one data folder, one folder per project. The CLI works at the desk, the phone app works everywhere else. This app is the third one: a desktop client for the screen you work at all day.
+
+The hard part of several writers on one folder is not the transport, it is the format. So the format is the contract: `Core/` is a plain C# library that parses, validates and writes exactly what the spec defines, refuses what it does not understand, and never touches a file it cannot read. The UI is a thin layer on top of it.
+
+No account, no server, no network access. The data folder is usually a synced folder (Syncthing, cloud drive, …), and that is the whole sync story.
+
+Status: the app runs on macOS, Windows and Linux. The format module is tested against the conformance fixtures of the spec and against the installed Python CLI (a format drift check).
+
+## Layout
+
+| Path | Content |
+|---|---|
+| `Core/` | The format module: models, YAML frontmatter, the store (read, write, backup, conflict), filters, grouping. No Avalonia dependency |
+| `ViewModels/` | MVVM view models (`CommunityToolkit.Mvvm`). `MainViewModel` is the shell and owns the write path; the dialogs only collect input |
+| `Views/` | Avalonia XAML. The `Views` know the `Window`, the `ViewModels` do not |
+| `Controls/` | Markdown renderer (Markdig), code block with copy button, resource converters |
+| `Themes/` | Material 3 dark theme and the style classes |
+| `OloopApp.Tests/` | xUnit tests, including a headless Avalonia UI suite that renders real pixels |
+| `spec/` | The [oloop-spec](https://github.com/greebo72/oloop-spec) repo as a Git submodule. Its schemas and conformance fixtures are the contract |
+
+## What the app does
+
+- **Settings:** the data folder is picked once and remembered, together with the actor name that is written into `createdBy` and `updatedBy`. The folder and the actor also come from `OLOOP_ROOT` and `OLOOP_ACTOR`.
+- **Project list:** one card per project with the number of open tasks and the most recent `updatedAt`.
+- **Task list:** the project name in the header, a grouping control (none, created, modified, type, status), a "silent since" filter and a switch for closed tasks. Every row shows title, type, labels and the age since `updatedAt`.
+- **Task detail:** type, title, status, labels, the description as rendered Markdown, comments, timestamps with their author, and the image of the task. Edit, close, reopen and comment from there.
+- **New task and new project**, a search over titles and labels, and keyboard shortcuts (Ctrl+F, Ctrl+N, Ctrl+E, Ctrl+,, Escape, F5).
+- **Files that cannot be read** are listed with the reason and are never written to.
+- **Changes from elsewhere:** a file that changed on disk while you were editing it is a conflict, not a silent overwrite — you choose between reloading and overwriting.
+
+## Design
+
+Material 3 dark mode, generated from the seed `#4C5C92`. The type containers have to mean what the spec says (todo = primary container, feature = tertiary container), so the scheme is fixed instead of dynamic. Hierarchy comes from size and color, not from bold weight; a 4 dp spacing grid; one filled primary element per screen at most.
+
+## Build and test
+
+You need the .NET SDK. The project targets `net10.0`.
+
+```
+git clone --recurse-submodules https://github.com/greebo72/oloop-desktop.git
+cd oloop-desktop
+dotnet build
+cd OloopApp.Tests && dotnet test
+```
+
+The format drift check against the reference Python CLI needs the `oloop` command on the `PATH`; without it, those tests are skipped. Everything else runs without it.
+
+To run the app:
+
+```
+dotnet run --project OloopApp
+```
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
