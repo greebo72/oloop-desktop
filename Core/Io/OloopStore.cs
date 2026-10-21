@@ -67,7 +67,7 @@ public sealed class OloopStore
                 unreadable.Add(new UnreadableFile(projectFile, ex.Message));
                 continue;
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 unreadable.Add(new UnreadableFile(projectFile, ex.Message));
                 continue;
@@ -96,7 +96,7 @@ public sealed class OloopStore
                 {
                     unreadable.Add(new UnreadableFile(file, ex.Message));
                 }
-                catch (IOException ex)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     unreadable.Add(new UnreadableFile(file, ex.Message));
                 }

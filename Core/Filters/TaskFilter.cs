@@ -29,8 +29,8 @@ public sealed class TaskFilter
     /// <summary>Only tasks carrying this label. Null shows all labels.</summary>
     public string? Label { get; set; }
 
-    /// <summary>Whether closed tasks are part of the result.</summary>
-    public bool ShowClosed { get; set; } = true;
+    /// <summary>Whether closed tasks are part of the result. Off by default.</summary>
+    public bool ShowClosed { get; set; }
 
     /// <summary>Applies the filter.</summary>
     public IEnumerable<OloopTask> Apply(IEnumerable<OloopTask> tasks, DateTimeOffset? now = null)

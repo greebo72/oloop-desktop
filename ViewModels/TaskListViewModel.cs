@@ -158,11 +158,37 @@ public partial class TaskListViewModel : ViewModelBase
     /// <summary>The "silent since" values offered in the header.</summary>
     public IReadOnlyList<StaleDaysOption> StaleDaysOptions { get; }
 
+    /// <summary>
+    /// The files of this project that could not be read. They are never
+    /// written to, and the user has to fix them in the data folder.
+    /// </summary>
+    public ObservableCollection<UnreadableFile> Unreadable { get; } = [];
+
+    /// <summary>Whether this project has a file that could not be read.</summary>
+    public bool HasUnreadable => Unreadable.Count > 0;
+
+    /// <summary>The headline of the unreadable files, for example "1 file cannot be read".</summary>
+    public string UnreadableSummary
+    {
+        get
+        {
+            var count = Unreadable.Count;
+            return count switch
+            {
+                0 => "",
+                1 => "1 file cannot be read",
+                _ => $"{count} files cannot be read",
+            };
+        }
+    }
+
     /// <summary>Re-applies the filter and the grouping to the tasks.</summary>
     public void Refresh()
     {
         var tasks = Shell.Tasks.Where(t => t.ProjectId == Project.Id).ToList();
         TotalCount = tasks.Count;
+
+        RefreshUnreadable();
 
         var filter = new TaskFilter
         {
@@ -280,6 +306,52 @@ public partial class TaskListViewModel : ViewModelBase
     {
         if (e.PropertyName == nameof(MainViewModel.SearchText))
             Refresh();
+    }
+
+    /// <summary>
+    /// Picks the unreadable files that belong to this project. A file belongs
+    /// to the project whose folder it is in — the path of an unreadable file
+    /// is the full path, and the folder of the project sits directly under
+    /// the data root.
+    /// </summary>
+    private void RefreshUnreadable()
+    {
+        Unreadable.Clear();
+
+        if (Project.FolderName.Length == 0)
+            return;
+
+        var root = (Shell.DataRoot ?? "").Trim();
+        var projectFolder = root.Length > 0
+            ? Path.Combine(root, Project.FolderName)
+            : Project.FolderName;
+
+        foreach (var file in Shell.Unreadable)
+        {
+            // The file is in the folder of the project, or in its tasks
+            // folder — anywhere below it belongs to the project.
+            if (IsBelow(file.Path, projectFolder))
+                Unreadable.Add(file);
+        }
+
+        OnPropertyChanged(nameof(HasUnreadable));
+        OnPropertyChanged(nameof(UnreadableSummary));
+    }
+
+    /// <summary>
+    /// Whether a path is the folder itself or lies below it. The comparison
+    /// is done on the path segments, so a project named "app" does not match
+    /// the project "app-2".
+    /// </summary>
+    private static bool IsBelow(string path, string folder)
+    {
+        var normalized = Path.GetFullPath(path);
+        var root = Path.GetFullPath(folder);
+
+        if (normalized.Equals(root, StringComparison.Ordinal))
+            return true;
+
+        return normalized.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
 
     private static GroupingMode ParseGrouping(string? name)

@@ -152,6 +152,39 @@ public class StoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Load_Reports_A_File_Without_Read_Permissions()
+    {
+        // A file the user cannot read throws UnauthorizedAccessException, not
+        // IOException. It must not escape the scan — the list of unreadable
+        // files has to be complete, and the other files still have to be read.
+        if (OperatingSystem.IsWindows())
+            return; // the permissions of a file work differently there
+
+        var store = Store;
+        await store.CreateProjectAsync("My Project");
+
+        var locked = Path.Combine(_root, "my-project", "tasks", "locked.md");
+        await File.WriteAllTextAsync(locked, "title: Locked\n");
+
+        // No read permission for the owner. The execute bit is not needed
+        // for a file and would only confuse the cleanup.
+        File.SetUnixFileMode(locked, UnixFileMode.None);
+
+        try
+        {
+            var snapshot = await store.LoadAsync();
+
+            Assert.Single(snapshot.Unreadable);
+            Assert.Contains("locked.md", snapshot.Unreadable[0].Path);
+        }
+        finally
+        {
+            // The file has to be readable again, or the cleanup fails.
+            File.SetUnixFileMode(locked, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+    }
+
+    [Fact]
     public void Slugify_Folds_To_Lowercase_Ascii()
     {
         Assert.Equal("my-project", OloopStore.Slugify("My Project"));

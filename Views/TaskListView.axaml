@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:OloopApp.ViewModels"
+             xmlns:models="using:OloopApp.Core.Models"
              xmlns:controls="using:OloopApp.Controls"
              x:Class="OloopApp.Views.TaskListView"
              x:DataType="vm:TaskListViewModel">
@@ -91,6 +92,35 @@
                                Text="{Binding EmptyText}" />
                 </StackPanel>
             </Border>
+
+            <!-- Files of this project that could not be read. They are
+                 never written to. -->
+            <StackPanel IsVisible="{Binding HasUnreadable}" Spacing="4" Margin="0,4,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource StatusOpenBrush}" />
+                    <TextBlock Text="{Binding UnreadableSummary}" Classes="SectionHeader" />
+                </StackPanel>
+
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
+                           Text="These files are left untouched. Fix them in the data folder and reload to see them." />
+
+                <ItemsControl ItemsSource="{Binding Unreadable}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:UnreadableFile">
+                            <Border Classes="Card" Margin="0,4,0,0" Padding="12"
+                                    Background="{StaticResource SurfaceContainerHighBrush}">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Path}" Classes="LabelMedium"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Reason}" Classes="Muted" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

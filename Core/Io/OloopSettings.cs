@@ -51,8 +51,8 @@ public sealed class OloopSettings
     public Func<string?> EnvironmentActorReader { get; set; } =
         () => Environment.GetEnvironmentVariable("OLOOP_ACTOR");
 
-    /// <summary>Whether closed tasks are shown in the list.</summary>
-    public bool ShowClosed { get; set; } = true;
+    /// <summary>Whether closed tasks are shown in the list. Off by default.</summary>
+    public bool ShowClosed { get; set; }
 
     /// <summary>The grouping mode name (None, Created, Modified, Type, Status).</summary>
     public string Grouping { get; set; } = "None";

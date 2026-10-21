@@ -39,6 +39,16 @@ public class SettingsTests : IDisposable
     }
 
     [Fact]
+    public void Closed_Tasks_Are_Hidden_By_Default()
+    {
+        // app-brief.md: "Closed tasks are hidden by default, with a switch
+        // to show them." A new settings file must not show them either.
+        var settings = new OloopSettings();
+
+        Assert.False(settings.ShowClosed);
+    }
+
+    [Fact]
     public void A_Remembered_Type_Comes_First()
     {
         var settings = new OloopSettings();

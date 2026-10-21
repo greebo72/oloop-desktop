@@ -98,6 +98,22 @@ public class TaskListViewModelTests
     }
 
     [Fact]
+    public void Closed_Tasks_Are_Hidden_By_Default()
+    {
+        // app-brief.md: "Closed tasks are hidden by default, with a switch
+        // to show them." The list takes the default from the settings.
+        var shell = new MainViewModel();
+        shell.Tasks.Add(Task("1", status: TaskStatus.closed, title: "Done"));
+        shell.Tasks.Add(Task("2", status: TaskStatus.open, title: "Open"));
+
+        var list = new TaskListViewModel(Project(), shell, new OloopSettings { Grouping = "None" });
+
+        Assert.False(list.ShowClosed);
+        Assert.Single(list.Groups[0].Rows);
+        Assert.Equal("Open", list.Groups[0].Rows[0].Title);
+    }
+
+    [Fact]
     public void The_Grouping_Mode_Creates_One_Group_Per_Type()
     {
         var shell = new MainViewModel();

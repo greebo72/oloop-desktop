@@ -125,6 +125,13 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>All projects of the loaded data root.</summary>
     public ObservableCollection<OloopProject> Projects { get; } = [];
 
+    /// <summary>
+    /// The files of the loaded data root that could not be read. The
+    /// dashboard shows all of them, the task list of a project only the ones
+    /// of that project.
+    /// </summary>
+    public ObservableCollection<UnreadableFile> Unreadable { get; } = [];
+
     /// <summary>Whether the dashboard is shown (no project open).</summary>
     public bool IsDashboard => Split is null && Silent is null;
 
@@ -198,6 +205,7 @@ public partial class MainViewModel : ViewModelBase
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
                 Tasks.Clear();
+                Unreadable.Clear();
                 Silent?.Refresh();
                 return;
             }
@@ -209,6 +217,7 @@ public partial class MainViewModel : ViewModelBase
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
                 Tasks.Clear();
+                Unreadable.Clear();
                 Silent?.Refresh();
                 return;
             }
@@ -223,6 +232,10 @@ public partial class MainViewModel : ViewModelBase
             Tasks.Clear();
             foreach (var task in snapshot.Tasks)
                 Tasks.Add(task);
+
+            Unreadable.Clear();
+            foreach (var file in snapshot.Unreadable)
+                Unreadable.Add(file);
 
             Dashboard.Update(snapshot);
             Dashboard.HasNoDataRoot = false;

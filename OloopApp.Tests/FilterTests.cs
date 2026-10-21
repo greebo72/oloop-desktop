@@ -67,4 +67,18 @@ public class FilterTests
 
         Assert.Equal(["a"], filter.Apply([open, closed]).Select(t => t.Id));
     }
+
+    [Fact]
+    public void The_Filter_Hides_Closed_Tasks_By_Default()
+    {
+        // app-brief.md: "Closed tasks are hidden by default, with a switch
+        // to show them."
+        var open = Task("a", "Open");
+        var closed = Task("b", "Closed", status: TaskStatus.closed);
+
+        var filter = new TaskFilter();
+
+        Assert.False(filter.ShowClosed);
+        Assert.Equal(["a"], filter.Apply([open, closed]).Select(t => t.Id));
+    }
 }
