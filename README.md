@@ -122,3 +122,5 @@ The version in the packages comes from `<Version>` in `OloopApp.csproj`. A GitHu
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
+
+The user interface uses the font family [Inter](https://github.com/rsms/inter), which is embedded in the application. Inter is licensed under the SIL Open Font License 1.1 and may be bundled with software under any other license. The copyright notice and the OFL travel with the release — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

@@ -40,6 +40,9 @@ mkdir -p "$stage"
 cp -R "$work/publish/." "$stage/"
 chmod +x "$stage/oloop"
 
+# The embedded font (Inter, SIL OFL 1.1) has to travel with its license.
+cp THIRD-PARTY-NOTICES.md "$stage/THIRD-PARTY-NOTICES.md"
+
 cat > "$stage/README.txt" <<'README'
 oloop - a local cross-project tracker
 

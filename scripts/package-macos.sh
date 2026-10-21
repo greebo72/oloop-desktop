@@ -58,6 +58,9 @@ cp -R "$work/publish/." "$bundle/Contents/MacOS/"
 # The icon has to sit in Resources and be named AppIcon.icns.
 cp Assets/oloop.icns "$bundle/Contents/Resources/AppIcon.icns"
 
+# The embedded font (Inter, SIL OFL 1.1) has to travel with its license.
+cp THIRD-PARTY-NOTICES.md "$bundle/Contents/Resources/THIRD-PARTY-NOTICES.md"
+
 cat > "$bundle/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

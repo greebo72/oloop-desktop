@@ -42,6 +42,9 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed"
 }
 
+# The embedded font (Inter, SIL OFL 1.1) has to travel with its license.
+Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.md") (Join-Path $work "THIRD-PARTY-NOTICES.md")
+
 Write-Host "==> Zipping"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 if (Test-Path $zip) {
