@@ -90,11 +90,17 @@ jobs:
         run: |
           # A release that exists already is updated, not duplicated. The
           # workflow can be run again for the same tag.
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/* --clobber
+          #
+          # --repo is needed: this job has no checkout, so gh cannot find
+          # the repository on its own.
+          repo="${{ github.repository }}"
+          if gh release view "$TAG" --repo "$repo" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber --repo "$repo"
             echo "Release $TAG updated."
           else
             gh release create "$TAG" dist/* \
+              --repo "$repo" \
+              --target "${{ github.sha }}" \
               --title "oloop $TAG" \
               --generate-notes
             echo "Release $TAG created."
