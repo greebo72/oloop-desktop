@@ -571,6 +571,19 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// The store of the current data root, also when there is none. The views
+    /// use it to look up files that belong to a task, like its image.
+    /// </summary>
+    public OloopStore? StoreOrNull
+    {
+        get
+        {
+            var root = DataRoot?.Trim() ?? "";
+            return root.Length == 0 ? null : Store;
+        }
+    }
+
     private void OpenProject(ProjectCardViewModel? card)
     {
         if (card is null)

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Avalonia.Controls;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OloopApp.Controls;
@@ -19,6 +20,11 @@ namespace OloopApp.ViewModels;
 public partial class TaskDetailViewModel : ViewModelBase
 {
     private Control? _descriptionView;
+    private Bitmap? _image;
+    private string? _imageError;
+    private bool _imageLoaded;
+    private string? _imagePath;
+    private OloopProject? _imageProject;
 
     /// <summary>Creates the detail of a task.</summary>
     public TaskDetailViewModel(OloopTask task, OloopProject project, MainViewModel shell)
@@ -68,6 +74,10 @@ public partial class TaskDetailViewModel : ViewModelBase
 
         Description = task.Description ?? "";
         HasDescription = !string.IsNullOrWhiteSpace(Description);
+
+        // The image is read on the first access, not here.
+        _imagePath = task.ImagePath;
+        _imageProject = project;
 
         CreatedText = BuildStamp("Created", task.CreatedAt, task.CreatedBy);
         UpdatedText = BuildStamp("Updated", task.UpdatedAt, task.UpdatedBy);
@@ -131,6 +141,49 @@ public partial class TaskDetailViewModel : ViewModelBase
     /// <summary>Whether the task has a description.</summary>
     public bool HasDescription { get; }
 
+    /// <summary>
+    /// The image of the task, when it has one and the file is there. Null
+    /// otherwise — a task without an image shows nothing at all.
+    ///
+    /// The file is read on the first access, not in the constructor: reading
+    /// a bitmap needs a running platform, and the view model is built before
+    /// the view asks for it.
+    /// </summary>
+    public Bitmap? Image
+    {
+        get
+        {
+            EnsureImageLoaded();
+            return _image;
+        }
+    }
+
+    /// <summary>Whether the task has an image that can be shown.</summary>
+    public bool HasImage
+    {
+        get
+        {
+            EnsureImageLoaded();
+            return _image is not null;
+        }
+    }
+
+    /// <summary>
+    /// The message shown when the task points at an image that is not there.
+    /// Null when there is no image at all.
+    /// </summary>
+    public string? ImageError
+    {
+        get
+        {
+            EnsureImageLoaded();
+            return _imageError;
+        }
+    }
+
+    /// <summary>Whether the image could not be loaded.</summary>
+    public bool HasImageError => ImageError is not null;
+
     /// <summary>"Created 2 h ago by timo".</summary>
     public string CreatedText { get; }
 
@@ -191,5 +244,47 @@ public partial class TaskDetailViewModel : ViewModelBase
     {
         var stamp = $"{prefix} {RelativeAge.Format(timestamp)} ago";
         return string.IsNullOrWhiteSpace(actor) ? stamp : $"{stamp} by {actor}";
+    }
+
+    /// <summary>
+    /// Loads the image of the task. A path that points nowhere, or a file that
+    /// is not an image, is reported instead of shown as a broken picture.
+    ///
+    /// The file is read only once — the result is kept.
+    /// </summary>
+    private void EnsureImageLoaded()
+    {
+        if (_imageLoaded)
+            return;
+
+        _imageLoaded = true;
+
+        if (string.IsNullOrWhiteSpace(_imagePath) || _imageProject is null)
+            return;
+
+        var store = Shell.StoreOrNull;
+        var path = store?.ResolveImagePath(_imageProject, _imagePath);
+
+        if (path is null)
+        {
+            _imageError = "The image path of the task is not valid.";
+            return;
+        }
+
+        if (!File.Exists(path))
+        {
+            _imageError = "The image of the task is missing.";
+            return;
+        }
+
+        try
+        {
+            _image = new Bitmap(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or ArgumentException or NotSupportedException)
+        {
+            _imageError = "The image of the task could not be read.";
+        }
     }
 }

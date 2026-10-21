@@ -155,6 +155,43 @@ public sealed class OloopStore
     private static string TaskFilePath(string projectFolder, string taskId)
         => Path.Combine(projectFolder, "tasks", taskId + ".md");
 
+    /// <summary>
+    /// The absolute path of the image of a task, or null when the task has no
+    /// image. The path in the file is relative to the project folder
+    /// (SPEC.md, "Relative imagePath").
+    ///
+    /// A path that points outside the project folder is refused — the path
+    /// comes from a file and must not reach the rest of the disk.
+    /// </summary>
+    public string? ResolveImagePath(OloopProject project, string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return null;
+
+        // The folder name comes from the scan. It is only unknown for a
+        // project that was never read from disk.
+        var folder = project.FolderName.Length > 0
+            ? Path.Combine(_root, project.FolderName)
+            : ProjectFolder(project);
+
+        string full;
+        try
+        {
+            full = Path.GetFullPath(Path.Combine(folder, relativePath));
+        }
+        catch (Exception ex) when (ex is ArgumentException or PathTooLongException
+                                       or NotSupportedException)
+        {
+            return null;
+        }
+
+        var root = Path.GetFullPath(folder);
+        if (!full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            return null;
+
+        return full;
+    }
+
     // ---------------- Mutations ----------------
 
     /// <summary>

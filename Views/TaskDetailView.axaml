@@ -86,6 +86,24 @@
             <!-- Description -->
             <ContentControl Content="{Binding DescriptionView}" IsVisible="{Binding HasDescription}" />
 
+            <!-- The image of the task, when it has one. -->
+            <Border Classes="Card" Padding="0"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding HasImage}">
+                <Image Source="{Binding Image}"
+                       Stretch="Uniform"
+                       MaxHeight="320" />
+            </Border>
+
+            <!-- The image is missing or cannot be read — the task says so
+                 instead of showing a broken picture. -->
+            <Border Classes="Card" Padding="12" IsVisible="{Binding HasImageError}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="The image could not be shown" Classes="TitleMedium" />
+                    <TextBlock Text="{Binding ImageError}" Classes="BodyMedium" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
             <!-- Meta -->
             <StackPanel Spacing="4">
                 <TextBlock Text="{Binding CreatedText}" Classes="Muted" />

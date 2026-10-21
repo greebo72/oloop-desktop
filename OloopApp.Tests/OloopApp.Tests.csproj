@@ -14,6 +14,8 @@
     <!-- Headless Avalonia for the UI tests. Not Avalonia.Headless.XUnit: that one
          pulls in xunit.v3, which clashes with the xunit v2 runner. -->
     <PackageReference Include="Avalonia.Headless" Version="12.1.4" />
+    <!-- The real renderer, so a test can look at the pixels of a window. -->
+    <PackageReference Include="Avalonia.Skia" Version="12.1.4" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +26,14 @@
   <ItemGroup>
     <Content Include="..\spec\fixtures\**\*">
       <Link>fixtures\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- The logo of the app, used as the image file of a task in the tests. -->
+  <ItemGroup>
+    <Content Include="..\Assets\oloop.png">
+      <Link>Assets\oloop.png</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
