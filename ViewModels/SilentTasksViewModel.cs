@@ -187,13 +187,14 @@ public partial class SilentTasksViewModel : ViewModelBase
         IsEmpty = filtered.Count == 0;
 
         // The detail of the selected task is rebuilt from the fresh data,
-        // so it never shows the version from before the last write.
+        // so it never shows the version from before the last write — except
+        // for an edit that is under way.
         if (Selected is { } selected)
         {
             var fresh = filtered.FirstOrDefault(t => t.Id == selected.Task.Id);
             Selected = fresh is null
                 ? null
-                : new TaskDetailViewModel(fresh, ProjectOf(fresh), Shell);
+                : TaskDetailViewModel.Open(fresh, ProjectOf(fresh), Shell);
         }
 
         Groups.Clear();
@@ -211,20 +212,29 @@ public partial class SilentTasksViewModel : ViewModelBase
     {
         Selected = row is null
             ? null
-            : new TaskDetailViewModel(row.Task, row.Project, Shell);
+            : TaskDetailViewModel.Open(row.Task, row.Project, Shell);
     }
 
     /// <summary>
-    /// Opens the edit dialog for the given row. The view offers the same
-    /// command as the detail pane.
+    /// Puts the given row into edit mode: the row is selected and its detail
+    /// edits in place.
     /// </summary>
     public async Task EditRowAsync(SilentTaskRowViewModel? row)
     {
         if (row is null)
             return;
 
-        await Shell.OpenEditTaskAsync(row.Task, row.Project);
+        SelectRow(row);
+        Selected?.BeginEdit();
+
+        await Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Puts the selected task into edit mode. Does nothing when no task is
+    /// selected.
+    /// </summary>
+    public void EditSelected() => Selected?.BeginEdit();
 
     /// <summary>
     /// The project a task belongs to. The task knows its project id, the

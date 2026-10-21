@@ -177,7 +177,7 @@ public class RecentTypeTests : IDisposable
             return Task.FromResult(true);
         }
 
-        public Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel)
+        public Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
             => Task.FromResult(false);
 
         public Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel)

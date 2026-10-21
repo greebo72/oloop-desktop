@@ -244,6 +244,8 @@ public partial class MainViewModel : ViewModelBase
                 ? ""
                 : $"{snapshot.Unreadable.Count} file(s) could not be read.";
 
+            PruneDrafts();
+
             Split?.Refresh();
             Silent?.Refresh();
         }
@@ -424,40 +426,81 @@ public partial class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Opens the edit task dialog for the given task and writes the change.
+    /// Puts the task that is shown in the detail pane into edit mode. The
+    /// detail edits in place, there is no dialog.
     /// </summary>
-    public async Task<bool> OpenEditTaskAsync(OloopTask task, OloopProject project)
+    public Task EditSelectedTaskAsync()
     {
-        var viewModel = new EditTaskViewModel(task);
-        if (!await Dialogs.ShowEditTaskAsync(viewModel))
-            return false;
+        if (Split is not null)
+            Split.TaskList.EditSelected();
+        else
+            Silent?.EditSelected();
 
-        if (!viewModel.IsDirty)
-            return false;
+        return Task.CompletedTask;
+    }
 
-        var edited = await EditTaskAsync(
-            task, project, viewModel.TrimmedTitle,
-            viewModel.TrimmedDescription, viewModel.Labels);
+    // ---------------- Unsaved changes ----------------
 
-        if (edited)
-            StatusMessage = $"Task '{viewModel.TrimmedTitle}' saved.";
+    private readonly Dictionary<string, TaskDetailViewModel> _drafts = [];
 
-        return edited;
+    /// <summary>
+    /// Whether a detail pane holds input that is not written yet: an edit
+    /// that changed something, or a comment that was typed but not added.
+    /// </summary>
+    public bool HasUnsavedChanges => _drafts.Count > 0;
+
+    /// <summary>
+    /// The titles of the tasks with unsaved changes, for the question the
+    /// user is asked before the window closes.
+    /// </summary>
+    public IReadOnlyList<string> UnsavedTaskTitles
+        => _drafts.Values.Select(d => d.Task.Title).OrderBy(t => t, StringComparer.CurrentCulture).ToList();
+
+    /// <summary>
+    /// The detail with unsaved changes for a task, or null. The drafts live
+    /// in the shell, so they survive a change of the selection, of the
+    /// project and of the view.
+    /// </summary>
+    public TaskDetailViewModel? TryGetDraft(string taskId)
+        => _drafts.GetValueOrDefault(taskId);
+
+    /// <summary>Remembers the detail as the draft of its task.</summary>
+    internal void SetDraft(string taskId, TaskDetailViewModel detail)
+    {
+        _drafts[taskId] = detail;
+        OnPropertyChanged(nameof(HasUnsavedChanges));
     }
 
     /// <summary>
-    /// Opens the edit dialog for the task that is shown in the detail pane.
+    /// Forgets the draft of a task — but only when the given detail is the
+    /// draft. A newer detail of the same task keeps its draft.
     /// </summary>
-    public async Task EditSelectedTaskAsync()
+    internal void ClearDraft(string taskId, TaskDetailViewModel detail)
     {
-        if (Split is not null)
+        if (_drafts.TryGetValue(taskId, out var current) && ReferenceEquals(current, detail))
         {
-            await Split.TaskList.EditSelectedAsync();
-            return;
+            _drafts.Remove(taskId);
+            OnPropertyChanged(nameof(HasUnsavedChanges));
         }
+    }
 
-        if (Silent?.Selected is { } selected)
-            await OpenEditTaskAsync(selected.Task, selected.Project);
+    /// <summary>
+    /// Drops the drafts of tasks that are no longer on disk, and says so. A
+    /// draft for a task that is gone cannot be written anyway.
+    /// </summary>
+    private void PruneDrafts()
+    {
+        var gone = _drafts.Keys.Where(id => Tasks.All(t => t.Id != id)).ToList();
+        if (gone.Count == 0)
+            return;
+
+        foreach (var id in gone)
+            _drafts.Remove(id);
+
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+        StatusMessage = gone.Count == 1
+            ? "A task with unsaved changes is no longer in the data folder."
+            : $"{gone.Count} tasks with unsaved changes are no longer in the data folder.";
     }
 
     // ---------------- Writes ----------------
@@ -518,6 +561,38 @@ public partial class MainViewModel : ViewModelBase
             store.EditTaskAsync(baseTask, project, title, description, labels, actor));
     }
 
+    /// <summary>
+    /// Changes title, description and labels of a task for the edit mode of
+    /// the detail pane. The outcome tells the pane whether to keep what the
+    /// user typed: only "Reload" in the conflict dialog throws it away.
+    /// </summary>
+    public async Task<WriteOutcome> SaveTaskEditAsync(
+        OloopTask task,
+        OloopProject project,
+        string title,
+        string description,
+        IReadOnlyList<string> labels)
+    {
+        var store = Store;
+        if (store is null)
+        {
+            StatusMessage = NoDataRoot;
+            return WriteOutcome.NotSaved;
+        }
+
+        var actor = await EnsureActorAsync();
+        if (actor is null)
+            return WriteOutcome.NotSaved;
+
+        var outcome = await MutateOutcomeAsync(store, task, baseTask =>
+            store.EditTaskAsync(baseTask, project, title, description, labels, actor));
+
+        if (outcome == WriteOutcome.Saved)
+            StatusMessage = $"Task '{title}' saved.";
+
+        return outcome;
+    }
+
     /// <summary>Closes or reopens a task.</summary>
     public async Task<bool> SetTaskClosedAsync(OloopTask task, OloopProject project, bool closed)
     {
@@ -565,12 +640,18 @@ public partial class MainViewModel : ViewModelBase
         OloopStore store,
         OloopTask task,
         Func<OloopTask, Task<OloopTask>> write)
+        => await MutateOutcomeAsync(store, task, write) == WriteOutcome.Saved;
+
+    private async Task<WriteOutcome> MutateOutcomeAsync(
+        OloopStore store,
+        OloopTask task,
+        Func<OloopTask, Task<OloopTask>> write)
     {
         try
         {
             await write(task);
             await RefreshAsync();
-            return true;
+            return WriteOutcome.Saved;
         }
         catch (OloopConflictException conflict)
         {
@@ -580,7 +661,7 @@ public partial class MainViewModel : ViewModelBase
                                        or OloopFormatException)
         {
             StatusMessage = $"The change could not be written: {ex.Message}";
-            return false;
+            return WriteOutcome.NotSaved;
         }
     }
 
@@ -588,7 +669,7 @@ public partial class MainViewModel : ViewModelBase
     /// Asks the user what to do when the store refused a write because the
     /// file changed on disk.
     /// </summary>
-    private async Task<bool> HandleConflictAsync(
+    private async Task<WriteOutcome> HandleConflictAsync(
         OloopStore store,
         OloopTask task,
         OloopConflictException conflict,
@@ -601,13 +682,15 @@ public partial class MainViewModel : ViewModelBase
             case ConflictChoice.Reload:
                 await RefreshAsync();
                 StatusMessage = "The task was reloaded from disk.";
-                return false;
+                return WriteOutcome.Discarded;
 
             case ConflictChoice.Overwrite:
-                return await OverwriteAsync(store, task, write);
+                return await OverwriteAsync(store, task, write)
+                    ? WriteOutcome.Saved
+                    : WriteOutcome.NotSaved;
 
             default:
-                return false;
+                return WriteOutcome.NotSaved;
         }
     }
 

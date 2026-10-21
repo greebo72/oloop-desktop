@@ -15,13 +15,44 @@ public partial class MainWindow : Window
         Title = AppVersion.WindowTitle;
     }
 
+    private bool _closeConfirmed;
+
+    /// <summary>
+    /// Asks before the window closes while a task holds input that is not
+    /// written (an edit that changed something, a typed comment). The window
+    /// stays open until the user picks "Discard".
+    /// </summary>
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        base.OnClosing(e);
+
+        if (_closeConfirmed || e.Cancel)
+            return;
+
+        if (DataContext is not MainViewModel { HasUnsavedChanges: true } shell)
+            return;
+
+        e.Cancel = true;
+        _ = ConfirmCloseAsync(shell);
+    }
+
+    private async Task ConfirmCloseAsync(MainViewModel shell)
+    {
+        var discard = await shell.Dialogs.ShowDiscardChangesAsync(shell.UnsavedTaskTitles);
+        if (!discard)
+            return;
+
+        _closeConfirmed = true;
+        Close();
+    }
+
     /// <summary>
     /// The keyboard shortcuts of the shell:
     ///
     /// <list type="bullet">
     /// <item>Ctrl+F — focus the search field.</item>
     /// <item>Ctrl+N — new task in the open project.</item>
-    /// <item>Ctrl+E — edit the selected task.</item>
+    /// <item>Ctrl+E — edit the selected task in place.</item>
     /// <item>Ctrl+, — the settings.</item>
     /// <item>Escape — clear the search, or go back to the dashboard.</item>
     /// <item>F5 — reload the data root.</item>

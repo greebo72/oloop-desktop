@@ -57,17 +57,6 @@ public sealed class DialogService : IDialogService
     }
 
     /// <inheritdoc />
-    public async Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel)
-    {
-        var owner = _owner();
-        if (owner is null)
-            return false;
-
-        var dialog = new EditTaskDialog(viewModel);
-        return await dialog.ShowDialog<bool>(owner);
-    }
-
-    /// <inheritdoc />
     public async Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel)
     {
         var owner = _owner();
@@ -76,5 +65,16 @@ public sealed class DialogService : IDialogService
 
         var dialog = new ConflictDialog(viewModel);
         return await dialog.ShowDialog<ConflictChoice>(owner);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
+    {
+        var owner = _owner();
+        if (owner is null)
+            return false;
+
+        var dialog = new DiscardChangesDialog(taskTitles);
+        return await dialog.ShowDialog<bool>(owner);
     }
 }

@@ -115,7 +115,7 @@ public class ShellWiringTests : IDisposable
     }
 
     [Fact]
-    public async Task EditTask_Dialog_Writes_The_Change()
+    public async Task SaveTaskEdit_Writes_The_Change()
     {
         var store = new OloopStore(_root);
         var project = await ProjectAsync(store);
@@ -125,31 +125,14 @@ public class ShellWiringTests : IDisposable
         var shell = Shell();
         await shell.RefreshAsync();
 
-        _dialogs.OnEditTask = vm => vm.Title = "New title";
+        var outcome = await shell.SaveTaskEditAsync(
+            task, project, "New title", task.Description ?? "", task.Labels);
 
-        var edited = await shell.OpenEditTaskAsync(task, project);
-
-        Assert.True(edited);
+        Assert.Equal(WriteOutcome.Saved, outcome);
 
         var path = Path.Combine(_root, "my-project", "tasks", task.Id + ".md");
         var onDisk = TaskIo.Read(task.Id, await File.ReadAllTextAsync(path), project.Id);
         Assert.Equal("New title", onDisk.Title);
-    }
-
-    [Fact]
-    public async Task EditTask_Dialog_Without_A_Change_Writes_Nothing()
-    {
-        var store = new OloopStore(_root);
-        var project = await ProjectAsync(store);
-        var task = await store.CreateTaskAsync(
-            project, TaskType.todo, "Same title", "Same description", [], "claude");
-
-        var shell = Shell();
-        await shell.RefreshAsync();
-
-        var edited = await shell.OpenEditTaskAsync(task, project);
-
-        Assert.False(edited);
     }
 
     // ---------------- The status ----------------
@@ -217,11 +200,11 @@ public class ShellWiringTests : IDisposable
             expectedUpdatedAt: onDisk.UpdatedAt);
 
         _dialogs.ConflictChoice = ConflictChoice.Overwrite;
-        _dialogs.OnEditTask = vm => vm.Title = "My title";
 
-        var edited = await shell.OpenEditTaskAsync(task, project);
+        var outcome = await shell.SaveTaskEditAsync(
+            task, project, "My title", task.Description ?? "", task.Labels);
 
-        Assert.True(edited);
+        Assert.Equal(WriteOutcome.Saved, outcome);
         Assert.Equal(ConflictChoice.Overwrite, _dialogs.LastConflictChoice);
         Assert.NotNull(_dialogs.LastConflictViewModel);
 
@@ -248,11 +231,11 @@ public class ShellWiringTests : IDisposable
             expectedUpdatedAt: onDisk.UpdatedAt);
 
         _dialogs.ConflictChoice = ConflictChoice.Reload;
-        _dialogs.OnEditTask = vm => vm.Title = "My title";
 
-        var edited = await shell.OpenEditTaskAsync(task, project);
+        var outcome = await shell.SaveTaskEditAsync(
+            task, project, "My title", task.Description ?? "", task.Labels);
 
-        Assert.False(edited);
+        Assert.Equal(WriteOutcome.Discarded, outcome);
         Assert.Equal(ConflictChoice.Reload, _dialogs.LastConflictChoice);
 
         // The version on disk is untouched and the shell shows it.
@@ -280,11 +263,11 @@ public class ShellWiringTests : IDisposable
             expectedUpdatedAt: onDisk.UpdatedAt);
 
         _dialogs.ConflictChoice = ConflictChoice.Cancel;
-        _dialogs.OnEditTask = vm => vm.Title = "My title";
 
-        var edited = await shell.OpenEditTaskAsync(task, project);
+        var outcome = await shell.SaveTaskEditAsync(
+            task, project, "My title", task.Description ?? "", task.Labels);
 
-        Assert.False(edited);
+        Assert.Equal(WriteOutcome.NotSaved, outcome);
 
         var after = TaskIo.Read(task.Id, await File.ReadAllTextAsync(path), project.Id);
         Assert.Equal("Changed by somebody else", after.Title);
@@ -464,7 +447,6 @@ public class ShellWiringTests : IDisposable
 
         public Action<SettingsViewModel>? OnSettings { get; set; }
         public Action<NewTaskViewModel>? OnNewTask { get; set; }
-        public Action<EditTaskViewModel>? OnEditTask { get; set; }
 
         public bool CancelNewTask { get; set; }
         public bool CancelSettings { get; set; }
@@ -510,11 +492,8 @@ public class ShellWiringTests : IDisposable
             return Task.FromResult(true);
         }
 
-        public Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel)
-        {
-            OnEditTask?.Invoke(viewModel);
-            return Task.FromResult(true);
-        }
+        public Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
+            => Task.FromResult(false);
 
         public Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel)
         {

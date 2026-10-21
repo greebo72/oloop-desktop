@@ -37,54 +37,100 @@
                 </StackPanel>
 
                 <!-- The actions of the task. Exactly one filled primary
-                     button on the screen. -->
+                     button on the screen: Save while editing. -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                             VerticalAlignment="Center">
 
+                    <!-- Viewing -->
                     <Button Classes="Icon" Command="{Binding EditCommand}"
+                            IsVisible="{Binding !IsEditing}"
                             ToolTip.Tip="Edit the task (Ctrl+E)">
                         <PathIcon Data="{StaticResource IconEdit}" />
                     </Button>
 
                     <Button Classes="Outlined"
                             Command="{Binding CloseCommand}"
-                            IsVisible="{Binding !IsClosed}"
+                            IsVisible="{Binding ShowClose}"
                             ToolTip.Tip="Close the task">
                         <TextBlock Text="Close" />
                     </Button>
 
                     <Button Classes="Outlined"
                             Command="{Binding ReopenCommand}"
-                            IsVisible="{Binding IsClosed}"
+                            IsVisible="{Binding ShowReopen}"
                             ToolTip.Tip="Reopen the task">
                         <TextBlock Text="Reopen" />
                     </Button>
+
+                    <!-- Editing -->
+                    <Button Classes="Text" Content="Cancel"
+                            Command="{Binding CancelCommand}"
+                            IsVisible="{Binding IsEditing}"
+                            ToolTip.Tip="Drop the changes" />
+                    <Button Classes="Primary" Content="Save"
+                            Command="{Binding SaveCommand}"
+                            IsEnabled="{Binding CanSave}"
+                            IsVisible="{Binding IsEditing}"
+                            ToolTip.Tip="Save the changes" />
 
                 </StackPanel>
 
             </Grid>
 
-            <!-- Title -->
-            <TextBlock Text="{Binding Title}" Classes="HeadlineSmall" TextWrapping="Wrap" />
+            <!-- Viewing: title, labels, description -->
+            <StackPanel Spacing="16" IsVisible="{Binding !IsEditing}">
 
-            <!-- Labels -->
-            <ItemsControl ItemsSource="{Binding Labels}" IsVisible="{Binding HasLabels}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="x:String">
-                        <Border Classes="Chip Outlined" Margin="0,0,8,0">
-                            <TextBlock Text="{Binding}" />
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                <TextBlock Text="{Binding Title}" Classes="HeadlineSmall" TextWrapping="Wrap" />
 
-            <!-- Description -->
-            <ContentControl Content="{Binding DescriptionView}" IsVisible="{Binding HasDescription}" />
+                <ItemsControl ItemsSource="{Binding Labels}" IsVisible="{Binding HasLabels}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Border Classes="Chip Outlined" Margin="0,0,8,0">
+                                <TextBlock Text="{Binding}" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ContentControl Content="{Binding DescriptionView}" IsVisible="{Binding HasDescription}" />
+
+            </StackPanel>
+
+            <!-- Editing: the same fields as input. The type is immutable, so
+                 it stays the chip above. -->
+            <StackPanel Spacing="14" IsVisible="{Binding IsEditing}">
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Title" Classes="SectionHeader" />
+                    <TextBox Name="TitleBox"
+                             Text="{Binding Editor.Title, Mode=TwoWay}"
+                             PlaceholderText="What has to be done?"
+                             MaxLength="300" />
+                    <TextBlock Text="{Binding Editor.TitleError}" Classes="Muted"
+                               IsVisible="{Binding Editor.TitleError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Description" Classes="SectionHeader" />
+                    <TextBox Text="{Binding Editor.Description, Mode=TwoWay}"
+                             PlaceholderText="Markdown is supported."
+                             AcceptsReturn="True" TextWrapping="Wrap"
+                             MinLines="3" MaxLines="14"
+                             VerticalContentAlignment="Top" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Labels" Classes="SectionHeader" />
+                    <TextBox Text="{Binding Editor.LabelsText, Mode=TwoWay}"
+                             PlaceholderText="comma separated, e.g. ui, backend" />
+                </StackPanel>
+
+            </StackPanel>
 
             <!-- The image of the task, when it has one. -->
             <Border Classes="Card" Padding="0"
@@ -140,6 +186,7 @@
                 <!-- The comment field. -->
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                     <TextBox Grid.Column="0"
+                             IsEnabled="{Binding !IsEditing}"
                              Text="{Binding CommentText, Mode=TwoWay}"
                              PlaceholderText="Add a comment…"
                              AcceptsReturn="True" TextWrapping="Wrap"

@@ -227,7 +227,7 @@ public class ShortcutTests
     // ---------------- Ctrl+E ----------------
 
     [Fact]
-    public async Task Ctrl_E_Opens_The_Edit_Dialog_Of_The_Selected_Task()
+    public async Task Ctrl_E_Edits_The_Selected_Task_In_Place()
     {
         await OnUiThread(() =>
         {
@@ -252,7 +252,8 @@ public class ShortcutTests
 
             Press(window, Key.E, KeyModifiers.Control);
 
-            Assert.Equal(1, dialogs.EditTaskCalls);
+            // The selected task is edited in place, no dialog opens.
+            Assert.True(shell.Split!.TaskList.Selected!.IsEditing);
 
             window.Close();
         });
@@ -281,7 +282,7 @@ public class ShortcutTests
 
             Press(window, Key.E, KeyModifiers.Control);
 
-            Assert.Equal(0, dialogs.EditTaskCalls);
+            Assert.Null(shell.Split!.TaskList.Selected);
 
             window.Close();
         });
@@ -401,7 +402,6 @@ public class ShortcutTests
     {
         public int SettingsCalls { get; private set; }
         public int NewTaskCalls { get; private set; }
-        public int EditTaskCalls { get; private set; }
 
         public Task<bool> ShowSettingsAsync(SettingsViewModel viewModel)
         {
@@ -418,11 +418,8 @@ public class ShortcutTests
             return Task.FromResult(false);
         }
 
-        public Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel)
-        {
-            EditTaskCalls++;
-            return Task.FromResult(false);
-        }
+        public Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
+            => Task.FromResult(false);
 
         public Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel)
             => Task.FromResult(ConflictChoice.Cancel);

@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OloopApp.Views.DiscardChangesDialog"
+        Title="Unsaved changes"
+        Width="520" SizeToContent="Height"
+        MinWidth="440"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <!-- The dialog background is opaque on purpose: a transparent popup would
+         let the window behind it bleed through. -->
+    <Border Background="{StaticResource SurfaceBrush}" Padding="20,16,20,16">
+        <StackPanel Spacing="14">
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="IconContainer"
+                        Background="{StaticResource TertiaryContainerBrush}">
+                    <PathIcon Data="{StaticResource IconWarning}" Width="20" Height="20"
+                              Foreground="{StaticResource OnTertiaryContainerBrush}" />
+                </Border>
+                <TextBlock Text="Unsaved changes" Classes="TitleLarge" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock Name="MessageText" Classes="BodyLarge" TextWrapping="Wrap" />
+
+            <!-- The tasks with input that is not written. -->
+            <Border Classes="Card" Padding="12">
+                <ItemsControl Name="TaskList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <TextBlock Text="{Binding}" Classes="TitleMedium" TextWrapping="Wrap"
+                                       Margin="0,0,0,4" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <!-- Nothing is thrown away silently — the user has to pick
+                 "Discard" explicitly. Exactly one filled primary button. -->
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Classes="Text" Content="Discard" Click="OnDiscardClick" />
+                <Button Classes="Primary" Content="Keep editing" Click="OnKeepClick" />
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</Window>

@@ -93,7 +93,7 @@ public class EditCommandTests : IDisposable
     }
 
     [Fact]
-    public async Task The_Edit_Command_Of_A_Row_Opens_The_Edit_Dialog()
+    public async Task The_Edit_Command_Of_A_Row_Edits_The_Task_In_Place()
     {
         var shell = new MainViewModel { DataRoot = _root, Actor = "claude" };
         var dialogs = new RecordingDialogService();
@@ -107,8 +107,10 @@ public class EditCommandTests : IDisposable
 
         await list.Groups[0].EditCommand!.ExecuteAsync(list.Groups[0].Rows[0]);
 
-        Assert.NotNull(dialogs.EditTaskViewModel);
-        Assert.Equal("Write the docs", dialogs.EditTaskViewModel!.TrimmedTitle);
+        // The row is selected and its detail is in edit mode, there is no dialog.
+        Assert.NotNull(list.Selected);
+        Assert.True(list.Selected!.IsEditing);
+        Assert.Equal("Write the docs", list.Selected.Editor!.TrimmedTitle);
     }
 
     [Fact]
@@ -123,11 +125,11 @@ public class EditCommandTests : IDisposable
 
         await list.EditRowAsync(null);
 
-        Assert.Null(dialogs.EditTaskViewModel);
+        Assert.Null(list.Selected);
     }
 
     [Fact]
-    public async Task The_Edit_Command_Edits_The_Selected_Task()
+    public void The_Edit_Command_Edits_The_Selected_Task()
     {
         var shell = new MainViewModel { DataRoot = _root, Actor = "claude" };
         var dialogs = new RecordingDialogService();
@@ -140,14 +142,16 @@ public class EditCommandTests : IDisposable
             Project(), shell, new OloopSettings { ShowClosed = true, Grouping = "None" });
 
         // Nothing is selected — nothing happens.
-        await list.EditSelectedAsync();
-        Assert.Null(dialogs.EditTaskViewModel);
+        list.EditSelected();
+        Assert.Null(list.Selected);
 
         list.SelectRow(list.Groups[0].Rows[0]);
-        await list.EditSelectedAsync();
+        Assert.False(list.Selected!.IsEditing);
 
-        Assert.NotNull(dialogs.EditTaskViewModel);
-        Assert.Equal("Write the docs", dialogs.EditTaskViewModel!.TrimmedTitle);
+        list.EditSelected();
+
+        Assert.True(list.Selected.IsEditing);
+        Assert.Equal("Write the docs", list.Selected.Editor!.TrimmedTitle);
     }
 
     // ---------------- The button in the view ----------------
@@ -223,18 +227,18 @@ public class EditCommandTests : IDisposable
 
             edit!.Command!.Execute(edit.CommandParameter);
 
-            Assert.NotNull(dialogs.EditTaskViewModel);
-            Assert.Equal("Write the docs", dialogs.EditTaskViewModel!.TrimmedTitle);
+            var selected = shell.Split!.TaskList.Selected;
+            Assert.NotNull(selected);
+            Assert.True(selected!.IsEditing);
+            Assert.Equal("Write the docs", selected.Editor!.TrimmedTitle);
 
             window.Close();
         });
     }
 
-    /// <summary>A dialog service that only records what it was asked for.</summary>
+    /// <summary>A dialog service that answers every question with "no".</summary>
     private sealed class RecordingDialogService : IDialogService
     {
-        public EditTaskViewModel? EditTaskViewModel { get; private set; }
-
         public Task<bool> ShowSettingsAsync(SettingsViewModel viewModel)
             => Task.FromResult(false);
 
@@ -244,11 +248,8 @@ public class EditCommandTests : IDisposable
         public Task<bool> ShowNewTaskAsync(NewTaskViewModel viewModel)
             => Task.FromResult(false);
 
-        public Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel)
-        {
-            EditTaskViewModel = viewModel;
-            return Task.FromResult(true);
-        }
+        public Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
+            => Task.FromResult(false);
 
         public Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel)
             => Task.FromResult(ConflictChoice.Cancel);

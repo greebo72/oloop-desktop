@@ -247,7 +247,7 @@ public class DialogWiringTests
             return Task.FromResult(false);
         }
 
-        public Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel)
+        public Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
             => Task.FromResult(false);
 
         public Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel)

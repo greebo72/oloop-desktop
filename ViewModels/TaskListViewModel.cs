@@ -207,14 +207,15 @@ public partial class TaskListViewModel : ViewModelBase
         OnPropertyChanged(nameof(EmptyText));
 
         // The detail of the selected task is rebuilt from the fresh data, so
-        // it never shows the version from before the last write. A task that
-        // the filter no longer shows loses the selection.
+        // it never shows the version from before the last write — except for
+        // an edit that is under way: that one stays, with what the user typed.
+        // A task that the filter no longer shows loses the selection.
         if (Selected is { } selected)
         {
             var fresh = filtered.FirstOrDefault(t => t.Id == selected.Task.Id);
             Selected = fresh is null
                 ? null
-                : new TaskDetailViewModel(fresh, Project, Shell);
+                : TaskDetailViewModel.Open(fresh, Project, Shell);
         }
 
         Groups.Clear();
@@ -229,38 +230,38 @@ public partial class TaskListViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Shows the detail of the given row.</summary>
+    /// <summary>
+    /// Shows the detail of the given row. A task with unsaved input gets it
+    /// back.
+    /// </summary>
     public void SelectRow(TaskRowViewModel? row)
     {
         Selected = row is null
             ? null
-            : new TaskDetailViewModel(row.Task, Project, Shell);
+            : TaskDetailViewModel.Open(row.Task, Project, Shell);
     }
 
     /// <summary>
-    /// Opens the edit dialog for the given row. The list offers the same
-    /// command as the detail pane, so a task can be changed without opening
-    /// it first.
+    /// Puts the given row into edit mode. The list offers the same command as
+    /// the detail pane, so a task can be changed without opening it first:
+    /// the row is selected and its detail edits in place.
     /// </summary>
     public async Task EditRowAsync(TaskRowViewModel? row)
     {
         if (row is null)
             return;
 
-        await Shell.OpenEditTaskAsync(row.Task, Project);
+        SelectRow(row);
+        Selected?.BeginEdit();
+
+        await Task.CompletedTask;
     }
 
     /// <summary>
-    /// Opens the edit dialog for the selected task. Does nothing when no task
-    /// is selected.
+    /// Puts the selected task into edit mode. Does nothing when no task is
+    /// selected.
     /// </summary>
-    public async Task EditSelectedAsync()
-    {
-        if (Selected is null)
-            return;
-
-        await Shell.OpenEditTaskAsync(Selected.Task, Project);
-    }
+    public void EditSelected() => Selected?.BeginEdit();
 
     partial void OnSelectedChanged(TaskDetailViewModel? value)
     {

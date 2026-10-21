@@ -30,13 +30,14 @@ public interface IDialogService
     Task<bool> ShowNewTaskAsync(NewTaskViewModel viewModel);
 
     /// <summary>
-    /// Shows the edit task dialog. Returns true when the user confirmed the
-    /// input, false when the dialog was cancelled.
-    /// </summary>
-    Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel);
-
-    /// <summary>
     /// Shows the conflict dialog. Returns what the user chose.
     /// </summary>
     Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel);
+
+    /// <summary>
+    /// Asks whether the input that is not written yet may be thrown away,
+    /// for example because the window is closing. The titles name the tasks
+    /// concerned. Returns true to discard, false to keep editing.
+    /// </summary>
+    Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles);
 }

@@ -172,34 +172,6 @@ public class DialogUiTests
     }
 
     [Fact]
-    public async Task EditTaskDialog_Opens_Prefilled()
-    {
-        await OnUiThread(() =>
-        {
-            var vm = new EditTaskViewModel(SampleTask());
-            var dialog = new EditTaskDialog(vm);
-
-            dialog.Show();
-            dialog.UpdateLayout();
-
-            Assert.NotNull(dialog.Content);
-            Assert.Same(vm, dialog.ViewModel);
-
-            var boxes = Descendants<TextBox>(dialog).ToList();
-            Assert.Equal(3, boxes.Count);
-            Assert.Equal("Original title", boxes[0].Text);
-            Assert.Equal("Original description", boxes[1].Text);
-            Assert.Equal("ui", boxes[2].Text);
-
-            var buttons = Descendants<Button>(dialog).Select(b => b.Content as string).ToList();
-            Assert.Contains("Save", buttons);
-            Assert.Contains("Cancel", buttons);
-
-            dialog.Close();
-        });
-    }
-
-    [Fact]
     public async Task ConflictDialog_Opens_And_Offers_All_Three_Choices()
     {
         await OnUiThread(() =>
@@ -271,30 +243,6 @@ public class DialogUiTests
     }
 
     [Fact]
-    public async Task EditTaskDialog_Resolves_The_Type_Icon_And_Brush()
-    {
-        await OnUiThread(() =>
-        {
-            var dialog = new EditTaskDialog(new EditTaskViewModel(SampleTask()));
-
-            dialog.Show();
-            dialog.UpdateLayout();
-
-            var icon = Descendants<PathIcon>(dialog).Single();
-            Assert.NotNull(icon.Data);
-            Assert.IsAssignableFrom<Geometry>(icon.Data);
-            Assert.NotNull(icon.Foreground);
-            Assert.IsType<SolidColorBrush>(icon.Foreground);
-
-            var chip = Descendants<Border>(dialog).Single(b => b.Classes.Contains("TypeChip"));
-            Assert.NotNull(chip.Background);
-            Assert.IsType<SolidColorBrush>(chip.Background);
-
-            dialog.Close();
-        });
-    }
-
-    [Fact]
     public async Task NewTaskDialog_Returns_True_And_Collected_Values()
     {
         var vm = new NewTaskViewModel(Project());
@@ -306,15 +254,6 @@ public class DialogUiTests
     }
 
     [Fact]
-    public async Task EditTaskDialog_Returns_True()
-    {
-        var result = await ShowDialogAsync<bool>(
-            () => new EditTaskDialog(new EditTaskViewModel(SampleTask())), d => d.Close(true));
-
-        Assert.True(result);
-    }
-
-    [Fact]
     public async Task ConflictDialog_Returns_The_Chosen_Action()
     {
         var result = await ShowDialogAsync<ConflictChoice>(
@@ -322,6 +261,41 @@ public class DialogUiTests
             d => d.Close(ConflictChoice.Reload));
 
         Assert.Equal(ConflictChoice.Reload, result);
+    }
+
+    [Fact]
+    public async Task DiscardChangesDialog_Lists_The_Tasks_And_Keeps_Editing_By_Default()
+    {
+        await OnUiThread(() =>
+        {
+            var dialog = new DiscardChangesDialog(["First task", "Second task"]);
+
+            dialog.Show();
+            dialog.UpdateLayout();
+
+            var texts = Descendants<TextBlock>(dialog).Select(t => t.Text).ToList();
+            Assert.Contains("First task", texts);
+            Assert.Contains("Second task", texts);
+            Assert.Contains(texts, t => t is not null && t.StartsWith("2 tasks"));
+
+            // The filled primary button is the safe answer.
+            var primary = Descendants<Button>(dialog).Single(b => b.Classes.Contains("Primary"));
+            Assert.Equal("Keep editing", primary.Content);
+
+            dialog.Close();
+        });
+    }
+
+    [Fact]
+    public async Task DiscardChangesDialog_Returns_True_Only_For_Discard()
+    {
+        var discard = await ShowDialogAsync<bool>(
+            () => new DiscardChangesDialog(["A task"]), d => d.Close(true));
+        var keep = await ShowDialogAsync<bool>(
+            () => new DiscardChangesDialog(["A task"]), d => d.Close(false));
+
+        Assert.True(discard);
+        Assert.False(keep);
     }
 
     [Fact]

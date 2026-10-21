@@ -30,9 +30,10 @@ public sealed class NullDialogService : IDialogService
     public Task<bool> ShowNewTaskAsync(NewTaskViewModel viewModel) => Task.FromResult(false);
 
     /// <inheritdoc />
-    public Task<bool> ShowEditTaskAsync(EditTaskViewModel viewModel) => Task.FromResult(false);
-
-    /// <inheritdoc />
     public Task<ConflictChoice> ShowConflictAsync(ConflictViewModel viewModel)
         => Task.FromResult(ConflictChoice.Cancel);
+
+    /// <inheritdoc />
+    public Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
+        => Task.FromResult(false);
 }
