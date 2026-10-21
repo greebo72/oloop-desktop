@@ -104,7 +104,7 @@ public partial class SettingsViewModel : ViewModelBase
     /// </summary>
     public void Save()
     {
-        SaveTo(OloopSettings.DefaultPath);
+        SaveTo(_settings.FilePath);
     }
 
     /// <summary>
@@ -125,6 +125,9 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             _settings.Save(path);
+
+            // From now on the settings go to the same file.
+            _settings.FilePath = path;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or NotSupportedException or ArgumentException)

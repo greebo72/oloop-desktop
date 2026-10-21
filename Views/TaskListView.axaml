@@ -23,39 +23,55 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:TaskRowViewModel">
                                         <Border Classes="Card" Padding="0" Margin="0,0,0,4">
-                                            <Button Background="Transparent"
-                                                    Padding="12"
-                                                    HorizontalContentAlignment="Stretch"
-                                                    Command="{Binding $parent[ItemsControl].((vm:TaskGroupViewModel)DataContext).SelectCommand}"
-                                                    CommandParameter="{Binding}">
-                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                            <!-- The row is a button that opens the
+                                                 detail, and next to it the edit
+                                                 button — a button cannot be
+                                                 nested in a button. -->
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Button Background="Transparent"
+                                                        Padding="12"
+                                                        HorizontalContentAlignment="Stretch"
+                                                        Command="{Binding $parent[ItemsControl].((vm:TaskGroupViewModel)DataContext).SelectCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
 
-                                                    <!-- Type icon on the type container -->
-                                                    <Border Classes="IconContainer"
-                                                            Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}">
-                                                        <PathIcon Data="{Binding IconKey, Converter={x:Static controls:ResourceGeometryConverter.Instance}}"
-                                                                  Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
-                                                    </Border>
+                                                        <!-- Type icon on the type container -->
+                                                        <Border Classes="IconContainer"
+                                                                Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}">
+                                                            <PathIcon Data="{Binding IconKey, Converter={x:Static controls:ResourceGeometryConverter.Instance}}"
+                                                                      Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
+                                                        </Border>
 
-                                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Title}"
-                                                                   Classes="TitleMedium"
-                                                                   MaxLines="2"
-                                                                   TextWrapping="Wrap"
-                                                                   TextTrimming="CharacterEllipsis" />
-                                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                                            <TextBlock Text="{Binding TypeName}" Classes="BodyMedium" />
-                                                            <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
-                                                            <TextBlock Text="{Binding LabelsText}" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Title}"
+                                                                       Classes="TitleMedium"
+                                                                       MaxLines="2"
+                                                                       TextWrapping="Wrap"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                <TextBlock Text="{Binding TypeName}" Classes="BodyMedium" />
+                                                                <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                                                <TextBlock Text="{Binding LabelsText}" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                                            </StackPanel>
                                                         </StackPanel>
-                                                    </StackPanel>
 
-                                                    <TextBlock Grid.Column="2"
-                                                               Text="{Binding Age}"
-                                                               Classes="Muted"
-                                                               VerticalAlignment="Center" />
-                                                </Grid>
-                                            </Button>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding Age}"
+                                                                   Classes="Muted"
+                                                                   VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </Button>
+
+                                                <Button Grid.Column="1"
+                                                        Classes="Icon"
+                                                        Margin="0,0,8,0"
+                                                        VerticalAlignment="Center"
+                                                        Command="{Binding $parent[ItemsControl].((vm:TaskGroupViewModel)DataContext).EditCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="Edit the task (Ctrl+E)">
+                                                    <PathIcon Data="{StaticResource IconEdit}" />
+                                                </Button>
+                                            </Grid>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

@@ -211,6 +211,31 @@ public partial class TaskListViewModel : ViewModelBase
             : new TaskDetailViewModel(row.Task, Project, Shell);
     }
 
+    /// <summary>
+    /// Opens the edit dialog for the given row. The list offers the same
+    /// command as the detail pane, so a task can be changed without opening
+    /// it first.
+    /// </summary>
+    public async Task EditRowAsync(TaskRowViewModel? row)
+    {
+        if (row is null)
+            return;
+
+        await Shell.OpenEditTaskAsync(row.Task, Project);
+    }
+
+    /// <summary>
+    /// Opens the edit dialog for the selected task. Does nothing when no task
+    /// is selected.
+    /// </summary>
+    public async Task EditSelectedAsync()
+    {
+        if (Selected is null)
+            return;
+
+        await Shell.OpenEditTaskAsync(Selected.Task, Project);
+    }
+
     partial void OnSelectedChanged(TaskDetailViewModel? value)
     {
         OnPropertyChanged(nameof(HasSelection));

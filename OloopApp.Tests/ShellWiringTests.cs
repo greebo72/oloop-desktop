@@ -34,7 +34,14 @@ public class ShellWiringTests : IDisposable
 
     private MainViewModel Shell()
     {
-        var shell = new MainViewModel
+        // The shell writes the settings file when it remembers the type of
+        // the last task — the test must not touch the settings of the user.
+        var shell = new MainViewModel(new OloopSettings
+        {
+            FilePath = Path.Combine(_root, "settings.json"),
+            DataRoot = _root,
+            Actor = "claude",
+        })
         {
             DataRoot = _root,
             Actor = "claude",

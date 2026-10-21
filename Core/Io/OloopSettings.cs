@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using OloopApp.Core.Models;
 
 namespace OloopApp.Core.Io;
 
@@ -8,6 +10,17 @@ namespace OloopApp.Core.Io;
 /// </summary>
 public sealed class OloopSettings
 {
+    /// <summary>How many task types are remembered.</summary>
+    public const int MaxRecentTypes = 3;
+
+    /// <summary>
+    /// The file the settings are read from and written to. The default is the
+    /// settings file of the user; a test or the app can point it somewhere
+    /// else. It is not part of the file itself.
+    /// </summary>
+    [JsonIgnore]
+    public string FilePath { get; set; } = DefaultPath;
+
     /// <summary>The data root. Falls back to the OLOOP_ROOT environment variable.</summary>
     public string? DataRoot { get; set; }
 
@@ -22,6 +35,55 @@ public sealed class OloopSettings
 
     /// <summary>The "silent since" filter in days. Null disables it.</summary>
     public double? StaleDays { get; set; }
+
+    private List<string>? _recentTypes;
+
+    /// <summary>
+    /// The task types the user picked last, most recent first. The new task
+    /// dialog starts with the most recent one.
+    ///
+    /// The names are stored as text, so a settings file with an unknown name
+    /// does not break the app.
+    /// </summary>
+    public List<string> RecentTypes
+    {
+        get => _recentTypes ??= [];
+        set => _recentTypes = value ?? [];
+    }
+
+    /// <summary>
+    /// The remembered types, in the order they were used. A name that is not a
+    /// task type is dropped — an old or hand edited settings file must not
+    /// break the dialog.
+    ///
+    /// It is computed from <see cref="RecentTypes"/>, so it is not written to
+    /// the settings file.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<TaskType> RecentTaskTypes =>
+        RecentTypes
+            .Select(name => Enum.TryParse<TaskType>(name, ignoreCase: true, out var type)
+                ? type
+                : (TaskType?)null)
+            .Where(type => type is not null)
+            .Select(type => type!.Value)
+            .Distinct()
+            .ToList();
+
+    /// <summary>
+    /// Puts a type at the front of the remembered types. The list keeps at
+    /// most <see cref="MaxRecentTypes"/> entries.
+    /// </summary>
+    public void RememberType(TaskType type)
+    {
+        var name = type.ToString();
+
+        RecentTypes.RemoveAll(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+        RecentTypes.Insert(0, name);
+
+        while (RecentTypes.Count > MaxRecentTypes)
+            RecentTypes.RemoveAt(RecentTypes.Count - 1);
+    }
 
     /// <summary>
     /// The path of the settings file: %APPDATA%/oloop/settings.json on Windows,
@@ -80,26 +142,51 @@ public sealed class OloopSettings
         try
         {
             if (!File.Exists(file))
-                return new OloopSettings();
+                return new OloopSettings { FilePath = file };
 
             var json = File.ReadAllText(file);
-            return JsonSerializer.Deserialize<OloopSettings>(json) ?? new OloopSettings();
+            var settings = JsonSerializer.Deserialize<OloopSettings>(json, ReadOptions)
+                           ?? new OloopSettings();
+
+            settings.FilePath = file;
+            return settings;
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
-            return new OloopSettings();
+            return new OloopSettings { FilePath = file };
         }
     }
 
     /// <summary>Writes the settings file, creating the folder if needed.</summary>
     public void Save(string? path = null)
     {
-        var file = path ?? DefaultPath;
+        var file = path ?? FilePath;
         var folder = Path.GetDirectoryName(file);
         if (!string.IsNullOrEmpty(folder))
             Directory.CreateDirectory(folder);
 
-        var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(this, WriteOptions);
         File.WriteAllText(file, json);
     }
+
+    /// <summary>
+    /// The options the settings file is written with: the keys are camelCase
+    /// (dataRoot, actor, showClosed, grouping, staleDays, recentTypes), the
+    /// same names the spec uses.
+    /// </summary>
+    private static readonly JsonSerializerOptions WriteOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    /// <summary>
+    /// The options the settings file is read with. The names are matched
+    /// without regard to case, so a file written by hand or by an older
+    /// version still loads.
+    /// </summary>
+    private static readonly JsonSerializerOptions ReadOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 }

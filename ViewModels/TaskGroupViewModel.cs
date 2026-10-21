@@ -19,7 +19,10 @@ public partial class TaskGroupViewModel : ViewModelBase
             Rows.Add(new TaskRowViewModel(task));
 
         if (owner is not null)
+        {
             SelectCommand = new RelayCommand<TaskRowViewModel>(owner.SelectRow);
+            EditCommand = new AsyncRelayCommand<TaskRowViewModel>(owner.EditRowAsync);
+        }
     }
 
     /// <summary>The header of the group. Null when the tasks are not grouped.</summary>
@@ -33,4 +36,7 @@ public partial class TaskGroupViewModel : ViewModelBase
 
     /// <summary>Shows the detail of a row. Null when the group stands alone.</summary>
     public IRelayCommand<TaskRowViewModel>? SelectCommand { get; }
+
+    /// <summary>Opens the edit dialog of a row. Null when the group stands alone.</summary>
+    public IAsyncRelayCommand<TaskRowViewModel>? EditCommand { get; }
 }

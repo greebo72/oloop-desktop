@@ -26,14 +26,22 @@ public partial class NewTaskViewModel : ViewModelBase
     /// Creates the view model for a new task in the given project.
     /// </summary>
     /// <param name="project">The project the task will belong to.</param>
-    public NewTaskViewModel(OloopProject project)
+    /// <param name="preferredType">
+    /// The type the dialog starts with — the type the user picked last. Null
+    /// means the first type of the row.
+    /// </param>
+    public NewTaskViewModel(OloopProject project, TaskType? preferredType = null)
     {
         Project = project;
         TypeOptions = TaskTypeExtensions.All
             .Select(type => new TaskTypeOption(type, SelectType))
             .ToList();
 
-        UpdateSelection(TaskType.todo);
+        // Setting the type also updates the selection of the type row. The
+        // type is set to the same value it already has, so the change
+        // handler does not run — the selection is set here.
+        Type = preferredType ?? TaskType.todo;
+        UpdateSelection(Type);
     }
 
     /// <summary>The title of the task. Required, 1 to 300 characters.</summary>

@@ -19,7 +19,7 @@ public partial class MainViewModel : ViewModelBase
     private const string NoDataRoot = "No data folder set. Open the settings to choose one.";
     private const string NoActor = "No actor name set. Open the settings to choose one.";
 
-    private readonly OloopSettings _settings = OloopSettings.Load();
+    private readonly OloopSettings _settings;
     private OloopStore? _store;
     private string? _storeRoot;
 
@@ -28,7 +28,18 @@ public partial class MainViewModel : ViewModelBase
     /// window exists; until then the commands do nothing.
     /// </summary>
     public MainViewModel()
+        : this(OloopSettings.Load())
     {
+    }
+
+    /// <summary>
+    /// Creates the shell with the given settings. The app uses the settings
+    /// of the user; a test can hand in its own.
+    /// </summary>
+    public MainViewModel(OloopSettings settings)
+    {
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+
         _dataRoot = _settings.ResolveDataRoot() ?? "";
         _actor = _settings.ResolveActor();
 
@@ -255,7 +266,8 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     public async Task<bool> OpenNewTaskAsync(OloopProject project)
     {
-        var viewModel = new NewTaskViewModel(project);
+        // The dialog starts with the type the user picked last.
+        var viewModel = new NewTaskViewModel(project, PreferredType);
         if (!await Dialogs.ShowNewTaskAsync(viewModel))
             return false;
 
@@ -264,9 +276,46 @@ public partial class MainViewModel : ViewModelBase
             viewModel.TrimmedDescription, viewModel.Labels);
 
         if (created)
+        {
+            // The type of the created task is remembered for the next one.
+            RememberType(viewModel.Type);
             StatusMessage = $"Task '{viewModel.TrimmedTitle}' created.";
+        }
 
         return created;
+    }
+
+    /// <summary>
+    /// The task type the new task dialog starts with: the type that was used
+    /// last. Null when nothing was picked yet.
+    /// </summary>
+    private TaskType? PreferredType
+    {
+        get
+        {
+            var recent = _settings.RecentTaskTypes;
+            return recent.Count > 0 ? recent[0] : null;
+        }
+    }
+
+    /// <summary>
+    /// Remembers the type of the last created task and writes the settings
+    /// file. A settings file that cannot be written does not stop the task —
+    /// the task is already on disk.
+    /// </summary>
+    private void RememberType(TaskType type)
+    {
+        _settings.RememberType(type);
+
+        try
+        {
+            _settings.Save();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or NotSupportedException or ArgumentException)
+        {
+            // The remembered type is a convenience, not a promise.
+        }
     }
 
     /// <summary>
@@ -299,11 +348,7 @@ public partial class MainViewModel : ViewModelBase
         if (Split is null)
             return;
 
-        var selected = Split.TaskList.Selected;
-        if (selected is null)
-            return;
-
-        await OpenEditTaskAsync(selected.Task, selected.Project);
+        await Split.TaskList.EditSelectedAsync();
     }
 
     // ---------------- Writes ----------------
