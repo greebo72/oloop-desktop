@@ -25,7 +25,7 @@ LABEL_POOL = [
     "release", "i18n", "saf", "multi-device", "docs", "refactor", "security", "build",
     "ux", "api", "sync", "backlog", "quick-win", "needs-info", "tera", "demo",
 ]
-ACTORS = ["claude", "timo", "claude", "claude", "anna", "markus"]
+ACTORS = ["claude", "alice", "claude", "claude", "anna", "markus"]
 WORDS = (
     "task project folder reload parse markdown comment label status update scan list view "
     "filter search group render cache store file write read open close dialog window model "
