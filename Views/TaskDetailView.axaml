@@ -107,7 +107,9 @@
 
                 <StackPanel Spacing="6">
                     <TextBlock Text="Title" Classes="SectionHeader" />
+                    <!-- The same size as the title in the viewing mode. -->
                     <TextBox Name="TitleBox"
+                             FontSize="24"
                              Text="{Binding Editor.Title, Mode=TwoWay}"
                              PlaceholderText="What has to be done?"
                              MaxLength="300" />
@@ -117,7 +119,9 @@
 
                 <StackPanel Spacing="6">
                     <TextBlock Text="Description" Classes="SectionHeader" />
-                    <TextBox Text="{Binding Editor.Description, Mode=TwoWay}"
+                    <!-- The same size and line height as the rendered description. -->
+                    <TextBox FontSize="16" LineHeight="24"
+                             Text="{Binding Editor.Description, Mode=TwoWay}"
                              PlaceholderText="Markdown is supported."
                              AcceptsReturn="True" TextWrapping="Wrap"
                              MinLines="3" MaxLines="14"
