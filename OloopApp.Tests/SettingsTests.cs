@@ -168,4 +168,58 @@ public class SettingsTests : IDisposable
             ["actor", "dataRoot", "grouping", "recentTypes", "showClosed", "staleDays"],
             keys);
     }
+
+    // ---------------- The actor ----------------
+
+    [Fact]
+    public void The_Actor_In_The_Settings_Wins()
+    {
+        var settings = new OloopSettings { Actor = "  timo  " };
+
+        Assert.Equal("timo", settings.ResolveActor());
+    }
+
+    [Fact]
+    public void The_Actor_Falls_Back_To_The_Environment()
+    {
+        var settings = new OloopSettings();
+
+        WithEnvironmentActor("claude", () =>
+            Assert.Equal("claude", settings.ResolveActor()));
+    }
+
+    [Fact]
+    public void The_Actor_Falls_Back_To_The_User_Of_The_System()
+    {
+        var settings = new OloopSettings();
+
+        // Without a name in the settings and without one in the environment,
+        // the name of the user who is logged in is used.
+        WithEnvironmentActor(null, () =>
+        {
+            var expected = string.IsNullOrWhiteSpace(Environment.UserName)
+                ? "oloop"
+                : Environment.UserName;
+
+            Assert.Equal(expected, settings.ResolveActor());
+        });
+    }
+
+    /// <summary>
+    /// Runs the action with the given value of OLOOP_ACTOR and puts the
+    /// environment back afterwards.
+    /// </summary>
+    private static void WithEnvironmentActor(string? value, Action action)
+    {
+        var old = Environment.GetEnvironmentVariable("OLOOP_ACTOR");
+        try
+        {
+            Environment.SetEnvironmentVariable("OLOOP_ACTOR", value);
+            action();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OLOOP_ACTOR", old);
+        }
+    }
 }
