@@ -33,7 +33,8 @@ dotnet publish OloopApp.csproj \
     --configuration Release \
     --runtime "$rid" \
     --self-contained true \
-    --output "$work/publish"
+    --output "$work/publish" \
+    -p:Version="$version"
 
 echo "==> Building the bundle"
 rm -rf "$bundle"

@@ -35,7 +35,8 @@ dotnet publish OloopApp.csproj `
     --configuration Release `
     --runtime $Runtime `
     --self-contained true `
-    --output $work | Out-Host
+    --output $work `
+    -p:Version=$Version | Out-Host
 
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed"

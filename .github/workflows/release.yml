@@ -1,8 +1,12 @@
 name: release
 
-# Builds the packages for the three desktop platforms and attaches them to
-# the GitHub release. The pattern is the one of oloop-cli: the release is
-# the trigger, the artifacts are attached to it.
+# Builds the packages for the three desktop platforms and puts them into a
+# GitHub release.
+#
+# The trigger is a tag: push v0.1.0 and the pipeline builds the three
+# packages and creates the release "v0.1.0" with them. The version in the
+# file names comes from the tag, so the tag and the packages cannot
+# disagree.
 #
 # All packages are self-contained: the user unpacks the archive and runs
 # the app, without installing a runtime. There is no installer on Windows
@@ -10,16 +14,40 @@ name: release
 # a FUSE that many systems do not have.
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
+  # Also build on a manual run, so the pipeline can be tried without
+  # pushing a tag. The release is only created for a tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag of the release (e.g. v0.1.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
-  macos:
-    name: macOS (arm64)
-    runs-on: macos-latest
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (arm64)
+            os: macos-latest
+            rid: osx-arm64
+            script: scripts/package-macos.sh
+          - name: Windows (x64)
+            os: windows-latest
+            rid: win-x64
+            script: scripts/package-windows.ps1
+          - name: Linux (x64)
+            os: ubuntu-latest
+            rid: linux-x64
+            script: scripts/package-linux.sh
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,46 +56,46 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Package
-        run: bash scripts/package-macos.sh
-      - name: Attach to the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" dist/*.zip --clobber
-
-  windows:
-    name: Windows (x64)
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
+        shell: bash
+        run: |
+          version="${{ github.event.inputs.tag || github.ref_name }}"
+          version="${version#v}"
+          case "${{ matrix.script }}" in
+            *.ps1) pwsh -File "${{ matrix.script }}" -Version "$version" -Runtime "${{ matrix.rid }}" ;;
+            *)      bash "${{ matrix.script }}" "$version" "${{ matrix.rid }}" ;;
+          esac
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
         with:
-          submodules: recursive
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      - name: Package
-        shell: pwsh
-        run: ./scripts/package-windows.ps1
-      - name: Attach to the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" dist/*.zip --clobber
+          name: oloop-${{ matrix.rid }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error
 
-  linux:
-    name: Linux (x64)
+  release:
+    name: Release
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Download the packages
+        uses: actions/download-artifact@v4
         with:
-          submodules: recursive
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      - name: Package
-        run: bash scripts/package-linux.sh
-      - name: Attach to the release
+          path: dist
+          merge-multiple: true
+      - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" dist/*.tar.gz --clobber
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          # A release that exists already is updated, not duplicated. The
+          # workflow can be run again for the same tag.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+            echo "Release $TAG updated."
+          else
+            gh release create "$TAG" dist/* \
+              --title "oloop $TAG" \
+              --generate-notes
+            echo "Release $TAG created."
+          fi
