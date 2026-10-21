@@ -11,13 +11,13 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://OloopApp/Themes/Theme.axaml" />
+                <ResourceInclude Source="avares://oloop/Themes/Theme.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://OloopApp/Themes/Styles.axaml" />
+        <StyleInclude Source="avares://oloop/Themes/Styles.axaml" />
     </Application.Styles>
 </Application>

@@ -1,8 +1,13 @@
 name: release
 
-# Publishes the app for the three desktop platforms and attaches the
-# artifacts to a GitHub release. The pattern is the one of oloop-cli:
-# the release is the trigger, the artifacts are attached to it.
+# Builds the packages for the three desktop platforms and attaches them to
+# the GitHub release. The pattern is the one of oloop-cli: the release is
+# the trigger, the artifacts are attached to it.
+#
+# All packages are self-contained: the user unpacks the archive and runs
+# the app, without installing a runtime. There is no installer on Windows
+# and no AppImage on Linux - a tarball runs everywhere, an AppImage needs
+# a FUSE that many systems do not have.
 
 on:
   release:
@@ -12,17 +17,9 @@ permissions:
   contents: write
 
 jobs:
-  publish:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            rid: linux-x64
-          - os: windows-latest
-            rid: win-x64
-          - os: macos-latest
-            rid: osx-arm64
-    runs-on: ${{ matrix.os }}
+  macos:
+    name: macOS (arm64)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,15 +27,47 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Publish
-        run: dotnet publish OloopApp.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained false --output out
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: oloop-${{ matrix.rid }}
-          path: out/
+      - name: Package
+        run: bash scripts/package-macos.sh
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" out --clobber
+        run: gh release upload "$TAG" dist/*.zip --clobber
+
+  windows:
+    name: Windows (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Package
+        shell: pwsh
+        run: ./scripts/package-windows.ps1
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" dist/*.zip --clobber
+
+  linux:
+    name: Linux (x64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Package
+        run: bash scripts/package-linux.sh
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" dist/*.tar.gz --clobber

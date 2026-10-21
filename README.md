@@ -61,6 +61,20 @@ To run the app:
 dotnet run --project OloopApp
 ```
 
+## Packages
+
+All packages are self-contained: the user unpacks the archive and runs the app, without installing a runtime.
+
+| Platform | Package | Script |
+|---|---|---|
+| macOS (arm64) | `oloop.app` (zipped) | `bash scripts/package-macos.sh` |
+| Windows (x64) | `oloop-<version>-win-x64.zip` | `pwsh scripts/package-windows.ps1` |
+| Linux (x64) | `oloop-<version>-linux-x64.tar.gz` | `bash scripts/package-linux.sh` |
+
+There is no installer on Windows and no AppImage on Linux: a portable archive runs everywhere, an AppImage needs a FUSE that many systems do not have. The macOS bundle is signed ad-hoc — a real signature needs an Apple developer account.
+
+The version in the packages comes from `<Version>` in `OloopApp.csproj`. A GitHub release builds all three and attaches the archives to it.
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).

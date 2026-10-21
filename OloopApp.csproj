@@ -5,8 +5,33 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\oloop.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+    <!-- The version of the app. The release workflow reads it from here. -->
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0</InformationalVersion>
+    <Product>oloop</Product>
+    <AssemblyTitle>oloop</AssemblyTitle>
+    <Company>oloop</Company>
+    <!-- The executable is called oloop, not OloopApp — the name shows up in
+         the task bar, in the app bundle and in the file manager. -->
+    <AssemblyName>oloop</AssemblyName>
+    <!-- The app has no network access, so the default is fine. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- No debug symbols in a release: they double the size of the
+         package and nobody needs them without a matching build. -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- The icon of the executable is platform specific: a .ico for Windows,
+       a .icns for macOS. Both live in Assets. The condition looks at the
+       target runtime, not at the host, so a cross publish carries the
+       icon too. -->
+  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+    <ApplicationIcon>Assets\oloop.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

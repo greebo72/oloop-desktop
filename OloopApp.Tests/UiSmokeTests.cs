@@ -48,6 +48,21 @@ public class UiSmokeTests
     }
 
     [Fact]
+    public async Task The_Window_Has_An_Icon()
+    {
+        await OnUiThread(() =>
+        {
+            var window = new MainWindow { DataContext = new MainViewModel() };
+            window.Show();
+
+            // The icon is a resource of the assembly, not a file next to the
+            // executable - a packaged app has no Assets folder next to it.
+            Assert.NotNull(window.Icon);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public async Task Theme_Resolves_Every_Token_The_Views_Use()
     {
         await OnUiThread(() =>
