@@ -42,6 +42,39 @@ Status: the app runs on macOS, Windows and Linux. The format module is tested ag
 
 Material 3 dark mode, generated from the seed `#4C5C92`. The type containers have to mean what the spec says (todo = primary container, feature = tertiary container), so the scheme is fixed instead of dynamic. Hierarchy comes from size and color, not from bold weight; a 4 dp spacing grid; one filled primary element per screen at most.
 
+## Installation
+
+The app is a single self-contained program. There is no installer: unpack the archive for your platform and start it. No .NET runtime is needed on the machine.
+
+Download the archive from the [releases page](https://github.com/greebo72/oloop-desktop/releases). Every release has the three packages below.
+
+| Platform | Archive |
+|---|---|
+| macOS (Apple silicon) | `oloop-<version>-macos-arm64.zip` |
+| Windows (x64) | `oloop-<version>-win-x64.zip` |
+| Linux (x64) | `oloop-<version>-linux-x64.tar.gz` |
+
+**macOS.** Unpack the zip and drag `oloop.app` into your `Applications` folder, then open it from there. The bundle is signed ad-hoc, so Gatekeeper refuses it the first time: right-click the app, choose **Open**, and confirm. A real signature needs an Apple developer account.
+
+**Windows.** Unpack the zip into any folder and run `oloop.exe`. The app is portable — the folder can live on a USB stick.
+
+**Linux.** Unpack the tarball and run the binary in it:
+
+```
+tar -xzf oloop-<version>-linux-x64.tar.gz
+cd oloop-<version>-linux-x64
+./oloop
+```
+
+### First start
+
+The app asks for two things before it can work, both in the settings dialog (Ctrl+,):
+
+- **The data folder.** The folder with one subfolder per project. Everything oloop knows lives there, and it is usually a synced folder (Syncthing, cloud drive). It can also come from the `OLOOP_ROOT` environment variable.
+- **Your name.** It is written into `createdBy` and `updatedBy` of every task you create or change. It can also come from `OLOOP_ACTOR`.
+
+The settings are remembered in `settings.json` — in `%APPDATA%\oloop\` on Windows, in `~/.config/oloop/` everywhere else.
+
 ## Build and test
 
 You need the .NET SDK. The project targets `net10.0`.
