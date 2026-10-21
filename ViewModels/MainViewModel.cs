@@ -773,6 +773,9 @@ public partial class MainViewModel : ViewModelBase
         // share the right pane.
         Silent = null;
         Split = new ProjectSplitViewModel(card.Project, this);
+
+        // A project opens with its first task selected, if it has one.
+        Split.TaskList.SelectFirst();
     }
 
     private void BackToDashboard()

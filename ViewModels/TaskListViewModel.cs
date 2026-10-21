@@ -242,6 +242,18 @@ public partial class TaskListViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Shows the detail of the first task of the list, the one at the top.
+    /// Does nothing when the list is empty. A project that is opened from the
+    /// project list starts like this, so the detail is not an empty pane.
+    /// </summary>
+    public void SelectFirst()
+    {
+        var first = Groups.SelectMany(g => g.Rows).FirstOrDefault();
+        if (first is not null)
+            SelectRow(first);
+    }
+
+    /// <summary>
     /// Puts the given row into edit mode. The list offers the same command as
     /// the detail pane, so a task can be changed without opening it first:
     /// the row is selected and its detail edits in place.
