@@ -54,7 +54,16 @@ Download the archive from the [releases page](https://github.com/greebo72/oloop-
 | Windows (x64) | `oloop-<version>-win-x64.zip` |
 | Linux (x64) | `oloop-<version>-linux-x64.tar.gz` |
 
-**macOS.** Unpack the zip and drag `oloop.app` into your `Applications` folder, then open it from there. The bundle is signed ad-hoc, so Gatekeeper refuses it the first time: right-click the app, choose **Open**, and confirm. A real signature needs an Apple developer account.
+**macOS.** Unpack the zip and drag `oloop.app` into your `Applications` folder, then open it from there. The bundle is signed ad-hoc, so a download from the browser is blocked by Gatekeeper the first time. Two ways past it:
+
+- Right-click the app in the Finder and choose **Open** — then confirm in the dialog. This is the way that keeps working, because it tells Gatekeeper that you made the choice.
+- Or remove the quarantine mark from the terminal:
+
+  ```
+  xattr -dr com.apple.quarantine /Applications/oloop.app
+  ```
+
+A signature from Apple (a Developer account, notarized) would remove the whole topic — it needs a paid account.
 
 **Windows.** Unpack the zip into any folder and run `oloop.exe`. The app is portable — the folder can live on a USB stick.
 
@@ -101,10 +110,12 @@ All packages are self-contained: the user unpacks the archive and runs the app, 
 | Platform | Package | Script |
 |---|---|---|
 | macOS (arm64) | `oloop.app` (zipped) | `bash scripts/package-macos.sh` |
+
+The macOS package is a single file. That is not only about the download size: a PE assembly cannot be signed by `codesign`, so its signature ends up in an extended attribute of the file, and `zip` does not keep extended attributes. A bundle with PE assemblies in it therefore has a broken signature after it was unpacked, and Gatekeeper refuses the app. A single file keeps only Mach-O binaries in the bundle, and their signatures live in the file itself.
 | Windows (x64) | `oloop-<version>-win-x64.zip` | `pwsh scripts/package-windows.ps1` |
 | Linux (x64) | `oloop-<version>-linux-x64.tar.gz` | `bash scripts/package-linux.sh` |
 
-There is no installer on Windows and no AppImage on Linux: a portable archive runs everywhere, an AppImage needs a FUSE that many systems do not have. The macOS bundle is signed ad-hoc — a real signature needs an Apple developer account.
+There is no installer on Windows and no AppImage on Linux: a portable archive runs everywhere, an AppImage needs a FUSE that many systems do not have. The macOS bundle is signed ad-hoc — a real signature needs an Apple developer account. The packaging script verifies the signature of the *unpacked* archive and fails the build if it is broken, because that is the state the user gets.
 
 The version in the packages comes from `<Version>` in `OloopApp.csproj`. A GitHub release builds all three and attaches the archives to it.
 
