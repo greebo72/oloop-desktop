@@ -4,7 +4,6 @@
         xmlns:views="using:OloopApp.Views"
         x:Class="OloopApp.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="oloop"
         Icon="/Assets/oloop.ico"
         Width="1280" Height="820"
         MinWidth="900" MinHeight="600"

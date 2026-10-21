@@ -63,6 +63,24 @@ public class UiSmokeTests
     }
 
     [Fact]
+    public async Task The_Window_Title_Shows_The_Version()
+    {
+        await OnUiThread(() =>
+        {
+            var window = new MainWindow { DataContext = new MainViewModel() };
+            window.Show();
+
+            Assert.Equal($"oloop {AppVersion.Text}", window.Title);
+
+            // Three parts, not four: the title must not carry the build
+            // number ("0.2.1.0") and it must not be empty.
+            Assert.Matches(@"^\d+\.\d+\.\d+$", AppVersion.Text);
+
+            window.Close();
+        });
+    }
+
+    [Fact]
     public async Task Theme_Resolves_Every_Token_The_Views_Use()
     {
         await OnUiThread(() =>

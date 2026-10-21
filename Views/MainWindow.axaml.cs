@@ -9,6 +9,10 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // The title of the window carries the version, so it is visible
+        // without opening anything.
+        Title = AppVersion.WindowTitle;
     }
 
     /// <summary>
