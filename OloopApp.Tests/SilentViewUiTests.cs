@@ -53,10 +53,10 @@ public class SilentViewUiTests
         Title = title,
         Status = TaskStatus.open,
         CreatedAt = "2026-01-01T09:00:00Z",
-        CreatedBy = "timo",
+        CreatedBy = "alice",
         UpdatedAt = DateTimeOffset.UtcNow.AddDays(-daysAgo)
             .ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"),
-        UpdatedBy = "timo",
+        UpdatedBy = "alice",
     };
 
     [Fact]

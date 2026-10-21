@@ -74,9 +74,9 @@ public class UnreadableFileTests : IDisposable
             status: open
             labels: []
             createdAt: '2026-01-01T09:00:00Z'
-            createdBy: timo
+            createdBy: alice
             updatedAt: '2026-01-01T09:00:00Z'
-            updatedBy: timo
+            updatedBy: alice
             comments: []
             ---
 
@@ -127,7 +127,7 @@ public class UnreadableFileTests : IDisposable
         var store = new OloopStore(_root);
         var snapshot = await store.LoadAsync();
 
-        var shell = new MainViewModel { DataRoot = _root, Actor = "timo" };
+        var shell = new MainViewModel { DataRoot = _root, Actor = "alice" };
         await shell.RefreshAsync();
 
         Assert.Equal(1, shell.Dashboard.UnreadableCount);

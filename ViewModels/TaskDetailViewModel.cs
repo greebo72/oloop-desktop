@@ -184,10 +184,10 @@ public partial class TaskDetailViewModel : ViewModelBase
     /// <summary>Whether the image could not be loaded.</summary>
     public bool HasImageError => ImageError is not null;
 
-    /// <summary>"Created 2 h ago by timo".</summary>
+    /// <summary>"Created 2 h ago by alice".</summary>
     public string CreatedText { get; }
 
-    /// <summary>"Updated 2 h ago by timo".</summary>
+    /// <summary>"Updated 2 h ago by alice".</summary>
     public string UpdatedText { get; }
 
     /// <summary>The comments of the task.</summary>

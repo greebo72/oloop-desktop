@@ -107,8 +107,8 @@ public partial class TaskDetailViewModel : ViewModelBase
     public string Description { get; }                // raw Markdown
     public Control DescriptionView { get; }           // rendered Markdown tree
     public bool HasDescription { get; }
-    public string CreatedText { get; }                // "Created 2 h ago by timo"
-    public string UpdatedText { get; }                // "Updated 2 h ago by timo"
+    public string CreatedText { get; }                // "Created 2 h ago by alice"
+    public string UpdatedText { get; }                // "Updated 2 h ago by alice"
     public ObservableCollection<CommentViewModel> Comments { get; }
     public bool HasComments { get; }
 }

@@ -39,9 +39,9 @@ public class TaskListViewModelTests
             Title = title,
             Status = status,
             CreatedAt = updatedAt ?? "2026-01-01T09:00:00Z",
-            CreatedBy = "timo",
+            CreatedBy = "alice",
             UpdatedAt = updatedAt ?? "2026-01-01T09:00:00Z",
-            UpdatedBy = "timo",
+            UpdatedBy = "alice",
             Labels = labels ?? [],
         };
 

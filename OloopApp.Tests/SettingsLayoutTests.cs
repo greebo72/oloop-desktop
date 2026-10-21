@@ -42,7 +42,7 @@ public class SettingsLayoutTests
         TextBlock CtrlN, TextBlock CtrlE, TextBlock CtrlComma, TextBlock Escape, TextBlock F5)
         ShowDialog()
     {
-        var settings = new OloopSettings { Actor = "timo", DataRoot = "/tmp" };
+        var settings = new OloopSettings { Actor = "alice", DataRoot = "/tmp" };
         var dialog = new SettingsDialog(new SettingsViewModel(settings));
         dialog.Show();
         dialog.UpdateLayout();

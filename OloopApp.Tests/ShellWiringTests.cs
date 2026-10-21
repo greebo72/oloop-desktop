@@ -298,11 +298,11 @@ public class ShellWiringTests : IDisposable
         var shell = Shell();
         await shell.RefreshAsync();
 
-        _dialogs.OnSettings = vm => vm.Actor = "timo";
+        _dialogs.OnSettings = vm => vm.Actor = "alice";
 
         await shell.OpenSettingsAsync();
 
-        Assert.Equal("timo", shell.Actor);
+        Assert.Equal("alice", shell.Actor);
     }
 
     // ---------------- The actor is asked for ----------------
@@ -315,7 +315,7 @@ public class ShellWiringTests : IDisposable
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();
 
-        _dialogs.OnSettings = vm => vm.Actor = "timo";
+        _dialogs.OnSettings = vm => vm.Actor = "alice";
 
         var created = await shell.CreateTaskAsync(
             project, TaskType.todo, "A task", "", []);
@@ -332,8 +332,8 @@ public class ShellWiringTests : IDisposable
             await File.ReadAllTextAsync(files[0]),
             project.Id);
 
-        Assert.Equal("timo", onDisk.CreatedBy);
-        Assert.Equal("timo", onDisk.UpdatedBy);
+        Assert.Equal("alice", onDisk.CreatedBy);
+        Assert.Equal("alice", onDisk.UpdatedBy);
     }
 
     [Fact]
@@ -397,7 +397,7 @@ public class ShellWiringTests : IDisposable
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();
 
-        _dialogs.OnSettings = vm => vm.Actor = "timo";
+        _dialogs.OnSettings = vm => vm.Actor = "alice";
 
         var closed = await shell.SetTaskClosedAsync(task, project, closed: true);
 
@@ -407,7 +407,7 @@ public class ShellWiringTests : IDisposable
         var path = Path.Combine(_root, "my-project", "tasks", task.Id + ".md");
         var onDisk = TaskIo.Read(task.Id, await File.ReadAllTextAsync(path), project.Id);
         Assert.Equal(TaskStatus.closed, onDisk.Status);
-        Assert.Equal("timo", onDisk.UpdatedBy);
+        Assert.Equal("alice", onDisk.UpdatedBy);
     }
 
     [Fact]
@@ -420,7 +420,7 @@ public class ShellWiringTests : IDisposable
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();
 
-        _dialogs.OnSettings = vm => vm.Actor = "timo";
+        _dialogs.OnSettings = vm => vm.Actor = "alice";
         _dialogs.OnNewTask = vm => vm.Title = "A task";
 
         var created = await shell.OpenNewTaskAsync(project);

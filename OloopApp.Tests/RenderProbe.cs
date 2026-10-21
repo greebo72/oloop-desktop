@@ -56,9 +56,9 @@ public class RenderProbe
                 Status = TaskStatus.open,
                 ImagePath = imagePath,
                 CreatedAt = "2026-01-01T09:00:00Z",
-                CreatedBy = "timo",
+                CreatedBy = "alice",
                 UpdatedAt = "2026-01-01T09:00:00Z",
-                UpdatedBy = "timo",
+                UpdatedBy = "alice",
                 Labels = ["ui"],
                 Description = "The screenshot shows the crash.",
             };
@@ -74,7 +74,7 @@ public class RenderProbe
         var shell = new MainViewModel
         {
             DataRoot = Path.Combine(Path.GetTempPath(), "oloop-render"),
-            Actor = "timo",
+            Actor = "alice",
         };
 
         var window = new MainWindow { DataContext = shell };

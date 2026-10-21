@@ -374,7 +374,7 @@ public class DialogUiTests
     {
         await OnUiThread(() =>
         {
-            var settings = new OloopSettings { Actor = "timo" };
+            var settings = new OloopSettings { Actor = "alice" };
 
             var dialog = new SettingsDialog(new SettingsViewModel(settings));
 
