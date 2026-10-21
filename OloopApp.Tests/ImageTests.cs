@@ -73,9 +73,9 @@ public class ImageTests : IDisposable
         Status = TaskStatus.open,
         ImagePath = imagePath,
         CreatedAt = "2026-01-01T09:00:00Z",
-        CreatedBy = "timo",
+        CreatedBy = "alice",
         UpdatedAt = "2026-01-01T09:00:00Z",
-        UpdatedBy = "timo",
+        UpdatedBy = "alice",
     };
 
     /// <summary>Writes a real PNG into the images folder of the project.</summary>

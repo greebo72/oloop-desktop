@@ -27,9 +27,9 @@ public class SilenceTests
             Title = title,
             Status = status,
             CreatedAt = updated,
-            CreatedBy = "timo",
+            CreatedBy = "alice",
             UpdatedAt = updated,
-            UpdatedBy = "timo",
+            UpdatedBy = "alice",
         };
     }
 

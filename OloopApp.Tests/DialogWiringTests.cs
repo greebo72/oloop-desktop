@@ -53,9 +53,9 @@ public class DialogWiringTests
         Title = "Write the docs",
         Status = TaskStatus.open,
         CreatedAt = "2026-01-01T09:00:00Z",
-        CreatedBy = "timo",
+        CreatedBy = "alice",
         UpdatedAt = "2026-01-01T09:00:00Z",
-        UpdatedBy = "timo",
+        UpdatedBy = "alice",
     };
 
     [Fact]

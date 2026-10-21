@@ -39,9 +39,9 @@ public class SilentViewModelTests
             Title = title,
             Status = status,
             CreatedAt = stamp,
-            CreatedBy = "timo",
+            CreatedBy = "alice",
             UpdatedAt = stamp,
-            UpdatedBy = "timo",
+            UpdatedBy = "alice",
         };
     }
 

@@ -76,9 +76,9 @@ public class EmptyStateTests
         Title = title,
         Status = TaskStatus.open,
         CreatedAt = "2026-01-01T09:00:00Z",
-        CreatedBy = "timo",
+        CreatedBy = "alice",
         UpdatedAt = "2026-01-01T09:00:00Z",
-        UpdatedBy = "timo",
+        UpdatedBy = "alice",
         Labels = [],
     };
 
@@ -87,7 +87,7 @@ public class EmptyStateTests
     [Fact]
     public void Without_A_Data_Folder_The_Dashboard_Points_At_The_Settings()
     {
-        var shell = new MainViewModel { DataRoot = "", Actor = "timo" };
+        var shell = new MainViewModel { DataRoot = "", Actor = "alice" };
 
         Assert.True(shell.Dashboard.HasNoDataRoot);
         Assert.Equal("No data folder", shell.Dashboard.EmptyTitle);
@@ -100,7 +100,7 @@ public class EmptyStateTests
         await OnUiThread(() =>
         {
             var missing = Path.Combine(Path.GetTempPath(), "oloop-missing-" + Guid.NewGuid().ToString("N"));
-            var shell = new MainViewModel { DataRoot = missing, Actor = "timo" };
+            var shell = new MainViewModel { DataRoot = missing, Actor = "alice" };
 
             shell.RefreshAsync().GetAwaiter().GetResult();
 
@@ -280,7 +280,7 @@ public class EmptyStateTests
     {
         await OnUiThread(() =>
         {
-            var shell = new MainViewModel { DataRoot = "", Actor = "timo" };
+            var shell = new MainViewModel { DataRoot = "", Actor = "alice" };
             var window = new MainWindow { DataContext = shell };
             window.Show();
 
@@ -305,7 +305,7 @@ public class EmptyStateTests
     {
         await OnUiThread(() =>
         {
-            var shell = new MainViewModel { DataRoot = "", Actor = "timo" };
+            var shell = new MainViewModel { DataRoot = "", Actor = "alice" };
             var window = new MainWindow { DataContext = shell };
             window.Show();
 

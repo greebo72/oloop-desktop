@@ -100,7 +100,7 @@ public class SettingsTests : IDisposable
     [Fact]
     public void The_Remembered_Types_Survive_A_Restart()
     {
-        var settings = new OloopSettings { DataRoot = "/tmp/root", Actor = "timo" };
+        var settings = new OloopSettings { DataRoot = "/tmp/root", Actor = "alice" };
         settings.RememberType(TaskType.feature);
         settings.RememberType(TaskType.bug);
         settings.Save(_path);
@@ -109,13 +109,13 @@ public class SettingsTests : IDisposable
 
         Assert.Equal([TaskType.bug, TaskType.feature], loaded.RecentTaskTypes);
         Assert.Equal("/tmp/root", loaded.DataRoot);
-        Assert.Equal("timo", loaded.Actor);
+        Assert.Equal("alice", loaded.Actor);
     }
 
     [Fact]
     public void A_Settings_File_Without_Recent_Types_Still_Loads()
     {
-        File.WriteAllText(_path, """{ "dataRoot": "/tmp/root", "actor": "timo" }""");
+        File.WriteAllText(_path, """{ "dataRoot": "/tmp/root", "actor": "alice" }""");
 
         var loaded = OloopSettings.Load(_path);
 
@@ -150,12 +150,12 @@ public class SettingsTests : IDisposable
     {
         // A file written by an older version or by hand may spell the names
         // differently — it still has to load.
-        File.WriteAllText(_path, """{ "DataRoot": "/tmp/root", "Actor": "timo" }""");
+        File.WriteAllText(_path, """{ "DataRoot": "/tmp/root", "Actor": "alice" }""");
 
         var loaded = OloopSettings.Load(_path);
 
         Assert.Equal("/tmp/root", loaded.DataRoot);
-        Assert.Equal("timo", loaded.Actor);
+        Assert.Equal("alice", loaded.Actor);
     }
 
     [Fact]
@@ -184,9 +184,9 @@ public class SettingsTests : IDisposable
     [Fact]
     public void The_Actor_In_The_Settings_Wins()
     {
-        var settings = new OloopSettings { Actor = "  timo  " };
+        var settings = new OloopSettings { Actor = "  alice  " };
 
-        Assert.Equal("timo", settings.ResolveActor());
+        Assert.Equal("alice", settings.ResolveActor());
     }
 
     [Fact]
@@ -202,13 +202,13 @@ public class SettingsTests : IDisposable
     {
         var settings = new OloopSettings
         {
-            SystemUserName = "timo",
+            SystemUserName = "alice",
             EnvironmentActorReader = () => null,
         };
 
         // Without a name in the settings and without one in the environment,
         // the name of the user who is logged in is used.
-        Assert.Equal("timo", settings.ResolveActor());
+        Assert.Equal("alice", settings.ResolveActor());
     }
 
     [Fact]
@@ -231,7 +231,7 @@ public class SettingsTests : IDisposable
     {
         var settings = new OloopSettings
         {
-            SystemUserName = "timo",
+            SystemUserName = "alice",
             EnvironmentActorReader = () => "claude",
         };
 
