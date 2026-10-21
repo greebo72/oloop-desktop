@@ -96,6 +96,10 @@
     <Style Selector="Border.Chip TextBlock">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="Medium" />
+        <!-- The chip is 24 dp high, its content only 16. Avalonia draws the
+             text from the top of its box, so without this the text would sit
+             at the top of the chip. -->
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style Selector="Border.Chip.Outlined">
@@ -162,6 +166,19 @@
         <Setter Property="CornerRadius" Value="20" />
         <Setter Property="Padding" Value="16,10" />
         <Setter Property="MinHeight" Value="40" />
+        <!-- The content is centered in the button, not stretched to its
+             padding. Otherwise the text hangs high (see below). -->
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Avalonia draws the text of a TextBlock from the top of its box. A
+         button gives its content more room than one text line needs
+         (MinHeight 40 + Padding 10 = 20 dp for a 16 dp line), so a
+         stretched TextBlock would put the text against the top edge of the
+         button. The text block is centered in the content instead, the
+         line box then sits in the middle of the button. -->
+    <Style Selector="Button TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style Selector="Button:pointerover">
@@ -259,7 +276,12 @@
         <Setter Property="Background" Value="{StaticResource SurfaceContainerHighestBrush}" />
         <Setter Property="CornerRadius" Value="24" />
         <Setter Property="MinHeight" Value="44" />
-        <Setter Property="Padding" Value="16,10" />
+        <!-- Avalonia aligns the text of a text box to the top of its content
+             area. A plain 10 dp padding would leave the line of text 5 dp
+             above the middle of the field. The vertical padding is 15 dp
+             ((44 - 14) / 2) instead, so the content area is exactly one
+             line high and the text sits in the middle. -->
+        <Setter Property="Padding" Value="16,15" />
         <Setter Property="PlaceholderText" Value="Tasks, Projekte, Labels suchen…" />
     </Style>
 
@@ -269,6 +291,10 @@
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="20" />
         <Setter Property="MinHeight" Value="36" />
+        <!-- The Fluent theme pads the combo box asymmetrically (12,5,0,7), so
+             the selected item ends up 1 dp above the middle. Symmetric
+             padding puts the line of text in the center, like the buttons. -->
+        <Setter Property="Padding" Value="12,5,0,5" />
     </Style>
 
     <!-- ============================================================
