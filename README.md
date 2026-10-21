@@ -54,16 +54,11 @@ Download the archive from the [releases page](https://github.com/greebo72/oloop-
 | Windows (x64) | `oloop-<version>-win-x64.zip` |
 | Linux (x64) | `oloop-<version>-linux-x64.tar.gz` |
 
-**macOS.** Unpack the zip and drag `oloop.app` into your `Applications` folder, then open it from there. The bundle is signed ad-hoc, so a download from the browser is blocked by Gatekeeper the first time. Two ways past it:
-
-- Right-click the app in the Finder and choose **Open** — then confirm in the dialog. This is the way that keeps working, because it tells Gatekeeper that you made the choice.
-- Or remove the quarantine mark from the terminal:
+**macOS.** Unpack the zip `oloop.app` into you Application folder and remove the quarantine mark from the terminal:
 
   ```
   xattr -dr com.apple.quarantine /Applications/oloop.app
   ```
-
-A signature from Apple (a Developer account, notarized) would remove the whole topic — it needs a paid account.
 
 **Windows.** Unpack the zip into any folder and run `oloop.exe`. The app is portable — the folder can live on a USB stick.
 
