@@ -17,6 +17,14 @@ public abstract class YamlNode
         public ScalarStyle Style { get; } = style;
 
         /// <summary>
+        /// True for a plain scalar that was read from a file. It is written
+        /// back exactly as it was read: whether <c>42</c> is a number, a string
+        /// or something else is not up to this client when it does not know
+        /// the field. A scalar that a writer builds is quoted when needed.
+        /// </summary>
+        public bool Verbatim { get; init; }
+
+        /// <summary>
         /// True for a plain <c>null</c> or <c>~</c>. A quoted "null" is a value,
         /// not a null (the style decides, not the text).
         /// </summary>
@@ -148,7 +156,7 @@ public static class YamlFrontmatter
     /// <summary>Reads the value the parser is currently positioned on.</summary>
     private static YamlNode ReadValue(Parser parser) => parser.Current switch
     {
-        Scalar s => new YamlNode.Scalar(s.Value, s.Style),
+        Scalar s => new YamlNode.Scalar(s.Value, s.Style) { Verbatim = s.Style == ScalarStyle.Plain },
         SequenceStart => ReadSequence(parser),
         MappingStart => ReadMapping(parser),
         _ => throw new OloopFormatException("unsupported YAML value in frontmatter"),
@@ -171,67 +179,107 @@ public static class YamlFrontmatter
     private static void RenderEntry(List<string> lines, string key, YamlNode value, int indent)
     {
         string pad = new(' ', indent);
+        string name = RenderKey(key);
 
         switch (value)
         {
             case YamlNode.NullNode:
-                lines.Add($"{pad}{key}: null");
+                lines.Add($"{pad}{name}: null");
                 break;
 
             case YamlNode.Raw raw:
-                lines.Add($"{pad}{key}: {raw.Value}");
+                lines.Add($"{pad}{name}: {raw.Value}");
                 break;
 
             case YamlNode.Scalar scalar:
-                lines.Add($"{pad}{key}: {Quote(scalar.Value)}");
+                lines.Add($"{pad}{name}: {RenderScalar(scalar)}");
                 break;
 
             case YamlNode.Sequence { Items.Count: 0 }:
-                lines.Add($"{pad}{key}: []");
+                lines.Add($"{pad}{name}: []");
                 break;
 
             case YamlNode.Sequence sequence:
-                lines.Add($"{pad}{key}:");
+                lines.Add($"{pad}{name}:");
                 foreach (var item in sequence.Items)
-                {
-                    switch (item)
-                    {
-                        case YamlNode.Scalar scalar:
-                            lines.Add($"{pad}- {Quote(scalar.Value)}");
-                            break;
-                        case YamlNode.Mapping mapping:
-                        {
-                            // A flat mapping: first key on the dash line, the rest indented.
-                            bool first = true;
-                            foreach (var (k, v) in mapping.Entries)
-                            {
-                                string prefix = first ? $"{pad}- " : $"{pad}  ";
-                                lines.Add($"{prefix}{k}: {RenderInline(v)}");
-                                first = false;
-                            }
-                            break;
-                        }
-                        default:
-                            throw new OloopFormatException($"unsupported YAML value for key '{key}'");
-                    }
-                }
+                    RenderItem(lines, item, indent);
+                break;
+
+            case YamlNode.Mapping { Entries.Count: 0 }:
+                lines.Add($"{pad}{name}: {{}}");
                 break;
 
             case YamlNode.Mapping mapping:
-                lines.Add($"{pad}{key}:");
+                lines.Add($"{pad}{name}:");
                 foreach (var (k, v) in mapping.Entries)
                     RenderEntry(lines, k, v, indent + 2);
                 break;
         }
     }
 
-    private static string RenderInline(YamlNode value) => value switch
+    /// <summary>
+    /// Renders one item of a sequence. A mapping starts on the dash line, so
+    /// a list of flat mappings looks the way it always did:
+    /// <c>- body: ...</c> followed by the other keys, indented.
+    /// </summary>
+    private static void RenderItem(List<string> lines, YamlNode item, int indent)
     {
-        YamlNode.NullNode => "null",
-        YamlNode.Raw raw => raw.Value,
-        YamlNode.Scalar scalar => Quote(scalar.Value),
-        _ => throw new OloopFormatException("unsupported YAML value"),
-    };
+        string pad = new(' ', indent);
+
+        switch (item)
+        {
+            case YamlNode.NullNode:
+                lines.Add($"{pad}- null");
+                break;
+
+            case YamlNode.Raw raw:
+                lines.Add($"{pad}- {raw.Value}");
+                break;
+
+            case YamlNode.Scalar scalar:
+                lines.Add($"{pad}- {RenderScalar(scalar)}");
+                break;
+
+            case YamlNode.Sequence { Items.Count: 0 }:
+                lines.Add($"{pad}- []");
+                break;
+
+            case YamlNode.Sequence sequence:
+                lines.Add($"{pad}-");
+                foreach (var inner in sequence.Items)
+                    RenderItem(lines, inner, indent + 2);
+                break;
+
+            case YamlNode.Mapping { Entries.Count: 0 }:
+                lines.Add($"{pad}- {{}}");
+                break;
+
+            case YamlNode.Mapping mapping:
+            {
+                var inner = new List<string>();
+                foreach (var (k, v) in mapping.Entries)
+                    RenderEntry(inner, k, v, indent + 2);
+
+                // The first line moves up to the dash.
+                inner[0] = $"{pad}- {inner[0][(indent + 2)..]}";
+                lines.AddRange(inner);
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A scalar as it goes into the file: a plain scalar that was read stays
+    /// as it was, every other one is quoted when it would not survive.
+    /// </summary>
+    private static string RenderScalar(YamlNode.Scalar scalar)
+        => scalar.Verbatim ? scalar.Value : Quote(scalar.Value);
+
+    /// <summary>
+    /// A key as it goes into the file. The keys of the format are plain words;
+    /// the key of a field this client does not know is quoted when it has to be.
+    /// </summary>
+    private static string RenderKey(string key) => Quote(key);
 
     /// <summary>
     /// Quotes a scalar so no value is ever read back as a number, a date or a

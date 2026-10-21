@@ -1,3 +1,5 @@
+using OloopApp.Core.Io;
+
 namespace OloopApp.Core.Models;
 
 /// <summary>
@@ -59,6 +61,12 @@ public sealed class TaskComment
 {
     public required string Body { get; init; }
     public required string CreatedAt { get; init; }
+
+    /// <summary>
+    /// Fields of the comment that this client does not know, in the order of
+    /// the file. They are written back unchanged (SPEC.md, "Unknown fields").
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, YamlNode>> ExtraFields { get; init; } = [];
 }
 
 /// <summary>
@@ -74,6 +82,14 @@ public sealed class OloopTask
     public required string Title { get; init; }
     public required TaskStatus Status { get; init; }
     public string? ImagePath { get; init; }
+
+    /// <summary>
+    /// The calendar date the task should be done by, <c>YYYY-MM-DD</c> without
+    /// a time zone. Null when the task has no due date: the field is absent or
+    /// null in the file.
+    /// </summary>
+    public string? DueDate { get; init; }
+
     public IReadOnlyList<string> Labels { get; init; } = [];
     public required string CreatedAt { get; init; }
     public required string CreatedBy { get; init; }
@@ -82,6 +98,13 @@ public sealed class OloopTask
     public IReadOnlyList<TaskComment> Comments { get; init; } = [];
     /// <summary>The Markdown body of the file.</summary>
     public string Description { get; init; } = "";
+
+    /// <summary>
+    /// Frontmatter fields that this client does not know, in the order of the
+    /// file. They are written back unchanged, so a client that is older than
+    /// the file never erases what a newer one added (SPEC.md, "Unknown fields").
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, YamlNode>> ExtraFields { get; init; } = [];
 
     /// <summary>Name of the owning project. Filled in by the store, not stored in the file.</summary>
     public string ProjectName { get; set; } = "";
@@ -106,6 +129,7 @@ public sealed class OloopTask
             Title = title ?? Title,
             Status = status ?? Status,
             ImagePath = ImagePath,
+            DueDate = DueDate,
             Labels = labels ?? Labels,
             CreatedAt = CreatedAt,
             CreatedBy = CreatedBy,
@@ -113,6 +137,7 @@ public sealed class OloopTask
             UpdatedBy = updatedBy ?? UpdatedBy,
             Comments = comments ?? Comments,
             Description = description ?? Description,
+            ExtraFields = ExtraFields,
             ProjectName = ProjectName,
         };
     }
@@ -127,6 +152,12 @@ public sealed class OloopProject
     public required string CreatedAt { get; init; }
     public string? ReferencePath { get; init; }
     public string? ReferenceHost { get; init; }
+
+    /// <summary>
+    /// Frontmatter fields that this client does not know, in the order of the
+    /// file. They are written back unchanged.
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, YamlNode>> ExtraFields { get; init; } = [];
 
     /// <summary>Folder name (slug) under the data root. Not stored in the file.</summary>
     public string FolderName { get; set; } = "";

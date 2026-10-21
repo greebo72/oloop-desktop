@@ -53,11 +53,10 @@ public static class ProjectIo
             throw new OloopFormatException(
                 $"formatVersion {formatVersion} is newer than supported ({SupportedFormatVersion})");
 
-        foreach (var (key, _) in map.Entries)
-        {
-            if (!KeyOrder.Contains(key))
-                throw new OloopFormatException($"unknown key: {key}");
-        }
+        // Keys this client does not know are kept and written back unchanged.
+        var extraFields = map.Entries
+            .Where(e => !KeyOrder.Contains(e.Key))
+            .ToList();
 
         var id = ReadString(map, "id");
         if (!UuidPattern.IsMatch(id))
@@ -82,6 +81,7 @@ public static class ProjectIo
             CreatedAt = createdAt,
             ReferencePath = referencePath,
             ReferenceHost = referenceHost,
+            ExtraFields = extraFields,
         };
     }
 
@@ -141,6 +141,8 @@ public static class ProjectIo
 
         if (!string.IsNullOrWhiteSpace(project.ReferenceHost))
             entries.Add(new("referenceHost", new YamlNode.Scalar(project.ReferenceHost, ScalarStyle.Plain)));
+
+        entries.AddRange(project.ExtraFields);
 
         return $"---\n{YamlFrontmatter.Render(new YamlNode.Mapping(entries))}\n---\n";
     }
