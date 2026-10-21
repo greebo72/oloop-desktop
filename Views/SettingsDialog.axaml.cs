@@ -21,6 +21,21 @@ public partial class SettingsDialog : Window
     }
 
     /// <summary>
+    /// Puts the cursor into the actor field when the name is missing. The
+    /// user is asked for the name then, so the field is where the typing
+    /// has to go.
+    /// </summary>
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        if (DataContext is not SettingsViewModel vm || !vm.HasNoActor)
+            return;
+
+        this.FindControl<TextBox>("ActorBox")?.Focus();
+    }
+
+    /// <summary>
     /// Opens the dialog and waits for it. Returns true when the user saved
     /// the settings.
     /// </summary>

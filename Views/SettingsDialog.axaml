@@ -49,10 +49,17 @@
                  ============================================================ -->
             <StackPanel Spacing="6">
                 <TextBlock Text="Actor name *" Classes="LabelMedium" />
-                <TextBox Text="{Binding Actor, Mode=TwoWay}"
+                <TextBox Name="ActorBox"
+                         Text="{Binding Actor, Mode=TwoWay}"
                          PlaceholderText="Your name" />
                 <TextBlock Classes="Muted"
                            Text="Required. It is written into createdBy and updatedBy of every task." />
+                <TextBlock Classes="Muted"
+                           IsVisible="{Binding HasNoActor}"
+                           Text="No name yet. oloop asks for it before the first write." />
+                <TextBlock Classes="Muted"
+                           IsVisible="{Binding HasNoActor}"
+                           Text="Until a name is entered, no task is written." />
             </StackPanel>
 
             <!-- ============================================================

@@ -22,6 +22,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _actor = "";
 
+    /// <summary>
+    /// Whether the name is missing. Then the field is empty and the app
+    /// asks for it before the first write.
+    /// </summary>
+    public bool HasNoActor => string.IsNullOrWhiteSpace(Actor);
+
     /// <summary>Whether closed tasks are shown in the list.</summary>
     [ObservableProperty]
     private bool _showClosed;
@@ -182,6 +188,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnActorChanged(string value)
     {
         OnPropertyChanged(nameof(CanSave));
+        OnPropertyChanged(nameof(HasNoActor));
         UpdateValidation();
     }
 

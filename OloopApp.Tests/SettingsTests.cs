@@ -182,44 +182,49 @@ public class SettingsTests : IDisposable
     [Fact]
     public void The_Actor_Falls_Back_To_The_Environment()
     {
-        var settings = new OloopSettings();
+        var settings = new OloopSettings { EnvironmentActorReader = () => "claude" };
 
-        WithEnvironmentActor("claude", () =>
-            Assert.Equal("claude", settings.ResolveActor()));
+        Assert.Equal("claude", settings.ResolveActor());
     }
 
     [Fact]
     public void The_Actor_Falls_Back_To_The_User_Of_The_System()
     {
-        var settings = new OloopSettings();
+        var settings = new OloopSettings
+        {
+            SystemUserName = "timo",
+            EnvironmentActorReader = () => null,
+        };
 
         // Without a name in the settings and without one in the environment,
         // the name of the user who is logged in is used.
-        WithEnvironmentActor(null, () =>
-        {
-            var expected = string.IsNullOrWhiteSpace(Environment.UserName)
-                ? "oloop"
-                : Environment.UserName;
-
-            Assert.Equal(expected, settings.ResolveActor());
-        });
+        Assert.Equal("timo", settings.ResolveActor());
     }
 
-    /// <summary>
-    /// Runs the action with the given value of OLOOP_ACTOR and puts the
-    /// environment back afterwards.
-    /// </summary>
-    private static void WithEnvironmentActor(string? value, Action action)
+    [Fact]
+    public void The_Actor_Is_Empty_When_The_Chain_Runs_Out()
     {
-        var old = Environment.GetEnvironmentVariable("OLOOP_ACTOR");
-        try
+        // No name in the settings, none in the environment and no user name
+        // of the system: then there is no actor, and the app asks for one.
+        // A made up name would end up in every task.
+        var settings = new OloopSettings
         {
-            Environment.SetEnvironmentVariable("OLOOP_ACTOR", value);
-            action();
-        }
-        finally
+            SystemUserName = "",
+            EnvironmentActorReader = () => null,
+        };
+
+        Assert.Equal("", settings.ResolveActor());
+    }
+
+    [Fact]
+    public void The_Environment_Wins_Over_The_User_Of_The_System()
+    {
+        var settings = new OloopSettings
         {
-            Environment.SetEnvironmentVariable("OLOOP_ACTOR", old);
-        }
+            SystemUserName = "timo",
+            EnvironmentActorReader = () => "claude",
+        };
+
+        Assert.Equal("claude", settings.ResolveActor());
     }
 }

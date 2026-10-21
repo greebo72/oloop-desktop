@@ -51,6 +51,30 @@ public class ShellWiringTests : IDisposable
         return shell;
     }
 
+    /// <summary>
+    /// A shell without an actor: the settings file has no name, the
+    /// environment has none and the system has no user name either. Then
+    /// the app has to ask for the name before it writes.
+    /// </summary>
+    private MainViewModel ShellWithoutActor()
+    {
+        var settings = new OloopSettings
+        {
+            FilePath = Path.Combine(_root, "settings.json"),
+            DataRoot = _root,
+            SystemUserName = "",
+            EnvironmentActorReader = () => null,
+        };
+
+        var shell = new MainViewModel(settings)
+        {
+            DataRoot = _root,
+        };
+
+        shell.Dialogs = _dialogs;
+        return shell;
+    }
+
     private async Task<OloopProject> ProjectAsync(OloopStore store)
         => await store.CreateProjectAsync("My Project");
 
@@ -281,6 +305,148 @@ public class ShellWiringTests : IDisposable
         Assert.Equal("timo", shell.Actor);
     }
 
+    // ---------------- The actor is asked for ----------------
+
+    [Fact]
+    public async Task A_Write_Without_Actor_Asks_For_The_Name_And_Writes_Afterwards()
+    {
+        var store = new OloopStore(_root);
+        var project = await ProjectAsync(store);
+        var shell = ShellWithoutActor();
+        await shell.RefreshAsync();
+
+        _dialogs.OnSettings = vm => vm.Actor = "timo";
+
+        var created = await shell.CreateTaskAsync(
+            project, TaskType.todo, "A task", "", []);
+
+        Assert.True(created);
+        Assert.Equal(1, _dialogs.SettingsShown);
+
+        // The task is on disk and carries the name that was asked for.
+        var files = Directory.EnumerateFiles(Path.Combine(_root, "my-project", "tasks")).ToList();
+        Assert.Single(files);
+
+        var onDisk = TaskIo.Read(
+            Path.GetFileNameWithoutExtension(files[0]),
+            await File.ReadAllTextAsync(files[0]),
+            project.Id);
+
+        Assert.Equal("timo", onDisk.CreatedBy);
+        Assert.Equal("timo", onDisk.UpdatedBy);
+    }
+
+    [Fact]
+    public async Task A_Write_Without_Actor_Writes_Nothing_When_The_Dialog_Is_Cancelled()
+    {
+        var store = new OloopStore(_root);
+        var project = await ProjectAsync(store);
+        var shell = ShellWithoutActor();
+        await shell.RefreshAsync();
+
+        _dialogs.CancelSettings = true;
+
+        var created = await shell.CreateTaskAsync(
+            project, TaskType.todo, "A task", "", []);
+
+        Assert.False(created);
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "my-project", "tasks")));
+    }
+
+    [Fact]
+    public async Task A_Write_Without_Actor_Writes_Nothing_When_No_Name_Is_Entered()
+    {
+        var store = new OloopStore(_root);
+        var project = await ProjectAsync(store);
+        var shell = ShellWithoutActor();
+        await shell.RefreshAsync();
+
+        // The dialog opens but the name stays empty.
+        _dialogs.OnSettings = vm => vm.Actor = "";
+
+        var created = await shell.CreateTaskAsync(
+            project, TaskType.todo, "A task", "", []);
+
+        Assert.False(created);
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "my-project", "tasks")));
+    }
+
+    [Fact]
+    public async Task A_Write_With_Actor_Does_Not_Open_The_Settings()
+    {
+        var store = new OloopStore(_root);
+        var project = await ProjectAsync(store);
+        var shell = Shell();
+        await shell.RefreshAsync();
+
+        var created = await shell.CreateTaskAsync(
+            project, TaskType.todo, "A task", "", []);
+
+        Assert.True(created);
+        Assert.Equal(0, _dialogs.SettingsShown);
+    }
+
+    [Fact]
+    public async Task Closing_A_Task_Without_Actor_Asks_For_The_Name()
+    {
+        var store = new OloopStore(_root);
+        var project = await ProjectAsync(store);
+        var task = await store.CreateTaskAsync(
+            project, TaskType.todo, "A task", "", [], "claude");
+
+        var shell = ShellWithoutActor();
+        await shell.RefreshAsync();
+
+        _dialogs.OnSettings = vm => vm.Actor = "timo";
+
+        var closed = await shell.SetTaskClosedAsync(task, project, closed: true);
+
+        Assert.True(closed);
+        Assert.Equal(1, _dialogs.SettingsShown);
+
+        var path = Path.Combine(_root, "my-project", "tasks", task.Id + ".md");
+        var onDisk = TaskIo.Read(task.Id, await File.ReadAllTextAsync(path), project.Id);
+        Assert.Equal(TaskStatus.closed, onDisk.Status);
+        Assert.Equal("timo", onDisk.UpdatedBy);
+    }
+
+    [Fact]
+    public async Task The_New_Task_Dialog_Asks_For_The_Name_Before_It_Opens()
+    {
+        // The user should not type a whole task first and only then be asked
+        // who they are.
+        var store = new OloopStore(_root);
+        var project = await ProjectAsync(store);
+        var shell = ShellWithoutActor();
+        await shell.RefreshAsync();
+
+        _dialogs.OnSettings = vm => vm.Actor = "timo";
+        _dialogs.OnNewTask = vm => vm.Title = "A task";
+
+        var created = await shell.OpenNewTaskAsync(project);
+
+        Assert.True(created);
+        Assert.Equal(1, _dialogs.SettingsShown);
+        Assert.Equal(1, _dialogs.NewTaskShown);
+    }
+
+    [Fact]
+    public async Task The_New_Task_Dialog_Stays_Closed_Without_A_Name()
+    {
+        var store = new OloopStore(_root);
+        var project = await ProjectAsync(store);
+        var shell = ShellWithoutActor();
+        await shell.RefreshAsync();
+
+        _dialogs.CancelSettings = true;
+
+        var created = await shell.OpenNewTaskAsync(project);
+
+        Assert.False(created);
+        Assert.Equal(0, _dialogs.NewTaskShown);
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "my-project", "tasks")));
+    }
+
     // ---------------- The fake ----------------
 
     /// <summary>
@@ -301,14 +467,26 @@ public class ShellWiringTests : IDisposable
         public Action<EditTaskViewModel>? OnEditTask { get; set; }
 
         public bool CancelNewTask { get; set; }
+        public bool CancelSettings { get; set; }
         public ConflictChoice ConflictChoice { get; set; } = ConflictChoice.Cancel;
         public ConflictChoice? LastConflictChoice { get; private set; }
         public ConflictViewModel? LastConflictViewModel { get; private set; }
 
         public NewTaskViewModel? NewTaskViewModel { get; private set; }
 
+        /// <summary>How often the settings were shown.</summary>
+        public int SettingsShown { get; private set; }
+
+        /// <summary>How often the new task dialog was shown.</summary>
+        public int NewTaskShown { get; private set; }
+
         public Task<bool> ShowSettingsAsync(SettingsViewModel viewModel)
         {
+            SettingsShown++;
+
+            if (CancelSettings)
+                return Task.FromResult(false);
+
             if (OnSettings is null)
                 return Task.FromResult(false);
 
@@ -322,6 +500,7 @@ public class ShellWiringTests : IDisposable
 
         public Task<bool> ShowNewTaskAsync(NewTaskViewModel viewModel)
         {
+            NewTaskShown++;
             NewTaskViewModel = viewModel;
 
             if (CancelNewTask)

@@ -17,7 +17,8 @@ namespace OloopApp.ViewModels;
 public partial class MainViewModel : ViewModelBase
 {
     private const string NoDataRoot = "No data folder set. Open the settings to choose one.";
-    private const string NoActor = "No actor name set. Open the settings to choose one.";
+    private const string NoActorGiven = "Nothing was written: the actor name is still empty.";
+    private const string RootChanged = "The data folder changed, so nothing was written. Please try again.";
 
     private readonly OloopSettings _settings;
     private OloopStore? _store;
@@ -222,11 +223,64 @@ public partial class MainViewModel : ViewModelBase
         if (!await Dialogs.ShowSettingsAsync(viewModel))
             return;
 
+        ApplySettings();
+
+        await RefreshAsync();
+    }
+
+    /// <summary>
+    /// Takes the values of the settings over into the shell.
+    /// </summary>
+    private void ApplySettings()
+    {
         // The dialog wrote the values into the settings instance.
         DataRoot = _settings.ResolveDataRoot() ?? "";
         Actor = _settings.ResolveActor();
+    }
 
-        await RefreshAsync();
+    /// <summary>
+    /// The actor for a write. When there is none, the settings open and the
+    /// user is asked for the name; the write only goes ahead when a name was
+    /// entered (app-brief: "Until it is set, the app asks for it before the
+    /// first write and does not write anything without it").
+    ///
+    /// Returns null when there is still no actor — then nothing is written.
+    /// </summary>
+    private async Task<string?> EnsureActorAsync()
+    {
+        var actor = Actor?.Trim() ?? "";
+        if (actor.Length > 0)
+            return actor;
+
+        var rootBefore = DataRoot?.Trim() ?? "";
+
+        var viewModel = new SettingsViewModel(_settings);
+        if (!await Dialogs.ShowSettingsAsync(viewModel))
+        {
+            StatusMessage = NoActorGiven;
+            return null;
+        }
+
+        ApplySettings();
+
+        // The settings can also change the data folder. A write against the
+        // old folder would land in the wrong place, so it is refused and
+        // the new folder is loaded.
+        if ((DataRoot?.Trim() ?? "") != rootBefore)
+        {
+            await RefreshAsync();
+            StatusMessage = RootChanged;
+            return null;
+        }
+
+        actor = Actor?.Trim() ?? "";
+        if (actor.Length == 0)
+        {
+            StatusMessage = NoActorGiven;
+            return null;
+        }
+
+        return actor;
     }
 
     /// <summary>
@@ -266,6 +320,11 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     public async Task<bool> OpenNewTaskAsync(OloopProject project)
     {
+        // The name is asked for before the dialog opens: the user should not
+        // type a whole task first and only then be asked who they are.
+        if (await EnsureActorAsync() is null)
+            return false;
+
         // The dialog starts with the type the user picked last.
         var viewModel = new NewTaskViewModel(project, PreferredType);
         if (!await Dialogs.ShowNewTaskAsync(viewModel))
@@ -368,12 +427,9 @@ public partial class MainViewModel : ViewModelBase
             return false;
         }
 
-        var actor = Actor?.Trim() ?? "";
-        if (actor.Length == 0)
-        {
-            StatusMessage = NoActor;
+        var actor = await EnsureActorAsync();
+        if (actor is null)
             return false;
-        }
 
         try
         {
@@ -390,7 +446,7 @@ public partial class MainViewModel : ViewModelBase
     }
 
     /// <summary>Changes title, description and labels of a task.</summary>
-    public Task<bool> EditTaskAsync(
+    public async Task<bool> EditTaskAsync(
         OloopTask task,
         OloopProject project,
         string title,
@@ -401,59 +457,50 @@ public partial class MainViewModel : ViewModelBase
         if (store is null)
         {
             StatusMessage = NoDataRoot;
-            return Task.FromResult(false);
+            return false;
         }
 
-        var actor = Actor?.Trim() ?? "";
-        if (actor.Length == 0)
-        {
-            StatusMessage = NoActor;
-            return Task.FromResult(false);
-        }
+        var actor = await EnsureActorAsync();
+        if (actor is null)
+            return false;
 
-        return MutateAsync(store, task, baseTask =>
+        return await MutateAsync(store, task, baseTask =>
             store.EditTaskAsync(baseTask, project, title, description, labels, actor));
     }
 
     /// <summary>Closes or reopens a task.</summary>
-    public Task<bool> SetTaskClosedAsync(OloopTask task, OloopProject project, bool closed)
+    public async Task<bool> SetTaskClosedAsync(OloopTask task, OloopProject project, bool closed)
     {
         var store = Store;
         if (store is null)
         {
             StatusMessage = NoDataRoot;
-            return Task.FromResult(false);
+            return false;
         }
 
-        var actor = Actor?.Trim() ?? "";
-        if (actor.Length == 0)
-        {
-            StatusMessage = NoActor;
-            return Task.FromResult(false);
-        }
+        var actor = await EnsureActorAsync();
+        if (actor is null)
+            return false;
 
-        return MutateAsync(store, task, baseTask =>
+        return await MutateAsync(store, task, baseTask =>
             store.SetStatusAsync(baseTask, project, closed, actor));
     }
 
     /// <summary>Appends a comment to a task.</summary>
-    public Task<bool> AddCommentAsync(OloopTask task, OloopProject project, string body)
+    public async Task<bool> AddCommentAsync(OloopTask task, OloopProject project, string body)
     {
         var store = Store;
         if (store is null)
         {
             StatusMessage = NoDataRoot;
-            return Task.FromResult(false);
+            return false;
         }
 
-        var actor = Actor?.Trim() ?? "";
-        if (actor.Length == 0)
-        {
-            StatusMessage = NoActor;
-            return Task.FromResult(false);
-        }
+        var actor = await EnsureActorAsync();
+        if (actor is null)
+            return false;
 
-        return MutateAsync(store, task, baseTask =>
+        return await MutateAsync(store, task, baseTask =>
             store.AddCommentAsync(baseTask, project, body, actor));
     }
 

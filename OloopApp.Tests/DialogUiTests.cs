@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using OloopApp.Core.Io;
 using OloopApp.Core.Models;
 using OloopApp.ViewModels;
 using OloopApp.Views;
@@ -337,6 +338,81 @@ public class DialogUiTests
 
     /// <summary>The dialog of the last <see cref="ShowDialogAsync{T}"/> call.</summary>
     private static Window? dialogUnderTest;
+
+    // ---------------- The settings dialog ----------------
+
+    [Fact]
+    public async Task SettingsDialog_Focuses_The_Actor_Field_When_The_Name_Is_Missing()
+    {
+        await OnUiThread(() =>
+        {
+            // No name in the settings, none in the environment and no user
+            // name of the system: then the app has to ask for the name.
+            var settings = new OloopSettings
+            {
+                SystemUserName = "",
+                EnvironmentActorReader = () => null,
+            };
+
+            var dialog = new SettingsDialog(new SettingsViewModel(settings));
+
+            dialog.Show();
+            dialog.UpdateLayout();
+
+            var actor = Descendants<TextBox>(dialog)
+                .SingleOrDefault(t => t.Name == "ActorBox");
+
+            Assert.NotNull(actor);
+            Assert.True(actor!.IsFocused);
+
+            dialog.Close();
+        });
+    }
+
+    [Fact]
+    public async Task SettingsDialog_Does_Not_Focus_The_Actor_Field_When_A_Name_Is_There()
+    {
+        await OnUiThread(() =>
+        {
+            var settings = new OloopSettings { Actor = "timo" };
+
+            var dialog = new SettingsDialog(new SettingsViewModel(settings));
+
+            dialog.Show();
+            dialog.UpdateLayout();
+
+            var actor = Descendants<TextBox>(dialog)
+                .SingleOrDefault(t => t.Name == "ActorBox");
+
+            Assert.NotNull(actor);
+            Assert.False(actor!.IsFocused);
+
+            dialog.Close();
+        });
+    }
+
+    [Fact]
+    public async Task SettingsDialog_Says_That_The_Name_Is_Missing()
+    {
+        await OnUiThread(() =>
+        {
+            var settings = new OloopSettings
+            {
+                SystemUserName = "",
+                EnvironmentActorReader = () => null,
+            };
+
+            var dialog = new SettingsDialog(new SettingsViewModel(settings));
+
+            dialog.Show();
+            dialog.UpdateLayout();
+
+            var texts = Descendants<TextBlock>(dialog).Select(t => t.Text).ToList();
+            Assert.Contains(texts, t => t is not null && t.Contains("asks for it"));
+
+            dialog.Close();
+        });
+    }
 
     /// <summary>
     /// Shows a dialog the way the shell does — <c>await dialog.ShowDialog&lt;T&gt;(owner)</c> —

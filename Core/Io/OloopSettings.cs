@@ -27,6 +27,30 @@ public sealed class OloopSettings
     /// <summary>The actor written into createdBy/updatedBy. Falls back to OLOOP_ACTOR, then the OS user.</summary>
     public string Actor { get; set; } = "";
 
+    /// <summary>
+    /// The name of the system user — the last fallback of the actor.
+    ///
+    /// It is a property and not a direct call of <see cref="Environment.UserName"/>,
+    /// so the fallback can be emptied in a test: that is the only way the
+    /// chain of the actor can run out and the app has to ask for a name.
+    ///
+    /// It is not part of the settings file.
+    /// </summary>
+    [JsonIgnore]
+    public string SystemUserName { get; set; } = Environment.UserName;
+
+    /// <summary>
+    /// Reads OLOOP_ACTOR — the second fallback of the actor.
+    ///
+    /// It goes through a function so a test can hand in its own reader
+    /// instead of changing the environment of the whole process.
+    ///
+    /// It is not part of the settings file.
+    /// </summary>
+    [JsonIgnore]
+    public Func<string?> EnvironmentActorReader { get; set; } =
+        () => Environment.GetEnvironmentVariable("OLOOP_ACTOR");
+
     /// <summary>Whether closed tasks are shown in the list.</summary>
     public bool ShowClosed { get; set; } = true;
 
@@ -121,18 +145,24 @@ public sealed class OloopSettings
         return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
     }
 
-    /// <summary>The actor: the setting wins, otherwise OLOOP_ACTOR, then the OS user name.</summary>
+    /// <summary>
+    /// The actor: the setting wins, otherwise OLOOP_ACTOR, then the OS user
+    /// name.
+    ///
+    /// The chain can end empty — on a system without a user name. Then the
+    /// app asks for the name before the first write, because a made up name
+    /// would end up in every task.
+    /// </summary>
     public string ResolveActor()
     {
         if (!string.IsNullOrWhiteSpace(Actor))
             return Actor.Trim();
 
-        var fromEnv = Environment.GetEnvironmentVariable("OLOOP_ACTOR");
+        var fromEnv = EnvironmentActorReader();
         if (!string.IsNullOrWhiteSpace(fromEnv))
             return fromEnv.Trim();
 
-        var userName = Environment.UserName;
-        return string.IsNullOrWhiteSpace(userName) ? "oloop" : userName;
+        return string.IsNullOrWhiteSpace(SystemUserName) ? "" : SystemUserName.Trim();
     }
 
     /// <summary>Reads the settings file. A missing or broken file yields defaults.</summary>
