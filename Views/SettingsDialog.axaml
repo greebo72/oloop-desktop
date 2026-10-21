@@ -34,13 +34,14 @@
                     <TextBox Grid.Column="0"
                              Text="{Binding DataRoot, Mode=OneWay}"
                              IsReadOnly="True"
+                             ToolTip.Tip="{Binding DataRoot}"
                              PlaceholderText="No data folder chosen" />
                     <Button Grid.Column="1" Classes="Outlined" Click="OnBrowseDataRootClick"
                             VerticalAlignment="Stretch">
                         Browse…
                     </Button>
                 </Grid>
-                <TextBlock Classes="Muted"
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
                            Text="The folder with one subfolder per project. Everything oloop knows lives there." />
             </StackPanel>
 
@@ -54,12 +55,9 @@
                          PlaceholderText="Your name" />
                 <TextBlock Classes="Muted"
                            Text="Required. It is written into createdBy and updatedBy of every task." />
-                <TextBlock Classes="Muted"
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
                            IsVisible="{Binding HasNoActor}"
-                           Text="No name yet. oloop asks for it before the first write." />
-                <TextBlock Classes="Muted"
-                           IsVisible="{Binding HasNoActor}"
-                           Text="Until a name is entered, no task is written." />
+                           Text="No name yet. oloop asks for it before the first write — until a name is entered, no task is written." />
             </StackPanel>
 
             <!-- ============================================================
@@ -71,7 +69,8 @@
                 <CheckBox Content="Show closed tasks"
                           IsChecked="{Binding ShowClosed, Mode=TwoWay}" />
 
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8"
+                      RowDefinitions="Auto,Auto">
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Group by" Classes="BodyMedium"
                                VerticalAlignment="Center" />
                     <ComboBox Grid.Row="0" Grid.Column="1"
@@ -89,7 +88,7 @@
                                    Value="{Binding StaleDaysValue, Mode=TwoWay}" />
                 </Grid>
 
-                <TextBlock Classes="Muted"
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
                            Text="Stale since hides the tasks that were not touched for that many days. Leave it empty to switch the filter off." />
             </StackPanel>
 
@@ -98,7 +97,8 @@
                  ============================================================ -->
             <StackPanel Spacing="6">
                 <TextBlock Text="Shortcuts" Classes="LabelMedium" />
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowSpacing="4">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowSpacing="4"
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+F" Classes="BodyMedium" />
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="Focus the search" Classes="Muted" />
 
