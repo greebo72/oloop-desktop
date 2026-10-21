@@ -282,7 +282,7 @@
              ((44 - 14) / 2) instead, so the content area is exactly one
              line high and the text sits in the middle. -->
         <Setter Property="Padding" Value="16,15" />
-        <Setter Property="PlaceholderText" Value="Tasks, Projekte, Labels suchen…" />
+        <Setter Property="PlaceholderText" Value="Find projects …" />
     </Style>
 
     <Style Selector="ComboBox">

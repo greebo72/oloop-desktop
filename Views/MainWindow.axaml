@@ -28,7 +28,7 @@
             <TextBox Grid.Column="1" Classes="SearchBox"
                      Name="SearchBox"
                      Text="{Binding SearchText, Mode=TwoWay}"
-                     PlaceholderText="Tasks, Projekte, Labels suchen…"
+                     PlaceholderText="Find projects …"
                      MaxWidth="420" HorizontalAlignment="Center" />
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">

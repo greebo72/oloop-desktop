@@ -35,8 +35,7 @@ public partial class DashboardViewModel : ViewModelBase
 
     /// <summary>
     /// The search text of the top bar. The project cards are filtered by it,
-    /// so the placeholder of the search field ("Tasks, Projekte, Labels
-    /// suchen…") is true.
+    /// so the placeholder of the search field ("Find projects …") is true.
     /// </summary>
     [ObservableProperty]
     private string _searchText = "";
