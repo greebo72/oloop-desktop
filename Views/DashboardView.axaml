@@ -17,11 +17,35 @@
                     <TextBlock Text="{Binding Summary}" Classes="BodyMedium" />
                 </StackPanel>
 
-                <CheckBox Grid.Column="1" Name="ShowClosedBox"
-                          Content="Show closed"
-                          IsChecked="{Binding ShowClosed, Mode=TwoWay}"
-                          IsVisible="{Binding SearchTasks}"
-                          VerticalAlignment="Center" />
+                <!-- The filters of the task search. In the project search they
+                     have no effect, so they are hidden there. -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                            IsVisible="{Binding SearchTasks}" VerticalAlignment="Center">
+                    <ComboBox Name="DueFilterBox"
+                              ItemsSource="{Binding DueFilterOptions}"
+                              SelectedItem="{Binding SelectedDueFilter, Mode=TwoWay}"
+                              ToolTip.Tip="Filter by due date">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DueFilterOption">
+                                <TextBlock Text="{Binding Label}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <ComboBox Name="TaskSortBox"
+                              ItemsSource="{Binding SortOptions}"
+                              SelectedItem="{Binding SelectedSort, Mode=TwoWay}"
+                              ToolTip.Tip="Sort the results">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:TaskSortOption">
+                                <TextBlock Text="{Binding Label}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <CheckBox Name="ShowClosedBox"
+                              Content="Show closed"
+                              IsChecked="{Binding ShowClosed, Mode=TwoWay}"
+                              VerticalAlignment="Center" />
+                </StackPanel>
 
                 <!-- Without a data folder there is nothing to create a
                      project in yet — the settings come first. -->
@@ -78,7 +102,7 @@
                 <StackPanel Spacing="6">
                     <TextBlock Text="Search the tasks of all projects" Classes="TitleMedium" />
                     <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
-                               Text="Type in the search field. It looks into the title, the description and the labels." />
+                               Text="Type in the search field. It looks into the title, the description and the labels. Pick a due date filter to list tasks without typing." />
                 </StackPanel>
             </Border>
 
@@ -86,7 +110,7 @@
                 <StackPanel Spacing="6">
                     <TextBlock Text="Nothing matches" Classes="TitleMedium" />
                     <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
-                               Text="No task matches the search. Switch on 'Show closed' to include closed tasks." />
+                               Text="No task matches the search and the filters. Switch on 'Show closed' to include closed tasks." />
                 </StackPanel>
             </Border>
 

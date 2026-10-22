@@ -36,6 +36,9 @@ public sealed class TaskFilter
     /// <summary>Only tasks carrying this label. Null shows all labels.</summary>
     public string? Label { get; set; }
 
+    /// <summary>The due date filter. <see cref="DueFilter.All"/> lets every task pass.</summary>
+    public DueFilter Due { get; set; } = DueFilter.All;
+
     /// <summary>Whether closed tasks are part of the result. Off by default.</summary>
     public bool ShowClosed { get; set; }
 
@@ -43,6 +46,7 @@ public sealed class TaskFilter
     public IEnumerable<OloopTask> Apply(IEnumerable<OloopTask> tasks, DateTimeOffset? now = null)
     {
         var nowUtc = now ?? DateTimeOffset.UtcNow;
+        var today = (now?.ToLocalTime().DateTime ?? DateTime.Now).Date;
         var needle = SearchText.Trim();
 
         foreach (var task in tasks)
@@ -57,6 +61,9 @@ public sealed class TaskFilter
                 continue;
 
             if (Label is not null && !task.Labels.Contains(Label, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            if (Due != DueFilter.All && !DueFilters.Matches(task, Due, today))
                 continue;
 
             if (StaleDays is { } days)
