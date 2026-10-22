@@ -146,7 +146,7 @@
                     <TextBlock Text="Due date" Classes="SectionHeader" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <CalendarDatePicker SelectedDate="{Binding Editor.DueDate, Mode=TwoWay}"
-                                            Watermark="No due date"
+                                            PlaceholderText="No due date"
                                             MinWidth="200" />
                         <Button Classes="Text" Content="Clear"
                                 Command="{Binding Editor.ClearDueDateCommand}"
