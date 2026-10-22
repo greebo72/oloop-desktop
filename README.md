@@ -98,6 +98,32 @@ To run the app:
 dotnet run --project OloopApp
 ```
 
+## Performance
+
+Measured against a generated data folder that is large on purpose: **50 projects, 10,001 tasks, 13.3 MB**, the biggest project has 842 tasks (381 open). Release build, headless Avalonia with the Skia renderer, Apple M1, 16 GB, macOS 27. Times are medians of three runs unless the row says otherwise. A first run after a cold start is slower, as the first row shows.
+
+| What | Time |
+|---|---|
+| Read the whole data folder (parse 50 project files and 10,001 task files), first run | 2.4 s |
+| Read the whole data folder, warm | 0.67 s |
+| Reload the app (read, build the dashboard and the lists) | 0.72 s |
+| Dashboard, layout and render | 85 ms |
+| Open the biggest project (842 rows) | 1.3 s |
+| Build or regroup the task list (in memory, any grouping) | 1 to 2 ms |
+| Filter by typing, in memory | 17 ms |
+| Filter by typing, including layout of the 842 rows | 0.9 s (0.45 to 1.5 s) |
+| Close or reopen a task (write, then full reload) | 0.73 s to 0.78 s |
+| For comparison: `oloop task list` of the CLI over the same folder | 8.0 s |
+
+What the numbers say: reading and sorting are fast, what takes time is building the rows of a long list (the list is not virtualized yet), and a write reloads the whole folder. A folder with a few hundred tasks is instant. The measurement ran on macOS only, Windows and Linux have not been measured.
+
+The test (`OloopApp.Tests/PerformanceTests.cs`) and the data generator (`scripts/gen-testdata.py`) are on the branch `TEST_PERF`. They are not part of the normal test run: the test does nothing unless `OLOOP_PERF_ROOT` points to a data folder, and it writes to that folder.
+
+```
+python3 scripts/gen-testdata.py /tmp/oloop-perf
+OLOOP_PERF_ROOT=/tmp/oloop-perf dotnet test OloopApp.Tests -c Release --filter PerformanceTests
+```
+
 ## Packages
 
 All packages are self-contained: the user unpacks the archive and runs the app, without installing a runtime.
