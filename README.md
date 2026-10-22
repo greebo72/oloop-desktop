@@ -77,7 +77,7 @@ The app asks for two things before it can work, both in the settings dialog (Ctr
 - **The data folder.** The folder with one subfolder per project. Everything oloop knows lives there, and it is usually a synced folder (Syncthing, cloud drive). It can also come from the `OLOOP_ROOT` environment variable.
 - **Your name.** It is written into `createdBy` and `updatedBy` of every task you create or change. It can also come from `OLOOP_ACTOR`.
 
-The settings are remembered in `settings.json` — in `%APPDATA%\oloop\` on Windows, in `~/.config/oloop/` everywhere else.
+The settings are remembered in `settings.json` — in `%APPDATA%\oloop\` on Windows, in `~/.config/oloop/` everywhere else. The text size (Settings, Appearance, 50–300 %) is stored there too, so every computer and screen keeps its own value and the data folder stays untouched.
 
 ## Build and test
 

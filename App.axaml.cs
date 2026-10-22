@@ -18,6 +18,9 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var main = new MainViewModel();
+
+            // Before the first window, so it opens at the saved size.
+            UiScale.Factor = main.UiScaleFactor;
             var window = new MainWindow
             {
                 DataContext = main,

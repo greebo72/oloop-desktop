@@ -18,6 +18,7 @@ public partial class NewProjectDialog : Window
     public NewProjectDialog(NewProjectViewModel viewModel)
     {
         InitializeComponent();
+        UiScale.Attach(this);
         DataContext = viewModel;
     }
 

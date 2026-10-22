@@ -40,6 +40,10 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private double? _staleDays;
 
+    /// <summary>The size of the whole UI in percent.</summary>
+    [ObservableProperty]
+    private int _uiScalePercent = 100;
+
     /// <summary>
     /// The settings this view model edits. The values are copied out of it on
     /// construction and written back into it on <see cref="Save"/>.
@@ -53,6 +57,8 @@ public partial class SettingsViewModel : ViewModelBase
         ShowClosed = settings.ShowClosed;
         Grouping = ParseGrouping(settings.Grouping);
         StaleDays = settings.StaleDays;
+        UiScalePercent = Math.Clamp(settings.UiScalePercent,
+            OloopSettings.MinUiScalePercent, OloopSettings.MaxUiScalePercent);
     }
 
     /// <summary>
@@ -104,6 +110,30 @@ public partial class SettingsViewModel : ViewModelBase
         set => StaleDays = value.HasValue ? (double)value.Value : null;
     }
 
+    /// <summary>The lower limit of the text size input.</summary>
+    public decimal MinUiScalePercent => OloopSettings.MinUiScalePercent;
+
+    /// <summary>The upper limit of the text size input.</summary>
+    public decimal MaxUiScalePercent => OloopSettings.MaxUiScalePercent;
+
+    /// <summary>
+    /// The text size as a number for the numeric input. An empty input is
+    /// ignored and keeps the current size, a value outside the range is
+    /// pulled into it.
+    /// </summary>
+    public decimal? UiScaleValue
+    {
+        get => UiScalePercent;
+        set
+        {
+            if (!value.HasValue)
+                return;
+
+            UiScalePercent = (int)Math.Clamp(Math.Round(value.Value),
+                OloopSettings.MinUiScalePercent, OloopSettings.MaxUiScalePercent);
+        }
+    }
+
     /// <summary>
     /// Writes the settings file. A path that cannot be written is reported
     /// through <see cref="Error"/> instead of an exception.
@@ -127,6 +157,7 @@ public partial class SettingsViewModel : ViewModelBase
         _settings.ShowClosed = ShowClosed;
         _settings.Grouping = Grouping.ToString();
         _settings.StaleDays = StaleDays;
+        _settings.UiScalePercent = UiScalePercent;
 
         try
         {
@@ -195,6 +226,11 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnGroupingChanged(GroupingMode value)
     {
         OnPropertyChanged(nameof(GroupingIndex));
+    }
+
+    partial void OnUiScalePercentChanged(int value)
+    {
+        OnPropertyChanged(nameof(UiScaleValue));
     }
 
     partial void OnStaleDaysChanged(double? value)

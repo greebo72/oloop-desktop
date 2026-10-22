@@ -17,6 +17,7 @@ public partial class DiscardChangesDialog : Window
     public DiscardChangesDialog(IReadOnlyList<string> taskTitles)
     {
         InitializeComponent();
+        UiScale.Attach(this);
 
         MessageText.Text = taskTitles.Count == 1
             ? "This task has input that is not saved. If you continue, it is lost."

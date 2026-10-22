@@ -93,6 +93,26 @@
             </StackPanel>
 
             <!-- ============================================================
+                 Appearance
+                 ============================================================ -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="Appearance" Classes="LabelMedium" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <TextBlock Grid.Column="0" Text="Text size (%)" Classes="BodyMedium"
+                               VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="1" Name="UiScaleBox"
+                                   HorizontalAlignment="Stretch"
+                                   Minimum="{Binding MinUiScalePercent}"
+                                   Maximum="{Binding MaxUiScalePercent}"
+                                   Increment="10"
+                                   FormatString="0"
+                                   Value="{Binding UiScaleValue, Mode=TwoWay}" />
+                </Grid>
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
+                           Text="Scales the whole window. 100 is the normal size. The value is kept on this computer only, so every screen can have its own." />
+            </StackPanel>
+
+            <!-- ============================================================
                  Shortcuts
                  ============================================================ -->
             <StackPanel Spacing="6">

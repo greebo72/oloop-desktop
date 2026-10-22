@@ -17,6 +17,7 @@ public partial class SettingsDialog : Window
     public SettingsDialog(SettingsViewModel viewModel)
     {
         InitializeComponent();
+        UiScale.Attach(this);
         DataContext = viewModel;
     }
 
