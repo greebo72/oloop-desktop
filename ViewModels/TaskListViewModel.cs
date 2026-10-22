@@ -153,6 +153,7 @@ public partial class TaskListViewModel : ViewModelBase
         new GroupingOption(GroupingMode.Modified, "Modified"),
         new GroupingOption(GroupingMode.Type, "Type"),
         new GroupingOption(GroupingMode.Status, "Status"),
+        new GroupingOption(GroupingMode.DueDate, "Due date"),
     ];
 
     /// <summary>The "silent since" values offered in the header.</summary>

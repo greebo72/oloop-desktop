@@ -11,6 +11,7 @@ public enum GroupingMode
     Modified,
     Type,
     Status,
+    DueDate,
 }
 
 /// <summary>A group of tasks. <c>Title</c> is null for <see cref="GroupingMode.None"/>.</summary>
@@ -71,9 +72,55 @@ public static class TaskGrouping
                     .Where(g => g.Tasks.Count > 0)
                     .ToList();
 
+            case GroupingMode.DueDate:
+                return ByDueDate(tasks, TimeZoneInfo.ConvertTime(nowUtc, local).Date);
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
         }
+    }
+
+    /// <summary>The labels of the due date groups, in the order they are shown.</summary>
+    public static readonly string[] DueDateBuckets = ["Overdue", "Today", "This week", "Later", "Earlier", "No due date"];
+
+    /// <summary>
+    /// Groups by due date, the earliest first inside a group, tasks without a
+    /// date last. "This week" runs from tomorrow to the end of the calendar
+    /// week of the system's culture. A closed task with a past date is never
+    /// overdue, it goes to "Earlier".
+    /// </summary>
+    private static IReadOnlyList<TaskGroup> ByDueDate(IEnumerable<OloopTask> tasks, DateTime today)
+    {
+        var first = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+        var daysIntoWeek = ((int)today.DayOfWeek - (int)first + 7) % 7;
+        var endOfWeek = today.AddDays(6 - daysIntoWeek);
+
+        var buckets = DueDateBuckets.ToDictionary(name => name, _ => new List<OloopTask>());
+
+        foreach (var task in tasks
+                     .OrderBy(t => DueDate.Parse(t.DueDate) ?? DateTime.MaxValue)
+                     .ThenByDescending(t => t.UpdatedAt, StringComparer.Ordinal))
+        {
+            var date = DueDate.Parse(task.DueDate);
+            string name;
+            if (date is null)
+                name = "No due date";
+            else if (date.Value.Date < today)
+                name = task.IsClosed ? "Earlier" : "Overdue";
+            else if (date.Value.Date == today)
+                name = "Today";
+            else if (date.Value.Date <= endOfWeek)
+                name = "This week";
+            else
+                name = "Later";
+
+            buckets[name].Add(task);
+        }
+
+        return DueDateBuckets
+            .Where(name => buckets[name].Count > 0)
+            .Select(name => new TaskGroup(name, buckets[name]))
+            .ToList();
     }
 
     private static IReadOnlyList<TaskGroup> ByDate(

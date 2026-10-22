@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using OloopApp.Core.Grouping;
 using OloopApp.Core.Models;
 
 namespace OloopApp.ViewModels;
@@ -16,6 +18,7 @@ public partial class EditTaskViewModel : ViewModelBase
     private readonly string _originalTitle;
     private readonly string _originalDescription;
     private readonly IReadOnlyList<string> _originalLabels;
+    private readonly DateTime? _originalDueDate;
 
     /// <summary>The task behind the dialog.</summary>
     public OloopTask Task { get; }
@@ -31,6 +34,8 @@ public partial class EditTaskViewModel : ViewModelBase
         _originalTitle = task.Title;
         _originalDescription = task.Description ?? "";
         _originalLabels = task.Labels;
+        _originalDueDate = Core.Grouping.DueDate.Parse(task.DueDate);
+        _dueDate = _originalDueDate;
 
         _title = task.Title;
         _description = task.Description ?? "";
@@ -50,6 +55,20 @@ public partial class EditTaskViewModel : ViewModelBase
     private string _labelsText;
 
     /// <summary>
+    /// The due date picked in the calendar, null for none. Only the date part
+    /// counts, a time or a time zone is never stored.
+    /// </summary>
+    [ObservableProperty]
+    private DateTime? _dueDate;
+
+    /// <summary>The due date as it is written to the file, null for none.</summary>
+    public string? DueDateStorage => Core.Grouping.DueDate.ToStorage(DueDate);
+
+    /// <summary>Removes the due date.</summary>
+    [RelayCommand]
+    private void ClearDueDate() => DueDate = null;
+
+    /// <summary>
     /// Whether the input is complete enough to be written: the title must not
     /// be empty and must fit into the format.
     /// </summary>
@@ -61,7 +80,8 @@ public partial class EditTaskViewModel : ViewModelBase
     public bool IsDirty =>
         !string.Equals(TrimmedTitle, _originalTitle.Trim(), StringComparison.Ordinal) ||
         !string.Equals(TrimmedDescription, _originalDescription.Trim('\n'), StringComparison.Ordinal) ||
-        !Labels.SequenceEqual(_originalLabels, StringComparer.Ordinal);
+        !Labels.SequenceEqual(_originalLabels, StringComparer.Ordinal) ||
+        DueDate?.Date != _originalDueDate?.Date;
 
     /// <summary>The type of the task — immutable, shown but not editable.</summary>
     public TaskType Type => Task.Type;
@@ -121,6 +141,12 @@ public partial class EditTaskViewModel : ViewModelBase
     partial void OnDescriptionChanged(string value) => NotifyState();
 
     partial void OnLabelsTextChanged(string value) => NotifyState();
+
+    partial void OnDueDateChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(DueDateStorage));
+        NotifyState();
+    }
 
     private void NotifyState()
     {

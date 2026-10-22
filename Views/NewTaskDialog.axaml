@@ -32,7 +32,7 @@
     <!-- The dialog background is opaque on purpose: a transparent popup would
          let the window behind it bleed through. -->
     <Border Background="{StaticResource SurfaceBrush}" Padding="20,16,20,16">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
             <!-- ============================================================
                  Header
@@ -102,16 +102,32 @@
             <!-- ============================================================
                  Labels
                  ============================================================ -->
-            <StackPanel Grid.Row="4" Spacing="6" Margin="0,0,0,18">
+            <StackPanel Grid.Row="4" Spacing="6" Margin="0,0,0,14">
                 <TextBlock Text="Labels" Classes="SectionHeader" />
                 <TextBox Text="{Binding LabelsText, Mode=TwoWay}"
                          PlaceholderText="comma separated, e.g. ui, backend" />
             </StackPanel>
 
             <!-- ============================================================
+                 Due date
+                 ============================================================ -->
+            <StackPanel Grid.Row="5" Spacing="6" Margin="0,0,0,18">
+                <TextBlock Text="Due date" Classes="SectionHeader" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <CalendarDatePicker SelectedDate="{Binding DueDate, Mode=TwoWay}"
+                                        Watermark="No due date"
+                                        MinWidth="200" />
+                    <Button Classes="Text" Content="Clear"
+                            Command="{Binding ClearDueDateCommand}"
+                            IsEnabled="{Binding DueDate, Converter={x:Static ObjectConverters.IsNotNull}}"
+                            ToolTip.Tip="Remove the due date" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- ============================================================
                  Actions — exactly one filled primary button on the screen
                  ============================================================ -->
-            <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="8"
+            <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Right">
                 <Button Classes="Text" Content="Cancel" Click="OnCancelClick" />
                 <Button Classes="Primary" Content="Create" Click="OnCreateClick"

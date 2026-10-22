@@ -53,6 +53,13 @@
                                                                 <TextBlock Text="{Binding TypeName}" Classes="BodyMedium" />
                                                                 <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
                                                                 <TextBlock Text="{Binding LabelsText}" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                                                <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasDueDate}" />
+                                                                <Border Classes="Chip Chip-Overdue" IsVisible="{Binding IsOverdue}">
+                                                                    <TextBlock Text="overdue" />
+                                                                </Border>
+                                                                <TextBlock Text="{Binding DueDateText}" Classes="BodyMedium"
+                                                                           ToolTip.Tip="Due date"
+                                                                           IsVisible="{Binding HasDueDate}" />
                                                             </StackPanel>
                                                         </StackPanel>
 

@@ -82,6 +82,14 @@
 
                 <TextBlock Text="{Binding Title}" Classes="HeadlineSmall" TextWrapping="Wrap" />
 
+                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasDueDate}">
+                    <TextBlock Text="Due" Classes="LabelMedium" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding DueDateText}" Classes="BodyMedium" VerticalAlignment="Center" />
+                    <Border Classes="Chip Chip-Overdue" IsVisible="{Binding IsOverdue}">
+                        <TextBlock Text="overdue" />
+                    </Border>
+                </StackPanel>
+
                 <ItemsControl ItemsSource="{Binding Labels}" IsVisible="{Binding HasLabels}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -132,6 +140,19 @@
                     <TextBlock Text="Labels" Classes="SectionHeader" />
                     <TextBox Text="{Binding Editor.LabelsText, Mode=TwoWay}"
                              PlaceholderText="comma separated, e.g. ui, backend" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Due date" Classes="SectionHeader" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <CalendarDatePicker SelectedDate="{Binding Editor.DueDate, Mode=TwoWay}"
+                                            Watermark="No due date"
+                                            MinWidth="200" />
+                        <Button Classes="Text" Content="Clear"
+                                Command="{Binding Editor.ClearDueDateCommand}"
+                                IsEnabled="{Binding Editor.DueDate, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                ToolTip.Tip="Remove the due date" />
+                    </StackPanel>
                 </StackPanel>
 
             </StackPanel>
