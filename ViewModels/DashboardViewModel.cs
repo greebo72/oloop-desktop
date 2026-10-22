@@ -2,15 +2,29 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Filters;
+using OloopApp.Core.Grouping;
 using OloopApp.Core.Models;
 
 namespace OloopApp.ViewModels;
+
+/// <summary>One choice of the due date filter box.</summary>
+public sealed record DueFilterOption(DueFilter Filter, string Label);
+
+/// <summary>One choice of the sort box of the task results.</summary>
+public sealed record TaskSortOption(bool ByDueDate, string Label);
 
 /// <summary>The project dashboard: one card per project.</summary>
 public partial class DashboardViewModel : ViewModelBase
 {
     [ObservableProperty]
     private bool _isEmpty;
+
+    /// <summary>Creates the dashboard. The task filters start with no filter.</summary>
+    public DashboardViewModel()
+    {
+        _selectedDueFilter = DueFilterOptions[0];
+        _selectedSort = SortOptions[0];
+    }
 
     /// <summary>
     /// Whether no data folder is set at all. The empty state then has to
@@ -62,6 +76,25 @@ public partial class DashboardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showClosed;
 
+    /// <summary>The due date filter choices. The first one is the default, no filter.</summary>
+    public IReadOnlyList<DueFilterOption> DueFilterOptions { get; } =
+        Enum.GetValues<DueFilter>().Select(f => new DueFilterOption(f, f.Label())).ToList();
+
+    /// <summary>The sort choices of the results: newest first, or by due date.</summary>
+    public IReadOnlyList<TaskSortOption> SortOptions { get; } =
+    [
+        new TaskSortOption(false, "Recently updated"),
+        new TaskSortOption(true, "Due date"),
+    ];
+
+    /// <summary>The due date filter. It combines with the search text and "Show closed".</summary>
+    [ObservableProperty]
+    private DueFilterOption _selectedDueFilter;
+
+    /// <summary>How the task results are sorted.</summary>
+    [ObservableProperty]
+    private TaskSortOption _selectedSort;
+
     /// <summary>The tasks that match the search, newest first. Only filled in the task mode.</summary>
     public ObservableCollection<TaskRowViewModel> TaskResults { get; } = [];
 
@@ -77,7 +110,14 @@ public partial class DashboardViewModel : ViewModelBase
     public string SearchPlaceholder => SearchTasks ? "Find tasks …" : "Find projects …";
 
     /// <summary>Whether the task search has no text yet. Then a hint is shown instead of a list.</summary>
-    public bool ShowTaskHint => SearchTasks && string.IsNullOrWhiteSpace(SearchText);
+    public bool ShowTaskHint => SearchTasks && !HasTaskQuery;
+
+    /// <summary>
+    /// Whether the task search has something to look for: a search text or a
+    /// due date filter. A filter alone is enough, for example "Overdue".
+    /// </summary>
+    private bool HasTaskQuery
+        => !string.IsNullOrWhiteSpace(SearchText) || SelectedDueFilter.Filter != DueFilter.All;
 
     /// <summary>Whether the task search has text but finds nothing.</summary>
     public bool HasNoTaskMatches => SearchTasks && !ShowTaskHint && TaskResults.Count == 0;
@@ -241,17 +281,27 @@ public partial class DashboardViewModel : ViewModelBase
         TaskResultsNote = "";
 
         var needle = SearchText?.Trim() ?? "";
-        if (SearchTasks && needle.Length > 0)
+        if (SearchTasks && HasTaskQuery)
         {
             var found = new TaskFilter
             {
                 SearchText = needle,
                 SearchDescription = true,
                 ShowClosed = ShowClosed,
+                Due = SelectedDueFilter.Filter,
             }
             .Apply(_allTasks)
             .OrderByDescending(t => t.UpdatedAt, StringComparer.Ordinal)
             .ToList();
+
+            // Earliest due date first, tasks without a date at the end. The
+            // sort is stable, so equal dates stay newest first.
+            if (SelectedSort.ByDueDate)
+            {
+                found = found
+                    .OrderBy(t => DueDate.Parse(t.DueDate) ?? DateTime.MaxValue)
+                    .ToList();
+            }
 
             foreach (var task in found.Take(MaxTaskResults))
                 TaskResults.Add(new TaskRowViewModel(task));
@@ -273,6 +323,12 @@ public partial class DashboardViewModel : ViewModelBase
     }
 
     partial void OnShowClosedChanged(bool value)
+        => ApplyTaskSearch();
+
+    partial void OnSelectedDueFilterChanged(DueFilterOption value)
+        => ApplyTaskSearch();
+
+    partial void OnSelectedSortChanged(TaskSortOption value)
         => ApplyTaskSearch();
 
     partial void OnSearchTasksChanged(bool value)
