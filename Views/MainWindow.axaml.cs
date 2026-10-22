@@ -1,4 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Avalonia.Input;
 using OloopApp.ViewModels;
 
@@ -14,6 +17,63 @@ public partial class MainWindow : Window
         // The title of the window carries the version, so it is visible
         // without opening anything.
         Title = AppVersion.WindowTitle;
+
+        // A reload (the watcher starts one when a file changes) rebuilds the
+        // lists. The scroll positions are taken before and put back after, so
+        // the lists do not jump to the top while the user reads them.
+        DataContextChanged += (_, _) => HookReload();
+    }
+
+    private MainViewModel? _hooked;
+    private readonly List<(ScrollViewer Viewer, Vector Offset)> _offsets = [];
+
+    private void HookReload()
+    {
+        if (_hooked is not null)
+        {
+            _hooked.DataReloading -= SaveScrollOffsets;
+            _hooked.DataReloaded -= RestoreScrollOffsets;
+        }
+
+        _hooked = DataContext as MainViewModel;
+
+        if (_hooked is not null)
+        {
+            _hooked.DataReloading += SaveScrollOffsets;
+            _hooked.DataReloaded += RestoreScrollOffsets;
+        }
+    }
+
+    /// <summary>Remembers where every scroll viewer of the window is scrolled to.</summary>
+    private void SaveScrollOffsets()
+    {
+        _offsets.Clear();
+        foreach (var viewer in this.GetVisualDescendants().OfType<ScrollViewer>())
+        {
+            if (viewer.Offset != default)
+                _offsets.Add((viewer, viewer.Offset));
+        }
+    }
+
+    /// <summary>
+    /// Puts the scroll positions back once the rebuilt lists are laid out. A
+    /// position behind the new end of a shorter list is limited by the viewer.
+    /// </summary>
+    private void RestoreScrollOffsets()
+    {
+        var saved = _offsets.ToList();
+        _offsets.Clear();
+        if (saved.Count == 0)
+            return;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            foreach (var (viewer, offset) in saved)
+            {
+                viewer.UpdateLayout();
+                viewer.Offset = offset;
+            }
+        }, DispatcherPriority.Background);
     }
 
     private bool _closeConfirmed;

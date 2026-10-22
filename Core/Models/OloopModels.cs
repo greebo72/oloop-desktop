@@ -111,6 +111,27 @@ public sealed class OloopTask
 
     public bool IsClosed => Status == TaskStatus.closed;
 
+    /// <summary>
+    /// Whether another read of the task shows the same thing: every field the
+    /// detail displays is equal. A reload that finds the same content keeps
+    /// the detail it has, so the focus, the cursor and the scroll position
+    /// of what the user is working on stay where they are.
+    /// </summary>
+    public bool SameContentAs(OloopTask? other)
+        => other is not null
+           && Id == other.Id
+           && Title == other.Title
+           && Status == other.Status
+           && Description == other.Description
+           && ImagePath == other.ImagePath
+           && DueDate == other.DueDate
+           && UpdatedAt == other.UpdatedAt
+           && UpdatedBy == other.UpdatedBy
+           && Labels.SequenceEqual(other.Labels)
+           && Comments.Count == other.Comments.Count
+           && Comments.Zip(other.Comments).All(p => p.First.Body == p.Second.Body && p.First.CreatedAt == p.Second.CreatedAt)
+           && ProjectName == other.ProjectName;
+
     public OloopTask With(
         string? title = null,
         string? description = null,
