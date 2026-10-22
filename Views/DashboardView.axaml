@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:OloopApp.ViewModels"
              xmlns:models="using:OloopApp.Core.Models"
+             xmlns:controls="using:OloopApp.Controls"
              x:Class="OloopApp.Views.DashboardView"
              x:DataType="vm:DashboardViewModel">
 
@@ -11,15 +12,23 @@
             <!-- Header -->
             <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,8">
                 <StackPanel Grid.Column="0" Spacing="2">
-                    <TextBlock Text="Projects" Classes="TitleLarge" />
+                    <TextBlock Text="Projects" Classes="TitleLarge" IsVisible="{Binding ShowProjects}" />
+                    <TextBlock Text="Tasks" Classes="TitleLarge" IsVisible="{Binding SearchTasks}" />
                     <TextBlock Text="{Binding Summary}" Classes="BodyMedium" />
                 </StackPanel>
+
+                <CheckBox Grid.Column="1" Name="ShowClosedBox"
+                          Content="Show closed"
+                          IsChecked="{Binding ShowClosed, Mode=TwoWay}"
+                          IsVisible="{Binding SearchTasks}"
+                          VerticalAlignment="Center" />
+
                 <!-- Without a data folder there is nothing to create a
                      project in yet — the settings come first. -->
                 <Button Grid.Column="1"
                         Classes="Outlined"
                         VerticalAlignment="Center"
-                        IsVisible="{Binding !HasNoDataRoot}"
+                        IsVisible="{Binding ShowNewProjectButton}"
                         Click="OnNewProjectClick"
                         ToolTip.Tip="Create a project in the data folder">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -64,8 +73,79 @@
                 </StackPanel>
             </Border>
 
+            <!-- Task search: a hint without text, the results with text. -->
+            <Border Name="TaskHintCard" Classes="Card" Padding="24" IsVisible="{Binding ShowTaskHint}">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Search the tasks of all projects" Classes="TitleMedium" />
+                    <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                               Text="Type in the search field. It looks into the title, the description and the labels." />
+                </StackPanel>
+            </Border>
+
+            <Border Name="NoTaskMatchesCard" Classes="Card" Padding="24" IsVisible="{Binding HasNoTaskMatches}">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Nothing matches" Classes="TitleMedium" />
+                    <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                               Text="No task matches the search. Switch on 'Show closed' to include closed tasks." />
+                </StackPanel>
+            </Border>
+
+            <ItemsControl Name="TaskResultList" ItemsSource="{Binding TaskResults}"
+                          IsVisible="{Binding ShowTaskResults}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TaskRowViewModel">
+                        <Border Classes="Card" Margin="0,0,0,4" Padding="0">
+                            <Button Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="12"
+                                    HorizontalContentAlignment="Stretch"
+                                    Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).OpenTaskCommand}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip.Tip="Open the task in its project">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <Border Classes="IconContainer"
+                                            Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}">
+                                        <PathIcon Data="{Binding IconKey, Converter={x:Static controls:ResourceGeometryConverter.Instance}}"
+                                                  Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" Classes="TitleMedium"
+                                                   MaxLines="2" TextWrapping="Wrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{Binding ProjectName}" Classes="LabelMedium" />
+                                            <TextBlock Text="·" Classes="BodyMedium" />
+                                            <TextBlock Text="{Binding TypeName}" Classes="BodyMedium" />
+                                            <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                            <TextBlock Text="{Binding LabelsText}" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
+                                            <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasDueDate}" />
+                                            <Border Classes="Chip Chip-Overdue" IsVisible="{Binding IsOverdue}">
+                                                <TextBlock Text="overdue" />
+                                            </Border>
+                                            <TextBlock Text="{Binding DueDateText}" Classes="BodyMedium"
+                                                       IsVisible="{Binding HasDueDate}" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2"
+                                                HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding Age}" Classes="Muted" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{Binding StatusLabel}" Classes="Muted"
+                                                   HorizontalAlignment="Right" IsVisible="{Binding IsClosed}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="{Binding TaskResultsNote}" Classes="Muted"
+                       IsVisible="{Binding TaskResultsNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
             <!-- Project rows -->
-            <ItemsControl ItemsSource="{Binding Projects}">
+            <ItemsControl ItemsSource="{Binding Projects}" IsVisible="{Binding ShowProjects}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ProjectCardViewModel">
                         <Border Classes="Card" Margin="0,0,0,4" Padding="0">

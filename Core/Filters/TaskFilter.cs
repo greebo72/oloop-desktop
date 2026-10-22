@@ -10,8 +10,15 @@ namespace OloopApp.Core.Filters;
 /// </summary>
 public sealed class TaskFilter
 {
-    /// <summary>Free-text search over title and labels. Empty matches everything.</summary>
+    /// <summary>Free-text search over title and labels (and the description, see <see cref="SearchDescription"/>). Empty matches everything.</summary>
     public string SearchText { get; set; } = "";
+
+    /// <summary>
+    /// Whether the search also looks into the description. The task list of a
+    /// project searches title and labels only; the search over all projects
+    /// on the dashboard also searches the description.
+    /// </summary>
+    public bool SearchDescription { get; set; }
 
     /// <summary>
     /// "Silent since" in days. A task counts as stale when it was not touched
@@ -59,17 +66,23 @@ public sealed class TaskFilter
                     continue;
             }
 
-            if (needle.Length > 0 && !Matches(task, needle))
+            if (needle.Length > 0 && !Matches(task, needle, SearchDescription))
                 continue;
 
             yield return task;
         }
     }
 
-    private static bool Matches(OloopTask task, string needle)
+    private static bool Matches(OloopTask task, string needle, bool searchDescription)
     {
         if (task.Title.Contains(needle, StringComparison.OrdinalIgnoreCase))
             return true;
+
+        if (searchDescription
+            && (task.Description ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
 
         return task.Labels.Any(l => l.Contains(needle, StringComparison.OrdinalIgnoreCase));
     }
