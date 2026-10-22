@@ -255,6 +255,33 @@ public partial class TaskListViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Shows the detail of the task with the given id. A closed task is
+    /// shown by switching "Show closed" on, otherwise it would not be in the
+    /// list. Returns false when the project has no such task.
+    /// </summary>
+    public bool SelectTask(string taskId)
+    {
+        var task = Shell.Tasks.FirstOrDefault(t => t.Id == taskId && t.ProjectId == Project.Id);
+        if (task is null)
+            return false;
+
+        if (task.IsClosed)
+            ShowClosed = true;
+
+        // The "silent since" filter of the settings can hide a task that
+        // was found by the search. The task wins: the filter is switched off.
+        if (StaleDays is not null && !Groups.SelectMany(g => g.Rows).Any(r => r.Task.Id == taskId))
+            StaleDays = null;
+
+        var row = Groups.SelectMany(g => g.Rows).FirstOrDefault(r => r.Task.Id == taskId);
+        if (row is null)
+            return false;
+
+        SelectRow(row);
+        return true;
+    }
+
+    /// <summary>
     /// Puts the given row into edit mode. The list offers the same command as
     /// the detail pane, so a task can be changed without opening it first:
     /// the row is selected and its detail edits in place.

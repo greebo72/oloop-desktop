@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OloopApp.Core.Filters;
 using OloopApp.Core.Models;
 
 namespace OloopApp.ViewModels;
@@ -43,6 +44,59 @@ public partial class DashboardViewModel : ViewModelBase
     /// <summary>All projects of the data root, before the search.</summary>
     private readonly List<ProjectCardViewModel> _allProjects = [];
 
+    /// <summary>All tasks of the data root, before the search.</summary>
+    private readonly List<OloopTask> _allTasks = [];
+
+    /// <summary>The most tasks the result list shows. More would make the list slow.</summary>
+    public const int MaxTaskResults = 200;
+
+    /// <summary>
+    /// What the search looks for: the project cards (false) or the tasks of
+    /// all projects (true). Exactly one of them at a time. It starts as
+    /// projects on every launch and is not stored.
+    /// </summary>
+    [ObservableProperty]
+    private bool _searchTasks;
+
+    /// <summary>Whether closed tasks are part of the task results. Off by default.</summary>
+    [ObservableProperty]
+    private bool _showClosed;
+
+    /// <summary>The tasks that match the search, newest first. Only filled in the task mode.</summary>
+    public ObservableCollection<TaskRowViewModel> TaskResults { get; } = [];
+
+    /// <summary>
+    /// The command that opens a task found by the search. Set by the shell.
+    /// </summary>
+    public IRelayCommand<TaskRowViewModel>? OpenTaskCommand { get; set; }
+
+    /// <summary>Whether the search looks for projects.</summary>
+    public bool SearchProjects => !SearchTasks;
+
+    /// <summary>The placeholder of the search field, it names what is searched.</summary>
+    public string SearchPlaceholder => SearchTasks ? "Find tasks …" : "Find projects …";
+
+    /// <summary>Whether the task search has no text yet. Then a hint is shown instead of a list.</summary>
+    public bool ShowTaskHint => SearchTasks && string.IsNullOrWhiteSpace(SearchText);
+
+    /// <summary>Whether the task search has text but finds nothing.</summary>
+    public bool HasNoTaskMatches => SearchTasks && !ShowTaskHint && TaskResults.Count == 0;
+
+    /// <summary>Whether the result list of tasks is shown.</summary>
+    public bool ShowTaskResults => SearchTasks && TaskResults.Count > 0;
+
+    /// <summary>"Showing the first 200 of 340 tasks", empty when everything is shown.</summary>
+    public string TaskResultsNote { get; private set; } = "";
+
+    /// <summary>
+    /// Whether the "New project" button of the header is shown: only in the
+    /// project view, and only when there is a data folder to create it in.
+    /// </summary>
+    public bool ShowNewProjectButton => ShowProjects && !HasNoDataRoot;
+
+    /// <summary>Whether the project part (cards, empty state) of the dashboard is shown.</summary>
+    public bool ShowProjects => !SearchTasks;
+
     /// <summary>
     /// How many files could not be read. The section is only shown when there
     /// is at least one.
@@ -79,7 +133,7 @@ public partial class DashboardViewModel : ViewModelBase
     /// Whether the empty state is shown: there is no data folder, or no
     /// project at all, or the search hides all of them.
     /// </summary>
-    public bool ShowEmptyState => HasNoDataRoot || IsEmpty || HasNoMatches;
+    public bool ShowEmptyState => HasNoDataRoot || (!SearchTasks && (IsEmpty || HasNoMatches));
 
     /// <summary>
     /// The state of the empty card. Every part of it depends on a value that
@@ -95,6 +149,7 @@ public partial class DashboardViewModel : ViewModelBase
     /// <summary>Raises every property the empty card is bound to.</summary>
     private void RaiseEmptyStateChanged()
     {
+        OnPropertyChanged(nameof(ShowNewProjectButton));
         OnPropertyChanged(nameof(HasNoMatches));
         OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptyText));
@@ -118,6 +173,9 @@ public partial class DashboardViewModel : ViewModelBase
 
     public void Update(OloopSnapshot snapshot)
     {
+        _allTasks.Clear();
+        _allTasks.AddRange(snapshot.Tasks);
+
         _allProjects.Clear();
         foreach (var project in snapshot.Projects)
             _allProjects.Add(new ProjectCardViewModel
@@ -135,6 +193,8 @@ public partial class DashboardViewModel : ViewModelBase
         OnPropertyChanged(nameof(UnreadableCount));
         OnPropertyChanged(nameof(HasUnreadable));
         OnPropertyChanged(nameof(UnreadableSummary));
+
+        ApplyTaskSearch();
 
         var tasks = snapshot.Tasks.Count;
         var projects = snapshot.Projects.Count;
@@ -170,8 +230,58 @@ public partial class DashboardViewModel : ViewModelBase
         RaiseEmptyStateChanged();
     }
 
+    /// <summary>
+    /// Fills <see cref="TaskResults"/>: the tasks of all projects whose title,
+    /// description or labels contain the search text. Without text there is
+    /// no list, only a hint.
+    /// </summary>
+    private void ApplyTaskSearch()
+    {
+        TaskResults.Clear();
+        TaskResultsNote = "";
+
+        var needle = SearchText?.Trim() ?? "";
+        if (SearchTasks && needle.Length > 0)
+        {
+            var found = new TaskFilter
+            {
+                SearchText = needle,
+                SearchDescription = true,
+                ShowClosed = ShowClosed,
+            }
+            .Apply(_allTasks)
+            .OrderByDescending(t => t.UpdatedAt, StringComparer.Ordinal)
+            .ToList();
+
+            foreach (var task in found.Take(MaxTaskResults))
+                TaskResults.Add(new TaskRowViewModel(task));
+
+            if (found.Count > MaxTaskResults)
+                TaskResultsNote = $"Showing the first {MaxTaskResults} of {found.Count} tasks. Narrow the search to see the rest.";
+        }
+
+        OnPropertyChanged(nameof(TaskResultsNote));
+        OnPropertyChanged(nameof(ShowTaskHint));
+        OnPropertyChanged(nameof(HasNoTaskMatches));
+        OnPropertyChanged(nameof(ShowTaskResults));
+    }
+
     partial void OnSearchTextChanged(string value)
     {
         ApplySearch();
+        ApplyTaskSearch();
+    }
+
+    partial void OnShowClosedChanged(bool value)
+        => ApplyTaskSearch();
+
+    partial void OnSearchTasksChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SearchProjects));
+        OnPropertyChanged(nameof(SearchPlaceholder));
+        OnPropertyChanged(nameof(ShowProjects));
+        OnPropertyChanged(nameof(ShowNewProjectButton));
+        ApplyTaskSearch();
+        RaiseEmptyStateChanged();
     }
 }

@@ -112,6 +112,31 @@
         <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
     </Style>
 
+    <!-- The segmented control of the search mode: one of the segments is
+         selected, the others are plain. -->
+    <Style Selector="Border.Segmented">
+        <Setter Property="BorderBrush" Value="{StaticResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.Segment">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.Segment:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+    </Style>
+    <Style Selector="Button.Segment.Selected">
+        <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
     <!-- A due date that has passed. -->
     <Style Selector="Border.Chip-Overdue">
         <Setter Property="Background" Value="{StaticResource TypeBugBgBrush}" />

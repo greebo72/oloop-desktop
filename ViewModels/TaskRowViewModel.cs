@@ -22,6 +22,9 @@ public partial class TaskRowViewModel : ViewModelBase
     /// <summary>Title of the task.</summary>
     public string Title => Task.Title;
 
+    /// <summary>The project the task belongs to. The search over all projects shows it.</summary>
+    public string ProjectName => Task.ProjectName;
+
     /// <summary>Type of the task, capitalized for the row.</summary>
     public string TypeName => Task.Type.DisplayName();
 

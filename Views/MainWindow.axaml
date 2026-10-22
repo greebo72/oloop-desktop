@@ -25,11 +25,29 @@
                 <TextBlock Text="oloop" Classes="TitleLarge" VerticalAlignment="Center" />
             </StackPanel>
 
-            <TextBox Grid.Column="1" Classes="SearchBox"
-                     Name="SearchBox"
-                     Text="{Binding SearchText, Mode=TwoWay}"
-                     PlaceholderText="Find projects …"
-                     MaxWidth="420" HorizontalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- What the search looks for on the dashboard: exactly one
+                     of projects and tasks. -->
+                <Border Classes="Segmented" IsVisible="{Binding IsDashboard}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="Segment" Name="ProjectsModeButton"
+                                Classes.Selected="{Binding Dashboard.SearchProjects}"
+                                Command="{Binding ShowProjectSearchCommand}"
+                                Content="Projects" />
+                        <Button Classes="Segment" Name="TasksModeButton"
+                                Classes.Selected="{Binding Dashboard.SearchTasks}"
+                                Command="{Binding ShowTaskSearchCommand}"
+                                Content="Tasks" />
+                    </StackPanel>
+                </Border>
+
+                <TextBox Classes="SearchBox"
+                         Name="SearchBox"
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         PlaceholderText="{Binding SearchPlaceholder}"
+                         Width="420" />
+            </StackPanel>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
                 <!-- The "silent since" view: the tasks of all projects

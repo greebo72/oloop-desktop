@@ -55,6 +55,16 @@ public partial class MainViewModel : ViewModelBase
         // command — without it they would be dead.
         Dashboard.OpenProjectCommand = OpenProjectCommand;
 
+        OpenTaskCommand = new RelayCommand<TaskRowViewModel>(OpenTask);
+        Dashboard.OpenTaskCommand = OpenTaskCommand;
+        Dashboard.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DashboardViewModel.SearchTasks))
+                OnPropertyChanged(nameof(SearchPlaceholder));
+        };
+        ShowProjectSearchCommand = new RelayCommand(() => Dashboard.SearchTasks = false);
+        ShowTaskSearchCommand = new RelayCommand(() => Dashboard.SearchTasks = true);
+
         // Without a data folder the dashboard shows the empty state right
         // away — before the first refresh, too.
         Dashboard.HasNoDataRoot = _dataRoot.Length == 0;
@@ -66,6 +76,13 @@ public partial class MainViewModel : ViewModelBase
         EditTaskCommand = new AsyncRelayCommand(EditSelectedTaskAsync);
         ClearSearchCommand = new RelayCommand(ClearSearch);
     }
+
+    /// <summary>
+    /// The placeholder of the search field. On the dashboard it follows the
+    /// mode of the search, in a project the search filters the tasks.
+    /// </summary>
+    public string SearchPlaceholder
+        => !IsDashboard || Dashboard.SearchTasks ? "Find tasks …" : "Find projects …";
 
     /// <summary>Clears the search field.</summary>
     public RelayCommand ClearSearchCommand { get; }
@@ -795,6 +812,40 @@ public partial class MainViewModel : ViewModelBase
         Split.TaskList.SelectFirst();
     }
 
+    /// <summary>Opens the task of a search result in its project.</summary>
+    public RelayCommand<TaskRowViewModel> OpenTaskCommand { get; }
+
+    /// <summary>Makes the search of the dashboard look for projects.</summary>
+    public RelayCommand ShowProjectSearchCommand { get; }
+
+    /// <summary>Makes the search of the dashboard look for tasks of all projects.</summary>
+    public RelayCommand ShowTaskSearchCommand { get; }
+
+    /// <summary>
+    /// Opens the project of a task found by the search, with the task
+    /// selected in the detail. The search text is cleared first: the task
+    /// list of the project filters by it too, and a match in the description
+    /// would hide the very task the user clicked.
+    /// </summary>
+    private void OpenTask(TaskRowViewModel? row)
+    {
+        if (row is null)
+            return;
+
+        var project = Projects.FirstOrDefault(p => p.Id == row.Task.ProjectId);
+        if (project is null)
+            return;
+
+        SearchText = "";
+        Silent = null;
+        Split = new ProjectSplitViewModel(project, this);
+
+        // A task that cannot be selected (it was removed in the meantime)
+        // leaves the project open with its first task, like any project.
+        if (!Split.TaskList.SelectTask(row.Task.Id))
+            Split.TaskList.SelectFirst();
+    }
+
     private void BackToDashboard()
     {
         Split = null;
@@ -837,6 +888,7 @@ public partial class MainViewModel : ViewModelBase
     private void RaiseViewStateChanged()
     {
         OnPropertyChanged(nameof(IsDashboard));
+        OnPropertyChanged(nameof(SearchPlaceholder));
         OnPropertyChanged(nameof(IsSilent));
         OnPropertyChanged(nameof(HasSubView));
     }
