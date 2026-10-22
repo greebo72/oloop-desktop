@@ -10,6 +10,10 @@ public partial class TaskRowViewModel : ViewModelBase
     {
         Task = task;
         Age = RelativeAge.Format(task.UpdatedAt, now);
+
+        var today = (now ?? DateTimeOffset.Now).LocalDateTime.Date;
+        DueDateText = Core.Grouping.DueDate.Display(task.DueDate);
+        IsOverdue = Core.Grouping.DueDate.IsOverdue(task, today);
     }
 
     /// <summary>The task behind the row.</summary>
@@ -23,6 +27,15 @@ public partial class TaskRowViewModel : ViewModelBase
 
     /// <summary>How long ago the task was touched.</summary>
     public string Age { get; }
+
+    /// <summary>The due date in the local format, null when there is none.</summary>
+    public string? DueDateText { get; }
+
+    /// <summary>Whether the task has a due date.</summary>
+    public bool HasDueDate => DueDateText is not null;
+
+    /// <summary>Whether the task is open and its due date has passed.</summary>
+    public bool IsOverdue { get; }
 
     /// <summary>The labels as one line, empty when the task has none.</summary>
     public string LabelsText => string.Join(", ", Task.Labels);

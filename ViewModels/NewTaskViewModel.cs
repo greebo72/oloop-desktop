@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Models;
 
 namespace OloopApp.ViewModels;
@@ -56,6 +57,20 @@ public partial class NewTaskViewModel : ViewModelBase
     [ObservableProperty]
     private string _labelsText = "";
 
+    /// <summary>
+    /// The due date picked in the calendar, null for none. Only the date part
+    /// counts, a time or a time zone is never stored.
+    /// </summary>
+    [ObservableProperty]
+    private DateTime? _dueDate;
+
+    /// <summary>The due date as it is written to the file, null for none.</summary>
+    public string? DueDateStorage => Core.Grouping.DueDate.ToStorage(DueDate);
+
+    /// <summary>Removes the due date.</summary>
+    [RelayCommand]
+    private void ClearDueDate() => DueDate = null;
+
     /// <summary>The type of the task.</summary>
     [ObservableProperty]
     private TaskType _type = TaskType.todo;
@@ -88,6 +103,8 @@ public partial class NewTaskViewModel : ViewModelBase
     partial void OnDescriptionChanged(string value) => NotifySaveState();
 
     partial void OnLabelsTextChanged(string value) => NotifySaveState();
+
+    partial void OnDueDateChanged(DateTime? value) => OnPropertyChanged(nameof(DueDateStorage));
 
     partial void OnTypeChanged(TaskType value)
     {

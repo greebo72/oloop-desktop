@@ -112,6 +112,14 @@
         <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
     </Style>
 
+    <!-- A due date that has passed. -->
+    <Style Selector="Border.Chip-Overdue">
+        <Setter Property="Background" Value="{StaticResource TypeBugBgBrush}" />
+    </Style>
+    <Style Selector="Border.Chip-Overdue TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TypeBugBrush}" />
+    </Style>
+
     <Style Selector="Border.Chip-Todo">
         <Setter Property="Background" Value="{StaticResource TypeTodoBgBrush}" />
     </Style>

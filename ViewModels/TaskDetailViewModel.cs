@@ -98,6 +98,10 @@ public partial class TaskDetailViewModel : ViewModelBase
             _ => "TypeClosedBrush",
         };
 
+        DueDateText = Core.Grouping.DueDate.Display(task.DueDate);
+        HasDueDate = DueDateText is not null;
+        IsOverdue = Core.Grouping.DueDate.IsOverdue(task, DateTime.Today);
+
         Labels = task.Labels;
         LabelsText = string.Join(", ", task.Labels);
         HasLabels = task.Labels.Count > 0;
@@ -154,6 +158,15 @@ public partial class TaskDetailViewModel : ViewModelBase
 
     /// <summary>The foreground brush key of the type container.</summary>
     public string ForegroundKey { get; }
+
+    /// <summary>The due date in the local format, null when there is none.</summary>
+    public string? DueDateText { get; }
+
+    /// <summary>Whether the task has a due date.</summary>
+    public bool HasDueDate { get; }
+
+    /// <summary>Whether the task is open and its due date has passed.</summary>
+    public bool IsOverdue { get; }
 
     /// <summary>The labels of the task.</summary>
     public IReadOnlyList<string> Labels { get; }
@@ -370,7 +383,8 @@ public partial class TaskDetailViewModel : ViewModelBase
         try
         {
             var outcome = await Shell.SaveTaskEditAsync(
-                Task, Project, editor.TrimmedTitle, editor.TrimmedDescription, editor.Labels);
+                Task, Project, editor.TrimmedTitle, editor.TrimmedDescription, editor.Labels,
+                setDueDate: true, dueDate: editor.DueDateStorage);
 
             // Saved: the list shows the new detail. Discarded: the user chose
             // to reload. Either way the edit of this detail is over.

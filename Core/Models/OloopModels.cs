@@ -118,7 +118,9 @@ public sealed class OloopTask
         TaskStatus? status = null,
         string? updatedAt = null,
         string? updatedBy = null,
-        IReadOnlyList<TaskComment>? comments = null)
+        IReadOnlyList<TaskComment>? comments = null,
+        bool setDueDate = false,
+        string? dueDate = null)
     {
         return new OloopTask
         {
@@ -129,7 +131,7 @@ public sealed class OloopTask
             Title = title ?? Title,
             Status = status ?? Status,
             ImagePath = ImagePath,
-            DueDate = DueDate,
+            DueDate = setDueDate ? dueDate : DueDate,
             Labels = labels ?? Labels,
             CreatedAt = CreatedAt,
             CreatedBy = CreatedBy,

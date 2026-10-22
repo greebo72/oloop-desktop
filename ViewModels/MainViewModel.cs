@@ -389,7 +389,7 @@ public partial class MainViewModel : ViewModelBase
 
         var created = await CreateTaskAsync(
             project, viewModel.Type, viewModel.TrimmedTitle,
-            viewModel.TrimmedDescription, viewModel.Labels);
+            viewModel.TrimmedDescription, viewModel.Labels, viewModel.DueDateStorage);
 
         if (created)
         {
@@ -520,7 +520,8 @@ public partial class MainViewModel : ViewModelBase
         TaskType type,
         string title,
         string description,
-        IReadOnlyList<string> labels)
+        IReadOnlyList<string> labels,
+        string? dueDate = null)
     {
         var store = Store;
         if (store is null)
@@ -535,7 +536,8 @@ public partial class MainViewModel : ViewModelBase
 
         try
         {
-            await store.CreateTaskAsync(project, type, title, description, labels, actor);
+            await store.CreateTaskAsync(project, type, title, description, labels, actor,
+                dueDate: dueDate);
             await RefreshAsync();
             return true;
         }
@@ -553,7 +555,9 @@ public partial class MainViewModel : ViewModelBase
         OloopProject project,
         string title,
         string description,
-        IReadOnlyList<string> labels)
+        IReadOnlyList<string> labels,
+        bool setDueDate = false,
+        string? dueDate = null)
     {
         var store = Store;
         if (store is null)
@@ -567,7 +571,8 @@ public partial class MainViewModel : ViewModelBase
             return false;
 
         return await MutateAsync(store, task, baseTask =>
-            store.EditTaskAsync(baseTask, project, title, description, labels, actor));
+            store.EditTaskAsync(baseTask, project, title, description, labels, actor,
+                setDueDate: setDueDate, dueDate: dueDate));
     }
 
     /// <summary>
@@ -580,7 +585,9 @@ public partial class MainViewModel : ViewModelBase
         OloopProject project,
         string title,
         string description,
-        IReadOnlyList<string> labels)
+        IReadOnlyList<string> labels,
+        bool setDueDate = false,
+        string? dueDate = null)
     {
         var store = Store;
         if (store is null)
@@ -594,7 +601,8 @@ public partial class MainViewModel : ViewModelBase
             return WriteOutcome.NotSaved;
 
         var outcome = await MutateOutcomeAsync(store, task, baseTask =>
-            store.EditTaskAsync(baseTask, project, title, description, labels, actor));
+            store.EditTaskAsync(baseTask, project, title, description, labels, actor,
+                setDueDate: setDueDate, dueDate: dueDate));
 
         if (outcome == WriteOutcome.Saved)
             StatusMessage = $"Task '{title}' saved.";

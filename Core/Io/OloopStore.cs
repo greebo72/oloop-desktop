@@ -205,7 +205,8 @@ public sealed class OloopStore
         string description,
         IEnumerable<string>? labels,
         string actor,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? dueDate = null)
     {
         var trimmedTitle = title.Trim();
         if (trimmedTitle.Length == 0)
@@ -221,6 +222,7 @@ public sealed class OloopStore
             Title = trimmedTitle,
             Status = TaskStatus.open,
             ImagePath = null,
+            DueDate = dueDate,
             Labels = NormalizeLabels(labels),
             CreatedAt = now,
             CreatedBy = actor,
@@ -236,8 +238,11 @@ public sealed class OloopStore
     }
 
     /// <summary>
-    /// Edits title, description and labels. Never touches id, type, createdAt,
-    /// createdBy or the file name.
+    /// Edits title, description, labels and the due date. Never touches id,
+    /// type, createdAt, createdBy or the file name.
+    ///
+    /// The due date is only changed when <paramref name="setDueDate"/> is set:
+    /// then null removes it, otherwise the given date is written.
     /// </summary>
     public async Task<OloopTask> EditTaskAsync(
         OloopTask task,
@@ -246,14 +251,18 @@ public sealed class OloopStore
         string? description,
         IEnumerable<string>? labels,
         string actor,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool setDueDate = false,
+        string? dueDate = null)
     {
         var updated = task.With(
             title: title is null ? null : title.Trim(),
             description: description,
             labels: labels is null ? null : NormalizeLabels(labels),
             updatedAt: NowUtc(),
-            updatedBy: actor);
+            updatedBy: actor,
+            setDueDate: setDueDate,
+            dueDate: dueDate);
 
         await WriteTaskAsync(project, updated, task.UpdatedAt, ct).ConfigureAwait(false);
         return updated;
