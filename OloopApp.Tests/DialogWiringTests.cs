@@ -115,7 +115,7 @@ public class DialogWiringTests
 
             // Clicking it reaches the shell, which asks for the new project.
             var button = Descendants<Button>(dashboard!)
-                .FirstOrDefault(b => b.Content is StackPanel
+                .FirstOrDefault(b => Descendants<TextBlock>(b).Any(t => t.Text == "New project")
                     || b.Content?.ToString()?.Contains("New project") == true);
             Assert.NotNull(button);
 

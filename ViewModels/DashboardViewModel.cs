@@ -24,6 +24,14 @@ public partial class DashboardViewModel : ViewModelBase
     {
         _selectedDueFilter = DueFilterOptions[0];
         _selectedSort = SortOptions[0];
+
+        RemoveLabelCommand = new RelayCommand<LabelOptionViewModel>(
+            option => { if (option is not null) option.IsSelected = false; });
+        ClearLabelsCommand = new RelayCommand(() =>
+        {
+            foreach (var option in LabelOptions)
+                option.IsSelected = false;
+        });
     }
 
     /// <summary>
@@ -76,6 +84,32 @@ public partial class DashboardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showClosed;
 
+    /// <summary>
+    /// The labels the user can pick: every label of the tasks in the search
+    /// scope once, alphabetical, with its number of tasks. It is built from
+    /// the loaded tasks, never fixed, and follows a reload and "Show closed".
+    /// </summary>
+    public ObservableCollection<LabelOptionViewModel> LabelOptions { get; } = [];
+
+    /// <summary>The labels that are part of the filter, for the chips next to it.</summary>
+    public ObservableCollection<LabelOptionViewModel> SelectedLabels { get; } = [];
+
+    /// <summary>Whether at least one label is selected.</summary>
+    public bool HasSelectedLabels => SelectedLabels.Count > 0;
+
+    /// <summary>Whether there is no label to pick at all.</summary>
+    public bool HasNoLabels => LabelOptions.Count == 0;
+
+    /// <summary>The text of the label filter button: "Labels" or "Labels (2)".</summary>
+    public string LabelFilterText
+        => SelectedLabels.Count == 0 ? "Labels" : $"Labels ({SelectedLabels.Count})";
+
+    /// <summary>Removes one label from the filter. Used by the chips.</summary>
+    public IRelayCommand<LabelOptionViewModel> RemoveLabelCommand { get; }
+
+    /// <summary>Removes every label from the filter.</summary>
+    public IRelayCommand ClearLabelsCommand { get; }
+
     /// <summary>The due date filter choices. The first one is the default, no filter.</summary>
     public IReadOnlyList<DueFilterOption> DueFilterOptions { get; } =
         Enum.GetValues<DueFilter>().Select(f => new DueFilterOption(f, f.Label())).ToList();
@@ -117,7 +151,9 @@ public partial class DashboardViewModel : ViewModelBase
     /// due date filter. A filter alone is enough, for example "Overdue".
     /// </summary>
     private bool HasTaskQuery
-        => !string.IsNullOrWhiteSpace(SearchText) || SelectedDueFilter.Filter != DueFilter.All;
+        => !string.IsNullOrWhiteSpace(SearchText)
+           || SelectedDueFilter.Filter != DueFilter.All
+           || SelectedLabels.Count > 0;
 
     /// <summary>Whether the task search has text but finds nothing.</summary>
     public bool HasNoTaskMatches => SearchTasks && !ShowTaskHint && TaskResults.Count == 0;
@@ -234,6 +270,7 @@ public partial class DashboardViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasUnreadable));
         OnPropertyChanged(nameof(UnreadableSummary));
 
+        RebuildLabelOptions();
         ApplyTaskSearch();
 
         var tasks = snapshot.Tasks.Count;
@@ -289,6 +326,7 @@ public partial class DashboardViewModel : ViewModelBase
                 SearchDescription = true,
                 ShowClosed = ShowClosed,
                 Due = SelectedDueFilter.Filter,
+                AnyLabel = SelectedLabels.Select(l => l.Name).ToList(),
             }
             .Apply(_allTasks)
             .OrderByDescending(t => t.UpdatedAt, StringComparer.Ordinal)
@@ -323,7 +361,71 @@ public partial class DashboardViewModel : ViewModelBase
     }
 
     partial void OnShowClosedChanged(bool value)
-        => ApplyTaskSearch();
+    {
+        RebuildLabelOptions();
+        ApplyTaskSearch();
+    }
+
+    /// <summary>
+    /// Builds the label list from the tasks in the search scope: all loaded
+    /// tasks, the closed ones only with "Show closed". A selected label that
+    /// no longer occurs (a reload, "Show closed" switched off) leaves the
+    /// filter, a selected label that still occurs stays selected.
+    /// </summary>
+    private void RebuildLabelOptions()
+    {
+        var selected = new HashSet<string>(
+            SelectedLabels.Select(l => l.Name), LabelIndex.Comparer);
+
+        foreach (var option in LabelOptions)
+            option.PropertyChanged -= OnLabelOptionChanged;
+
+        LabelOptions.Clear();
+        SelectedLabels.Clear();
+
+        var scope = ShowClosed ? _allTasks : _allTasks.Where(t => !t.IsClosed);
+        foreach (var entry in LabelIndex.Build(scope))
+        {
+            var option = new LabelOptionViewModel(entry.Name, entry.Count, selected.Contains(entry.Name));
+            option.PropertyChanged += OnLabelOptionChanged;
+            LabelOptions.Add(option);
+
+            if (option.IsSelected)
+                SelectedLabels.Add(option);
+        }
+
+        RaiseLabelStateChanged();
+    }
+
+    private void OnLabelOptionChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(LabelOptionViewModel.IsSelected)
+            || sender is not LabelOptionViewModel option)
+        {
+            return;
+        }
+
+        if (option.IsSelected && !SelectedLabels.Contains(option))
+        {
+            // Keep the chips in the alphabetical order of the list.
+            var index = SelectedLabels.TakeWhile(l => LabelOptions.IndexOf(l) < LabelOptions.IndexOf(option)).Count();
+            SelectedLabels.Insert(index, option);
+        }
+        else if (!option.IsSelected)
+        {
+            SelectedLabels.Remove(option);
+        }
+
+        RaiseLabelStateChanged();
+        ApplyTaskSearch();
+    }
+
+    private void RaiseLabelStateChanged()
+    {
+        OnPropertyChanged(nameof(HasSelectedLabels));
+        OnPropertyChanged(nameof(HasNoLabels));
+        OnPropertyChanged(nameof(LabelFilterText));
+    }
 
     partial void OnSelectedDueFilterChanged(DueFilterOption value)
         => ApplyTaskSearch();

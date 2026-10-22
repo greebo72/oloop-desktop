@@ -36,6 +36,12 @@ public sealed class TaskFilter
     /// <summary>Only tasks carrying this label. Null shows all labels.</summary>
     public string? Label { get; set; }
 
+    /// <summary>
+    /// Only tasks that carry at least one of these labels (or). Compared
+    /// without regard to case. Null or empty lets every task pass.
+    /// </summary>
+    public IReadOnlyCollection<string>? AnyLabel { get; set; }
+
     /// <summary>The due date filter. <see cref="DueFilter.All"/> lets every task pass.</summary>
     public DueFilter Due { get; set; } = DueFilter.All;
 
@@ -62,6 +68,12 @@ public sealed class TaskFilter
 
             if (Label is not null && !task.Labels.Contains(Label, StringComparer.OrdinalIgnoreCase))
                 continue;
+
+            if (AnyLabel is { Count: > 0 }
+                && !task.Labels.Any(l => AnyLabel.Contains(l, LabelIndex.Comparer)))
+            {
+                continue;
+            }
 
             if (Due != DueFilter.All && !DueFilters.Matches(task, Due, today))
                 continue;

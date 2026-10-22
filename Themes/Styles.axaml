@@ -237,6 +237,26 @@
         <Setter Property="Opacity" Value="0.9" />
     </Style>
 
+    <!-- A button that looks like a combo box and opens a flyout, for the choice
+         lists a combo box cannot do (several choices at once). Same fill,
+         radius and height as the ComboBox style. -->
+    <Style Selector="Button.Dropdown">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="Padding" Value="12,5,8,5" />
+    </Style>
+    <Style Selector="Button.Dropdown:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighestBrush}" />
+    </Style>
+    <!-- A filter is active: the text takes the accent color. -->
+    <Style Selector="Button.Dropdown.Active">
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
     <!-- Outlined button (e.g. "Close task"). -->
     <Style Selector="Button.Outlined">
         <Setter Property="Background" Value="Transparent" />
