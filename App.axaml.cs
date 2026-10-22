@@ -17,7 +17,8 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var main = new MainViewModel();
+            var main = new MainViewModel { WatchDataFolder = true };
+            desktop.Exit += (_, _) => main.Dispose();
 
             // Before the first window, so it opens at the saved size.
             UiScale.Factor = main.UiScaleFactor;

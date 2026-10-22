@@ -194,7 +194,9 @@ public partial class SilentTasksViewModel : ViewModelBase
             var fresh = filtered.FirstOrDefault(t => t.Id == selected.Task.Id);
             Selected = fresh is null
                 ? null
-                : TaskDetailViewModel.Open(fresh, ProjectOf(fresh), Shell);
+                : selected.Task.SameContentAs(fresh)
+                    ? selected
+                    : TaskDetailViewModel.Open(fresh, ProjectOf(fresh), Shell);
         }
 
         Groups.Clear();

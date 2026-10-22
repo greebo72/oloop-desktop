@@ -31,6 +31,52 @@ public sealed class OloopStore
     // ---------------- Scanning ----------------
 
     /// <summary>
+    /// A cheap fingerprint of everything in the data root that the app shows:
+    /// the path, size and time of change of every file, without the
+    /// <c>.backup</c> folders and temp files. Two equal fingerprints mean that
+    /// nothing changed, so a reload would show the same. It only looks at the
+    /// file system and reads no file.
+    ///
+    /// The app compares it after a change event of the watcher, so the
+    /// app's own writes (which it has already reloaded) do not reload the
+    /// view a second time.
+    /// </summary>
+    public string Fingerprint()
+    {
+        if (!Directory.Exists(_root))
+            return "";
+
+        var entries = new List<string>();
+        try
+        {
+            foreach (var path in Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories))
+            {
+                if (DataFolderWatcher.IsIgnored(path))
+                    continue;
+
+                try
+                {
+                    var info = new FileInfo(path);
+                    entries.Add($"{path}|{info.Length}|{info.LastWriteTimeUtc.Ticks}");
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // A file that vanished while the folder was walked.
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The folder is being changed under us; the next event tries again.
+        }
+
+        entries.Sort(StringComparer.Ordinal);
+        var text = string.Join("\n", entries);
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(text)));
+    }
+
+    /// <summary>
     /// Reads the whole data root. Files that violate the format do not abort
     /// the scan: they come back as <see cref="OloopSnapshot.Unreadable"/> and
     /// are never written to.

@@ -214,9 +214,14 @@ public partial class TaskListViewModel : ViewModelBase
         if (Selected is { } selected)
         {
             var fresh = filtered.FirstOrDefault(t => t.Id == selected.Task.Id);
+            // A task that did not change keeps its detail as it is: the
+            // reload that the watcher starts must not take the cursor away
+            // from a comment that is being typed.
             Selected = fresh is null
                 ? null
-                : TaskDetailViewModel.Open(fresh, Project, Shell);
+                : selected.Task.SameContentAs(fresh)
+                    ? selected
+                    : TaskDetailViewModel.Open(fresh, Project, Shell);
         }
 
         Groups.Clear();

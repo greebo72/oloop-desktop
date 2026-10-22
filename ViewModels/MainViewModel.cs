@@ -14,7 +14,7 @@ namespace OloopApp.ViewModels;
 /// shell performs the write and handles a refused write (a conflict) by
 /// asking the user what to do.
 /// </summary>
-public partial class MainViewModel : ViewModelBase
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private const string NoDataRoot = "No data folder set. Open the settings to choose one.";
     private const string NoActorGiven = "Nothing was written: the actor name is still empty.";
@@ -223,6 +223,7 @@ public partial class MainViewModel : ViewModelBase
             var root = DataRoot?.Trim() ?? "";
             if (root.Length == 0)
             {
+                StopWatching();
                 // The empty card of the dashboard says it — a second line
                 // with the same words would only be noise.
                 StatusMessage = "";
@@ -237,6 +238,7 @@ public partial class MainViewModel : ViewModelBase
 
             if (!Directory.Exists(root))
             {
+                StopWatching();
                 StatusMessage = $"The data folder '{root}' does not exist.";
                 Dashboard.HasNoDataRoot = true;
                 Dashboard.Update(OloopSnapshot.Empty);
@@ -248,7 +250,15 @@ public partial class MainViewModel : ViewModelBase
             }
 
             var store = new OloopStore(root);
+
+            // Taken before the read: a file that changes while the folder is
+            // read makes the next check differ, so the change is not lost.
+            var fingerprint = store.Fingerprint();
             var snapshot = await store.LoadAsync();
+            _fingerprint = fingerprint;
+            EnsureWatching(root);
+
+            DataReloading?.Invoke();
 
             Projects.Clear();
             foreach (var project in snapshot.Projects)
@@ -273,6 +283,8 @@ public partial class MainViewModel : ViewModelBase
 
             Split?.Refresh();
             Silent?.Refresh();
+
+            DataReloaded?.Invoke();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -282,6 +294,117 @@ public partial class MainViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    // ---------------- Watching the data folder ----------------
+
+    private DataFolderWatcher? _watcher;
+    private string? _fingerprint;
+    private SynchronizationContext? _uiContext;
+
+    /// <summary>
+    /// Whether the app watches the data folder and reloads by itself when
+    /// something in it changes. The app switches it on; tests leave it off
+    /// unless they test the watching.
+    /// </summary>
+    public bool WatchDataFolder { get; set; }
+
+    /// <summary>The quiet time after the last file event before the view reloads.</summary>
+    public TimeSpan WatchDebounce { get; set; } = DataFolderWatcher.DefaultDebounce;
+
+    /// <summary>
+    /// Raised before a reload replaces the data and after it did. A view uses
+    /// the pair to keep what the user sees, for example the scroll position.
+    /// </summary>
+    public event Action? DataReloading;
+
+    /// <inheritdoc cref="DataReloading" />
+    public event Action? DataReloaded;
+
+    /// <summary>
+    /// Starts watching the folder when the app watches at all and the folder
+    /// is not watched yet. A changed folder gets a new watch.
+    /// </summary>
+    private void EnsureWatching(string root)
+    {
+        if (!WatchDataFolder)
+            return;
+
+        if (_watcher is not null
+            && string.Equals(_watcher.Folder, root, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        StopWatching();
+
+        // The events come on a thread pool thread. The reload touches what the
+        // window shows, so it goes back to the thread that started the watch.
+        _uiContext = SynchronizationContext.Current;
+
+        try
+        {
+            var watcher = new DataFolderWatcher(root, WatchDebounce);
+            watcher.Changed += OnWatcherChanged;
+            watcher.Failed += OnWatcherFailed;
+            _watcher = watcher;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or ArgumentException or PlatformNotSupportedException)
+        {
+            // No workaround such as polling: the problem is shown and reported.
+            StatusMessage = $"The data folder cannot be watched: {ex.Message} Use Reload (F5) to see changes.";
+        }
+    }
+
+    private void StopWatching()
+    {
+        _watcher?.Dispose();
+        _watcher = null;
+        _fingerprint = null;
+    }
+
+    private void OnWatcherChanged()
+    {
+        if (_uiContext is { } context)
+            context.Post(_ => _ = ReloadIfChangedAsync(), null);
+        else
+            _ = ReloadIfChangedAsync();
+    }
+
+    private void OnWatcherFailed(Exception error)
+    {
+        void Show() => StatusMessage =
+            $"Watching the data folder failed: {error.Message} Some changes may not show up, use Reload (F5).";
+
+        if (_uiContext is { } context)
+            context.Post(_ => Show(), null);
+        else
+            Show();
+    }
+
+    /// <summary>
+    /// Reloads when the folder differs from what was loaded last. The app's
+    /// own writes have been reloaded already, so a file event that follows one
+    /// finds the same state and does nothing.
+    /// </summary>
+    public async Task ReloadIfChangedAsync()
+    {
+        var root = DataRoot?.Trim() ?? "";
+        if (root.Length == 0 || !Directory.Exists(root))
+            return;
+
+        if (new OloopStore(root).Fingerprint() == _fingerprint)
+            return;
+
+        await RefreshAsync();
+    }
+
+    /// <summary>Stops watching the data folder.</summary>
+    public void Dispose()
+    {
+        StopWatching();
+        GC.SuppressFinalize(this);
     }
 
     // ---------------- Dialogs ----------------
