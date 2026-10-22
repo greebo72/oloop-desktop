@@ -175,8 +175,67 @@ public class SettingsTests : IDisposable
             .ToList();
 
         Assert.Equal(
-            ["actor", "dataRoot", "grouping", "recentTypes", "showClosed", "staleDays"],
+            ["actor", "dataRoot", "grouping", "recentTypes", "showClosed", "staleDays", "uiScalePercent"],
             keys);
+    }
+
+    // ---------------- The text size ----------------
+
+    [Fact]
+    public void The_Text_Size_Is_100_Percent_By_Default()
+    {
+        var settings = new OloopSettings();
+
+        Assert.Equal(100, settings.UiScalePercent);
+        Assert.Equal(1.0, settings.UiScaleFactor);
+    }
+
+    [Fact]
+    public void The_Text_Size_Survives_A_Restart()
+    {
+        new OloopSettings { FilePath = _path, UiScalePercent = 75 }.Save();
+
+        var loaded = OloopSettings.Load(_path);
+
+        Assert.Equal(75, loaded.UiScalePercent);
+        Assert.Equal(0.75, loaded.UiScaleFactor);
+    }
+
+    [Theory]
+    [InlineData(0, 0.5)]
+    [InlineData(-20, 0.5)]
+    [InlineData(5000, 3.0)]
+    public void A_Text_Size_Outside_The_Range_Is_Pulled_Into_It(int percent, double factor)
+    {
+        // A hand edited file must not make the app unusable.
+        var settings = new OloopSettings { UiScalePercent = percent };
+
+        Assert.Equal(factor, settings.UiScaleFactor);
+    }
+
+    [Fact]
+    public void The_Settings_Dialog_Saves_The_Text_Size()
+    {
+        var settings = new OloopSettings { FilePath = _path, Actor = "alice", DataRoot = _folder };
+        var viewModel = new OloopApp.ViewModels.SettingsViewModel(settings);
+
+        viewModel.UiScaleValue = 130;
+        viewModel.Save();
+
+        Assert.Null(viewModel.Error);
+        Assert.Equal(130, OloopSettings.Load(_path).UiScalePercent);
+    }
+
+    [Fact]
+    public void The_Text_Size_Input_Is_Limited_And_Ignores_An_Empty_Value()
+    {
+        var viewModel = new OloopApp.ViewModels.SettingsViewModel(new OloopSettings());
+
+        viewModel.UiScaleValue = 999;
+        Assert.Equal(OloopSettings.MaxUiScalePercent, viewModel.UiScalePercent);
+
+        viewModel.UiScaleValue = null;
+        Assert.Equal(OloopSettings.MaxUiScalePercent, viewModel.UiScalePercent);
     }
 
     // ---------------- The actor ----------------

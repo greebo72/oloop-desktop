@@ -9,6 +9,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        UiScale.Attach(this);
 
         // The title of the window carries the version, so it is visible
         // without opening anything.

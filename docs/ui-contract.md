@@ -60,7 +60,7 @@ merge.
   description, labels, actor, ct)`, `SetStatusAsync(task, project, closed, actor, ct)`,
   `AddCommentAsync(task, project, body, actor, ct)`, `CreateProjectAsync(name,
   referencePath, referenceHost, ct)`.
-- `OloopSettings` — `DataRoot`, `Actor`, `ShowClosed`, `Grouping`, `StaleDays`,
+- `OloopSettings` — `DataRoot`, `Actor`, `ShowClosed`, `Grouping`, `StaleDays`, `UiScalePercent`,
   `ResolveDataRoot()`, `ResolveActor()`, `Load()`, `Save()`, `DefaultPath`.
 
 ## View models the streams must provide

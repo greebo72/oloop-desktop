@@ -21,6 +21,7 @@ public partial class ConflictDialog : Window
     public ConflictDialog(ConflictViewModel viewModel)
     {
         InitializeComponent();
+        UiScale.Attach(this);
         ViewModel = viewModel;
         DataContext = viewModel;
     }

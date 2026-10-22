@@ -168,6 +168,14 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Opens the settings dialog.</summary>
     public AsyncRelayCommand SettingsCommand { get; }
 
+    /// <summary>
+    /// The size of the UI from the settings, as a factor. The app hands it to
+    /// <see cref="UiScale"/> at start; it is not applied in the constructor,
+    /// because the scale is global and a test must not change it by creating
+    /// a shell.
+    /// </summary>
+    public double UiScaleFactor => _settings.UiScaleFactor;
+
     /// <summary>Opens the new project dialog.</summary>
     public AsyncRelayCommand NewProjectCommand { get; }
 
@@ -284,6 +292,7 @@ public partial class MainViewModel : ViewModelBase
         // The dialog wrote the values into the settings instance.
         DataRoot = _settings.ResolveDataRoot() ?? "";
         Actor = _settings.ResolveActor();
+        UiScale.Factor = _settings.UiScaleFactor;
     }
 
     /// <summary>

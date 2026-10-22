@@ -60,6 +60,27 @@ public sealed class OloopSettings
     /// <summary>The "silent since" filter in days. Null disables it.</summary>
     public double? StaleDays { get; set; }
 
+    /// <summary>The smallest text size in percent.</summary>
+    public const int MinUiScalePercent = 50;
+
+    /// <summary>The largest text size in percent.</summary>
+    public const int MaxUiScalePercent = 300;
+
+    /// <summary>
+    /// The size of the whole UI in percent. 100 is the normal size. It lives
+    /// in the settings file of this machine, not in the data folder, because
+    /// every screen needs its own value.
+    /// </summary>
+    public int UiScalePercent { get; set; } = 100;
+
+    /// <summary>
+    /// The scale as a factor, limited to the allowed range. A hand edited file
+    /// with 0 or 5000 must not make the app unusable.
+    /// </summary>
+    [JsonIgnore]
+    public double UiScaleFactor
+        => Math.Clamp(UiScalePercent, MinUiScalePercent, MaxUiScalePercent) / 100.0;
+
     private List<string>? _recentTypes;
 
     /// <summary>
@@ -201,7 +222,7 @@ public sealed class OloopSettings
 
     /// <summary>
     /// The options the settings file is written with: the keys are camelCase
-    /// (dataRoot, actor, showClosed, grouping, staleDays, recentTypes), the
+    /// (dataRoot, actor, showClosed, grouping, staleDays, uiScalePercent, recentTypes), the
     /// same names the spec uses.
     /// </summary>
     private static readonly JsonSerializerOptions WriteOptions = new()

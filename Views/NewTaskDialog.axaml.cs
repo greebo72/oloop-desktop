@@ -18,6 +18,7 @@ public partial class NewTaskDialog : Window
     public NewTaskDialog(NewTaskViewModel viewModel)
     {
         InitializeComponent();
+        UiScale.Attach(this);
         ViewModel = viewModel;
         DataContext = viewModel;
     }
