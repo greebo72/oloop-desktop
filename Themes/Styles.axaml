@@ -22,6 +22,24 @@
         <Setter Property="FontWeight" Value="Medium" />
     </Style>
 
+    <!-- A closed task in a list: struck through, normal weight and muted,
+         like the Android list. -->
+    <Style Selector="TextBlock.TitleMedium.Closed">
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+        <Setter Property="TextDecorations">
+            <TextDecorationCollection>
+                <TextDecoration Location="Strikethrough"
+                                StrokeThickness="2"
+                                StrokeThicknessUnit="Pixel" />
+            </TextDecorationCollection>
+        </Setter>
+    </Style>
+
+    <Style Selector="StackPanel.ClosedMeta > TextBlock.BodyMedium">
+        <Setter Property="Foreground" Value="{StaticResource OutlineBrush}" />
+    </Style>
+
     <Style Selector="TextBlock.HeadlineSmall">
         <Setter Property="FontSize" Value="24" />
         <Setter Property="FontWeight" Value="Normal" />

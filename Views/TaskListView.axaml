@@ -46,10 +46,12 @@
                                                         <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding Title}"
                                                                        Classes="TitleMedium"
+                                                                       Classes.Closed="{Binding IsClosed}"
                                                                        MaxLines="2"
                                                                        TextWrapping="Wrap"
                                                                        TextTrimming="CharacterEllipsis" />
-                                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                            <StackPanel Orientation="Horizontal" Spacing="6"
+                                                                        Classes.ClosedMeta="{Binding IsClosed}">
                                                                 <TextBlock Text="{Binding TypeName}" Classes="BodyMedium" />
                                                                 <TextBlock Text="·" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />
                                                                 <TextBlock Text="{Binding LabelsText}" Classes="BodyMedium" IsVisible="{Binding HasLabels}" />

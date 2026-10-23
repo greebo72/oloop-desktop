@@ -65,8 +65,11 @@ public partial class TaskRowViewModel : ViewModelBase
         _ => "IconTaskAlt",
     };
 
-    /// <summary>The background brush key of the type container.</summary>
-    public string BackgroundKey => Task.Type switch
+    /// <summary>
+    /// The background brush key of the type container. A closed task is grey,
+    /// whatever its type.
+    /// </summary>
+    public string BackgroundKey => Task.IsClosed ? "TypeClosedBgBrush" : Task.Type switch
     {
         TaskType.todo => "TypeTodoBgBrush",
         TaskType.question => "TypeQuestionBgBrush",
@@ -76,8 +79,11 @@ public partial class TaskRowViewModel : ViewModelBase
         _ => "TypeClosedBgBrush",
     };
 
-    /// <summary>The foreground brush key of the type container.</summary>
-    public string ForegroundKey => Task.Type switch
+    /// <summary>
+    /// The foreground brush key of the type container. A closed task is grey,
+    /// whatever its type.
+    /// </summary>
+    public string ForegroundKey => Task.IsClosed ? "TypeClosedBrush" : Task.Type switch
     {
         TaskType.todo => "TypeTodoBrush",
         TaskType.question => "TypeQuestionBrush",
