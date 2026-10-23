@@ -93,6 +93,7 @@
                                                     <Grid ColumnDefinitions="*,Auto">
                                                         <Button Background="Transparent"
                                                                 Padding="12"
+                                                                HorizontalAlignment="Stretch"
                                                                 HorizontalContentAlignment="Stretch"
                                                                 Command="{Binding $parent[ItemsControl].((vm:SilenceGroupViewModel)DataContext).SelectCommand}"
                                                                 CommandParameter="{Binding}">

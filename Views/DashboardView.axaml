@@ -194,6 +194,7 @@
                             <Button Background="Transparent"
                                     BorderThickness="0"
                                     Padding="12"
+                                    HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Stretch"
                                     Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).OpenTaskCommand}"
                                     CommandParameter="{Binding}"
@@ -248,15 +249,21 @@
                     <DataTemplate x:DataType="vm:ProjectCardViewModel">
                         <Border Classes="Card" Margin="0,0,0,4" Padding="0">
                             <!-- The card opens the project. Without a command
-                                 the card would be a dead element. -->
+                                 the card would be a dead element. The button
+                                 stretches, otherwise only its content would be
+                                 clickable. -->
                             <Button Background="Transparent"
                                     BorderThickness="0"
                                     Padding="12"
+                                    HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Stretch"
                                     Command="{Binding OpenCommand}"
                                     CommandParameter="{Binding}"
                                     ToolTip.Tip="Open the project">
-                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                                <!-- Fixed share for the chips and a fixed width
+                                     for the progress, so the values of all
+                                     cards stand below each other. -->
+                                <Grid ColumnDefinitions="Auto,2*,3*,170" ColumnSpacing="16">
                                     <!-- Leading folder icon on primaryContainer -->
                                     <Border Grid.Column="0" Classes="IconContainer"
                                             Background="{StaticResource PrimaryContainerBrush}">
@@ -265,14 +272,55 @@
                                     </Border>
 
                                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}" Classes="TitleMedium" />
+                                        <TextBlock Text="{Binding Name}" Classes="TitleMedium"
+                                                   TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding UpdatedText}" Classes="BodyMedium" />
+                                        <TextBlock Text="{Binding ReferenceText}" Classes="Muted"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   IsVisible="{Binding HasReference}"
+                                                   ToolTip.Tip="{Binding ReferenceText}" />
                                     </StackPanel>
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
-                                                VerticalAlignment="Center">
+                                    <!-- The open tasks by type, and the overdue ones. -->
+                                    <WrapPanel Grid.Column="2" Orientation="Horizontal"
+                                               ItemSpacing="6" LineSpacing="6"
+                                               VerticalAlignment="Center">
+                                        <Border Classes="Chip Chip-Overdue" IsVisible="{Binding HasOverdue}"
+                                                ToolTip.Tip="Open tasks with a due date that has passed">
+                                            <TextBlock Text="{Binding OverdueText}" />
+                                        </Border>
+                                        <ItemsControl ItemsSource="{Binding OpenByType}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:TypeCountViewModel">
+                                                    <Border Classes="Chip"
+                                                            Background="{Binding BackgroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}"
+                                                            ToolTip.Tip="Open tasks of this type">
+                                                        <TextBlock Text="{Binding Text}"
+                                                                   Foreground="{Binding ForegroundKey, Converter={x:Static controls:ResourceBrushConverter.Instance}}" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </WrapPanel>
+
+                                    <!-- Progress: the share of closed tasks. -->
+                                    <StackPanel Grid.Column="3" Spacing="6" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding OpenOfTotal}" Classes="LabelMedium"
+                                                   HorizontalAlignment="Right"
                                                    Foreground="{StaticResource OnSurfaceVariantBrush}" />
+                                        <ProgressBar Minimum="0" Maximum="1"
+                                                     Value="{Binding DoneRatio}"
+                                                     Height="4" MinHeight="4" MinWidth="0"
+                                                     CornerRadius="2"
+                                                     Foreground="{StaticResource PrimaryBrush}"
+                                                     Background="{StaticResource SurfaceContainerHighestBrush}"
+                                                     IsVisible="{Binding HasTasks}"
+                                                     ToolTip.Tip="Share of closed tasks" />
                                     </StackPanel>
                                 </Grid>
                             </Button>

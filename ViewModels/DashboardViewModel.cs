@@ -253,12 +253,17 @@ public partial class DashboardViewModel : ViewModelBase
         _allTasks.AddRange(snapshot.Tasks);
 
         _allProjects.Clear();
+        var tasksOfProject = snapshot.Tasks.ToLookup(t => t.ProjectId);
         foreach (var project in snapshot.Projects)
-            _allProjects.Add(new ProjectCardViewModel
+        {
+            var card = new ProjectCardViewModel
             {
                 Project = project,
                 OpenCommand = OpenProjectCommand,
-            });
+            };
+            card.ApplyTasks(tasksOfProject[project.Id]);
+            _allProjects.Add(card);
+        }
 
         ApplySearch();
 
