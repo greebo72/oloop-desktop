@@ -8,6 +8,11 @@ name: release
 # file names comes from the tag, so the tag and the packages cannot
 # disagree.
 #
+# The text of the release is the section of the version in CHANGELOG.md
+# (.github/scripts/changelog-notes.sh). A tag without such a section stops
+# the pipeline before anything is built, so no release goes out without its
+# notes.
+#
 # All packages are self-contained: the user unpacks the archive and runs
 # the app, without installing a runtime. There is no installer on Windows
 # and no AppImage on Linux - a tarball runs everywhere, an AppImage needs
@@ -29,8 +34,19 @@ permissions:
   contents: write
 
 jobs:
+  changelog:
+    name: Changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that the changelog has notes for the version
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: .github/scripts/changelog-notes.sh "$TAG" > /dev/null
+
   build:
     name: ${{ matrix.name }}
+    needs: changelog
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -78,6 +94,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Download the packages
         uses: actions/download-artifact@v4
         with:
@@ -91,17 +108,19 @@ jobs:
           # A release that exists already is updated, not duplicated. The
           # workflow can be run again for the same tag.
           #
-          # --repo is needed: this job has no checkout, so gh cannot find
-          # the repository on its own.
+          # The checkout is only there for the changelog and its script.
+          # --repo stays explicit, so gh never has to guess the repository.
           repo="${{ github.repository }}"
+          .github/scripts/changelog-notes.sh "$TAG" > notes.md
           if gh release view "$TAG" --repo "$repo" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/* --clobber --repo "$repo"
+            gh release edit "$TAG" --notes-file notes.md --repo "$repo"
             echo "Release $TAG updated."
           else
             gh release create "$TAG" dist/* \
               --repo "$repo" \
               --target "${{ github.sha }}" \
               --title "oloop $TAG" \
-              --generate-notes
+              --notes-file notes.md
             echo "Release $TAG created."
           fi
