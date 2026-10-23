@@ -34,6 +34,19 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
+                    <Button Classes="Icon"
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding TaskList.IsGrouped}"
+                            ToolTip.Tip="Collapse or expand all groups"
+                            AutomationProperties.Name="Collapse or expand all groups">
+                        <PathIcon Data="{StaticResource IconMoreVert}" Width="16" Height="16" />
+                        <Button.Flyout>
+                            <MenuFlyout>
+                                <MenuItem Header="Collapse all" Command="{Binding TaskList.CollapseAllCommand}" />
+                                <MenuItem Header="Expand all" Command="{Binding TaskList.ExpandAllCommand}" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">

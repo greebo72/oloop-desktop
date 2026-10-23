@@ -34,6 +34,19 @@
                                    MinWidth="110" />
                 </StackPanel>
 
+                <Button Classes="Icon"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="Collapse or expand all groups"
+                        AutomationProperties.Name="Collapse or expand all groups">
+                    <PathIcon Data="{StaticResource IconMoreVert}" Width="16" Height="16" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Collapse all" Command="{Binding CollapseAllCommand}" />
+                            <MenuItem Header="Expand all" Command="{Binding ExpandAllCommand}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+
                 <CheckBox Content="Show closed"
                           IsChecked="{Binding ShowClosed, Mode=TwoWay}"
                           VerticalAlignment="Center" />
@@ -56,9 +69,18 @@
                             <DataTemplate x:DataType="vm:SilenceGroupViewModel">
                                 <StackPanel Spacing="2">
 
-                                    <TextBlock Text="{Binding Title}"
-                                               Classes="SectionHeader"
-                                               Margin="4,10,0,4" />
+                                    <Button Classes="GroupHeader"
+                                            Command="{Binding ToggleCommand}"
+                                            ToolTip.Tip="{Binding ToggleToolTip}"
+                                            AutomationProperties.Name="{Binding AutomationName}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconDropDown}" Width="16" Height="16"
+                                                      IsVisible="{Binding IsExpanded}" />
+                                            <PathIcon Data="{StaticResource IconChevronRight}" Width="16" Height="16"
+                                                      IsVisible="{Binding !IsExpanded}" />
+                                            <TextBlock Text="{Binding HeaderText}" Classes="SectionHeader" />
+                                        </StackPanel>
+                                    </Button>
 
                                     <ItemsControl ItemsSource="{Binding Rows}">
                                         <ItemsControl.ItemTemplate>

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Filters;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Io;
@@ -23,6 +24,7 @@ public partial class TaskListViewModel : ViewModelBase
     private int _openCount;
     private int _totalCount;
     private bool _isEmpty;
+    private readonly CollapseState _collapse = new();
 
     /// <summary>
     /// Creates the task list of a project. The settings are taken from the
@@ -45,8 +47,20 @@ public partial class TaskListViewModel : ViewModelBase
 
         shell.PropertyChanged += OnShellPropertyChanged;
 
+        CollapseAllCommand = new RelayCommand(() => SetAllExpanded(false));
+        ExpandAllCommand = new RelayCommand(() => SetAllExpanded(true));
+
         Refresh();
     }
+
+    /// <summary>Collapses every group of the list.</summary>
+    public IRelayCommand CollapseAllCommand { get; }
+
+    /// <summary>Expands every group of the list.</summary>
+    public IRelayCommand ExpandAllCommand { get; }
+
+    /// <summary>Whether the tasks are grouped, so groups can be collapsed.</summary>
+    public bool IsGrouped => Grouping != GroupingMode.None;
 
     /// <summary>The project whose tasks are listed.</summary>
     public OloopProject Project { get; }
@@ -232,8 +246,22 @@ public partial class TaskListViewModel : ViewModelBase
             if (group.Tasks.Count == 0)
                 continue;
 
-            Groups.Add(new TaskGroupViewModel(group.Title, group.Tasks, this));
+            Groups.Add(new TaskGroupViewModel(
+                group.Title, group.Tasks, this, expanded: !_collapse.IsCollapsed(group.Title)));
         }
+    }
+
+    /// <summary>
+    /// Remembers the state of a group that the user collapsed or expanded, so
+    /// the next reload builds it the same way.
+    /// </summary>
+    internal void GroupToggled(TaskGroupViewModel group)
+        => _collapse.Set(group.Title, group.IsExpanded);
+
+    private void SetAllExpanded(bool expanded)
+    {
+        foreach (var group in Groups)
+            group.IsExpanded = expanded;
     }
 
     /// <summary>
@@ -254,7 +282,15 @@ public partial class TaskListViewModel : ViewModelBase
     /// </summary>
     public void SelectFirst()
     {
-        var first = Groups.SelectMany(g => g.Rows).FirstOrDefault();
+        var group = Groups.FirstOrDefault();
+        if (group is null)
+            return;
+
+        // The first group can be collapsed; the task at the top is still
+        // the first task of the list.
+        group.IsExpanded = true;
+
+        var first = group.Rows.FirstOrDefault();
         if (first is not null)
             SelectRow(first);
     }
@@ -275,8 +311,14 @@ public partial class TaskListViewModel : ViewModelBase
 
         // The "silent since" filter of the settings can hide a task that
         // was found by the search. The task wins: the filter is switched off.
-        if (StaleDays is not null && !Groups.SelectMany(g => g.Rows).Any(r => r.Task.Id == taskId))
+        if (StaleDays is not null && !Groups.SelectMany(g => g.Tasks).Any(t => t.Id == taskId))
             StaleDays = null;
+
+        // The task can sit in a collapsed group: the group is expanded, so
+        // the selected row is visible.
+        var owner = Groups.FirstOrDefault(g => g.Tasks.Any(t => t.Id == taskId));
+        if (owner is not null)
+            owner.IsExpanded = true;
 
         var row = Groups.SelectMany(g => g.Rows).FirstOrDefault(r => r.Task.Id == taskId);
         if (row is null)
@@ -318,6 +360,11 @@ public partial class TaskListViewModel : ViewModelBase
         var option = GroupingOptions.FirstOrDefault(o => o.Mode == value);
         if (option is not null && !ReferenceEquals(option, SelectedGrouping))
             SelectedGrouping = option;
+
+        // Another grouping has other groups: the state of the old ones is
+        // of no use.
+        _collapse.Clear();
+        OnPropertyChanged(nameof(IsGrouped));
 
         Refresh();
     }
