@@ -86,10 +86,12 @@
                                                             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                                                 <TextBlock Text="{Binding Title}"
                                                                            Classes="TitleMedium"
+                                                                           Classes.Closed="{Binding IsClosed}"
                                                                            MaxLines="2"
                                                                            TextWrapping="Wrap"
                                                                            TextTrimming="CharacterEllipsis" />
-                                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                                                            Classes.ClosedMeta="{Binding IsClosed}">
                                                                     <!-- The project, because the
                                                                          tasks come from everywhere. -->
                                                                     <TextBlock Text="{Binding ProjectName}" Classes="BodyMedium" />
