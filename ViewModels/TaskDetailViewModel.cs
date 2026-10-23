@@ -4,6 +4,7 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OloopApp.Controls;
+using OloopApp.Core.Filters;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Models;
 
@@ -357,7 +358,7 @@ public partial class TaskDetailViewModel : ViewModelBase
         if (IsEditing)
             return;
 
-        Editor = new EditTaskViewModel(Task);
+        Editor = new EditTaskViewModel(Task, LabelIndex.Build(Shell.Tasks));
     }
 
     /// <summary>Leaves the edit mode. What was typed in it is dropped.</summary>
@@ -380,6 +381,7 @@ public partial class TaskDetailViewModel : ViewModelBase
         // builds the detail of the task anew. While the write runs, this
         // detail must not be picked up as the draft again.
         _isWriting = true;
+        var adopted = editor.AdoptedLabels;
         try
         {
             var outcome = await Shell.SaveTaskEditAsync(
@@ -388,6 +390,14 @@ public partial class TaskDetailViewModel : ViewModelBase
 
             // Saved: the list shows the new detail. Discarded: the user chose
             // to reload. Either way the edit of this detail is over.
+            if (outcome == WriteOutcome.Saved)
+            {
+                // Say which labels took the spelling of an existing one.
+                var note = LabelSuggester.Describe(adopted);
+                if (note.Length > 0)
+                    Shell.StatusMessage = MainViewModel.JoinStatus(Shell.StatusMessage ?? "", note);
+            }
+
             if (outcome != WriteOutcome.NotSaved)
             {
                 _retired = true;

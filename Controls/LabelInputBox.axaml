@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:filters="using:OloopApp.Core.Filters"
+             x:Class="OloopApp.Controls.LabelInputBox">
+
+    <UserControl.Styles>
+        <!-- The chosen suggestion in the colours of the app. -->
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}" />
+        </Style>
+        <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}" />
+        </Style>
+        <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <TextBox x:Name="Input"
+                 AutomationProperties.Name="Labels" />
+
+        <!-- The labels that fit what is typed. The popup never takes the
+             focus: the user keeps typing in the text box. -->
+        <Popup x:Name="SuggestionPopup"
+               Placement="BottomEdgeAlignedLeft"
+               IsLightDismissEnabled="False">
+            <Border x:Name="SuggestionBorder"
+                    Background="{StaticResource SurfaceContainerHighBrush}"
+                    BorderBrush="{StaticResource OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="4"
+                    Margin="0,4,0,0"
+                    BoxShadow="0 8 24 0 #66000000">
+                <ListBox x:Name="SuggestionList"
+                         Focusable="False"
+                         Background="Transparent"
+                         AutomationProperties.Name="Label suggestions">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="filters:LabelEntry">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                <TextBlock Text="{Binding Name}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Count}" Classes="Muted"
+                                           VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </Popup>
+    </Panel>
+</UserControl>
