@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Filters;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Models;
@@ -29,6 +30,7 @@ public partial class SilentTasksViewModel : ViewModelBase
     private int _openCount;
     private int _totalCount;
     private bool _isEmpty;
+    private readonly CollapseState _collapse = new();
 
     /// <summary>Creates the view.</summary>
     public SilentTasksViewModel(MainViewModel shell)
@@ -37,8 +39,17 @@ public partial class SilentTasksViewModel : ViewModelBase
 
         shell.PropertyChanged += OnShellPropertyChanged;
 
+        CollapseAllCommand = new RelayCommand(() => SetAllExpanded(false));
+        ExpandAllCommand = new RelayCommand(() => SetAllExpanded(true));
+
         Refresh();
     }
+
+    /// <summary>Collapses every bucket of the view.</summary>
+    public IRelayCommand CollapseAllCommand { get; }
+
+    /// <summary>Expands every bucket of the view.</summary>
+    public IRelayCommand ExpandAllCommand { get; }
 
     /// <summary>The shell, used for the search text and the task data.</summary>
     public MainViewModel Shell { get; }
@@ -133,10 +144,10 @@ public partial class SilentTasksViewModel : ViewModelBase
     {
         get
         {
-            var tasks = Groups.Sum(g => g.Rows.Count);
+            var tasks = Groups.Sum(g => g.Count);
             var projects = Groups
-                .SelectMany(g => g.Rows)
-                .Select(r => r.ProjectName)
+                .SelectMany(g => g.Tasks)
+                .Select(t => ProjectOf(t).Name)
                 .Where(name => name.Length > 0)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count();
@@ -202,11 +213,25 @@ public partial class SilentTasksViewModel : ViewModelBase
         Groups.Clear();
         foreach (var group in Silence.Group(filtered))
         {
-            Groups.Add(new SilenceGroupViewModel(group.Title, group.Tasks, this));
+            Groups.Add(new SilenceGroupViewModel(
+                group.Title, group.Tasks, this, expanded: !_collapse.IsCollapsed(group.Title)));
         }
 
         OnPropertyChanged(nameof(Summary));
         OnPropertyChanged(nameof(FilterText));
+    }
+
+    /// <summary>
+    /// Remembers the state of a bucket that the user collapsed or expanded,
+    /// so the next reload builds it the same way.
+    /// </summary>
+    internal void GroupToggled(SilenceGroupViewModel group)
+        => _collapse.Set(group.Title, group.IsExpanded);
+
+    private void SetAllExpanded(bool expanded)
+    {
+        foreach (var group in Groups)
+            group.IsExpanded = expanded;
     }
 
     /// <summary>Shows the detail of the given row.</summary>

@@ -310,6 +310,19 @@
         <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}" />
     </Style>
 
+    <!-- The header of a group in a list: a flat button with an arrow. -->
+    <Style Selector="Button.GroupHeader">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="4,4" />
+        <Setter Property="Margin" Value="0,6,0,2" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Button.GroupHeader:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceContainerHighBrush}" />
+    </Style>
+
     <!-- Extended FAB "New task". -->
     <Style Selector="Button.Fab">
         <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}" />

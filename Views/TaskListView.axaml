@@ -15,10 +15,19 @@
                     <DataTemplate x:DataType="vm:TaskGroupViewModel">
                         <StackPanel Spacing="2">
 
-                            <TextBlock Text="{Binding Title}"
-                                       Classes="SectionHeader"
-                                       Margin="4,10,0,4"
-                                       IsVisible="{Binding HasTitle}" />
+                            <Button Classes="GroupHeader"
+                                    Command="{Binding ToggleCommand}"
+                                    IsVisible="{Binding HasTitle}"
+                                    ToolTip.Tip="{Binding ToggleToolTip}"
+                                    AutomationProperties.Name="{Binding AutomationName}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconDropDown}" Width="16" Height="16"
+                                              IsVisible="{Binding IsExpanded}" />
+                                    <PathIcon Data="{StaticResource IconChevronRight}" Width="16" Height="16"
+                                              IsVisible="{Binding !IsExpanded}" />
+                                    <TextBlock Text="{Binding HeaderText}" Classes="SectionHeader" />
+                                </StackPanel>
+                            </Button>
 
                             <ItemsControl ItemsSource="{Binding Rows}">
                                 <ItemsControl.ItemTemplate>
