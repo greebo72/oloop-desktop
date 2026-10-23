@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OloopApp.Core.Filters;
 using OloopApp.Core.Models;
 
 namespace OloopApp.ViewModels;
@@ -31,9 +32,16 @@ public partial class NewTaskViewModel : ViewModelBase
     /// The type the dialog starts with — the type the user picked last. Null
     /// means the first type of the row.
     /// </param>
-    public NewTaskViewModel(OloopProject project, TaskType? preferredType = null)
+    /// <param name="knownLabels">
+    /// The labels that already exist, for the suggestions of the label input.
+    /// </param>
+    public NewTaskViewModel(
+        OloopProject project,
+        TaskType? preferredType = null,
+        IReadOnlyList<LabelEntry>? knownLabels = null)
     {
         Project = project;
+        KnownLabels = knownLabels ?? [];
         TypeOptions = TaskTypeExtensions.All
             .Select(type => new TaskTypeOption(type, SelectType))
             .ToList();
@@ -93,10 +101,20 @@ public partial class NewTaskViewModel : ViewModelBase
     /// <summary>The description — what the store would write.</summary>
     public string TrimmedDescription => (Description ?? "").Trim();
 
+    /// <summary>The labels that already exist, offered while the user types.</summary>
+    public IReadOnlyList<LabelEntry> KnownLabels { get; }
+
     /// <summary>
     /// The labels of the task, normalized the way the store normalizes them.
+    /// A label that only differs in case from an existing one takes the
+    /// spelling of the existing one.
     /// </summary>
-    public IReadOnlyList<string> Labels => LabelParser.Parse(LabelsText);
+    public IReadOnlyList<string> Labels
+        => LabelSuggester.Adopt(LabelParser.Parse(LabelsText), keep: null, KnownLabels).Labels;
+
+    /// <summary>The labels that were written in the spelling of an existing label.</summary>
+    public IReadOnlyList<AdoptedLabel> AdoptedLabels
+        => LabelSuggester.Adopt(LabelParser.Parse(LabelsText), keep: null, KnownLabels).Adopted;
 
     partial void OnTitleChanged(string value) => NotifySaveState();
 

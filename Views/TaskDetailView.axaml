@@ -138,8 +138,8 @@
 
                 <StackPanel Spacing="6">
                     <TextBlock Text="Labels" Classes="SectionHeader" />
-                    <TextBox Text="{Binding Editor.LabelsText, Mode=TwoWay}"
-                             PlaceholderText="comma separated, e.g. ui, backend" />
+                    <controls:LabelInputBox Text="{Binding Editor.LabelsText, Mode=TwoWay}"
+                                            KnownLabels="{Binding Editor.KnownLabels}" />
                 </StackPanel>
 
                 <StackPanel Spacing="6">

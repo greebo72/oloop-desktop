@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OloopApp.Core.Filters;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Models;
 
@@ -27,9 +28,13 @@ public partial class EditTaskViewModel : ViewModelBase
     /// Creates the view model for an existing task, pre-filled with its values.
     /// </summary>
     /// <param name="task">The task to edit.</param>
-    public EditTaskViewModel(OloopTask task)
+    /// <param name="knownLabels">
+    /// The labels that already exist, for the suggestions of the label input.
+    /// </param>
+    public EditTaskViewModel(OloopTask task, IReadOnlyList<LabelEntry>? knownLabels = null)
     {
         Task = task;
+        KnownLabels = knownLabels ?? [];
 
         _originalTitle = task.Title;
         _originalDescription = task.Description ?? "";
@@ -128,10 +133,21 @@ public partial class EditTaskViewModel : ViewModelBase
     /// <summary>The description — what the store would write.</summary>
     public string TrimmedDescription => (Description ?? "").Trim();
 
+    /// <summary>The labels that already exist, offered while the user types.</summary>
+    public IReadOnlyList<LabelEntry> KnownLabels { get; }
+
     /// <summary>
     /// The labels of the task, normalized the way the store normalizes them.
+    /// A label that is new to the task and only differs in case from an
+    /// existing one takes the spelling of the existing one. The labels the
+    /// task already carried keep their spelling.
     /// </summary>
-    public IReadOnlyList<string> Labels => LabelParser.Parse(LabelsText);
+    public IReadOnlyList<string> Labels
+        => LabelSuggester.Adopt(LabelParser.Parse(LabelsText), _originalLabels, KnownLabels).Labels;
+
+    /// <summary>The labels that were written in the spelling of an existing label.</summary>
+    public IReadOnlyList<AdoptedLabel> AdoptedLabels
+        => LabelSuggester.Adopt(LabelParser.Parse(LabelsText), _originalLabels, KnownLabels).Adopted;
 
     /// <summary>The validation message for the title, empty when the title is fine.</summary>
     public string? TitleError => TitleValidation.Error(Title);

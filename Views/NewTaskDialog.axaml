@@ -104,8 +104,8 @@
                  ============================================================ -->
             <StackPanel Grid.Row="4" Spacing="6" Margin="0,0,0,14">
                 <TextBlock Text="Labels" Classes="SectionHeader" />
-                <TextBox Text="{Binding LabelsText, Mode=TwoWay}"
-                         PlaceholderText="comma separated, e.g. ui, backend" />
+                <controls:LabelInputBox Text="{Binding LabelsText, Mode=TwoWay}"
+                                        KnownLabels="{Binding KnownLabels}" />
             </StackPanel>
 
             <!-- ============================================================

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OloopApp.Core.Filters;
 using OloopApp.Core.Io;
 using OloopApp.Core.Models;
 
@@ -523,7 +524,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             return false;
 
         // The dialog starts with the type the user picked last.
-        var viewModel = new NewTaskViewModel(project, PreferredType);
+        var viewModel = new NewTaskViewModel(project, PreferredType, LabelIndex.Build(Tasks));
         if (!await Dialogs.ShowNewTaskAsync(viewModel))
             return false;
 
@@ -535,11 +536,17 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         {
             // The type of the created task is remembered for the next one.
             RememberType(viewModel.Type);
-            StatusMessage = $"Task '{viewModel.TrimmedTitle}' created.";
+            StatusMessage = JoinStatus(
+                $"Task '{viewModel.TrimmedTitle}' created.",
+                LabelSuggester.Describe(viewModel.AdoptedLabels));
         }
 
         return created;
     }
+
+    /// <summary>Joins the parts of a status line, leaving out the empty ones.</summary>
+    internal static string JoinStatus(params string[] parts)
+        => string.Join(" ", parts.Where(p => p.Length > 0));
 
     /// <summary>
     /// The task type the new task dialog starts with: the type that was used
