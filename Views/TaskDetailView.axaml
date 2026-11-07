@@ -191,7 +191,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:CommentViewModel">
                                 <StackPanel Spacing="4" Margin="0,0,0,8">
-                                    <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
+                                    <SelectableTextBlock Text="{Binding Body}" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding CreatedText}" Classes="Muted" />
                                 </StackPanel>
                             </DataTemplate>

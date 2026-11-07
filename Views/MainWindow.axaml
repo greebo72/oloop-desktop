@@ -5,9 +5,34 @@
         x:Class="OloopApp.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/oloop.ico"
+        WindowDecorations="Full"
         Width="1280" Height="820"
         MinWidth="900" MinHeight="600"
         Background="{StaticResource SurfaceBrush}">
+
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="File">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="New Project..." Command="{Binding NewProjectCommand}" />
+                        <NativeMenuItem Header="New Task..." Command="{Binding NewTaskCommand}" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Settings..." Command="{Binding SettingsCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="View">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Projects" Command="{Binding BackToDashboardCommand}" />
+                        <NativeMenuItem Header="Silent Since" Command="{Binding ToggleSilentCommand}" />
+                        <NativeMenuItem Header="Reload" Command="{Binding RefreshCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+        </NativeMenu>
+    </NativeMenu.Menu>
 
     <Grid RowDefinitions="Auto,Auto,*">
 

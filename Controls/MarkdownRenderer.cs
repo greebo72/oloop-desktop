@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Markdig.Helpers;
@@ -85,7 +86,7 @@ public static class MarkdownRenderer
                 break;
 
             case HtmlBlock html:
-                parent.Children.Add(new TextBlock
+                parent.Children.Add(new SelectableTextBlock
                 {
                     Text = AsText(html.Lines),
                     Classes = { "BodyMedium" },
@@ -130,9 +131,9 @@ public static class MarkdownRenderer
         return panel;
     }
 
-    private static TextBlock CreateSegment(Segment segment, string styleClass, double? fontSize)
+    private static SelectableTextBlock CreateSegment(Segment segment, string styleClass, double? fontSize)
     {
-        var text = new TextBlock
+        var text = new SelectableTextBlock
         {
             Text = segment.Text,
             Classes = { styleClass },
@@ -173,7 +174,7 @@ public static class MarkdownRenderer
                 Spacing = 8,
             };
 
-            row.Children.Add(new TextBlock
+            row.Children.Add(new SelectableTextBlock
             {
                 Text = list.IsOrdered ? $"{number}." : "•",
                 Classes = { "BodyLarge" },
@@ -195,7 +196,115 @@ public static class MarkdownRenderer
             number++;
         }
 
+        var copyButton = new Button
+        {
+            Classes = { "Text" },
+            Content = "Copy list",
+            HorizontalAlignment = HorizontalAlignment.Right,
+        };
+
+        var copyText = GetListText(list);
+        copyButton.Click += async (_, _) =>
+        {
+            var top = TopLevel.GetTopLevel(copyButton);
+            if (top?.Clipboard is { } clipboard)
+                await clipboard.SetTextAsync(copyText);
+        };
+
+        panel.Children.Add(copyButton);
         return panel;
+    }
+
+    private static string GetListText(ListBlock list, int depth = 0)
+    {
+        var lines = new List<string>();
+        var number = list.IsOrdered ? ParseOrderedStart(list.OrderedStart) : 0;
+
+        foreach (var item in list)
+        {
+            if (item is not ListItemBlock listItem)
+                continue;
+
+            var marker = new string(' ', depth * 2) + (list.IsOrdered ? $"{number}. " : "• ");
+            var hasContent = false;
+
+            foreach (var child in listItem)
+            {
+                if (child is not Block childBlock)
+                    continue;
+
+                if (childBlock is ListBlock nestedList)
+                {
+                    if (!hasContent)
+                        lines.Add(marker.TrimEnd());
+
+                    lines.AddRange(GetListText(nestedList, depth + 1).Split('\n'));
+                    hasContent = true;
+                    continue;
+                }
+
+                var blockLines = GetListItemText(childBlock);
+                if (blockLines.Count == 0)
+                    continue;
+
+                if (!hasContent)
+                {
+                    lines.Add(marker + blockLines[0]);
+                    hasContent = true;
+                    blockLines.RemoveAt(0);
+                }
+
+                var continuationIndent = new string(' ', depth * 2 + 2);
+                lines.AddRange(blockLines.Select(line => continuationIndent + line));
+            }
+
+            if (!hasContent)
+                lines.Add(marker.TrimEnd());
+
+            number++;
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    private static List<string> GetListItemText(Block block)
+    {
+        switch (block)
+        {
+            case ParagraphBlock paragraph:
+                return GetInlineText(paragraph.Inline);
+
+            case HeadingBlock heading:
+                return GetInlineText(heading.Inline);
+
+            case CodeBlock code:
+                return AsText(code.Lines).Split('\n').Select(line => line.TrimEnd('\r')).ToList();
+
+            case HtmlBlock html:
+                return AsText(html.Lines).Split('\n').Select(line => line.TrimEnd('\r')).ToList();
+
+            case QuoteBlock quote:
+                var lines = new List<string>();
+                foreach (var child in quote)
+                {
+                    if (child is Block childBlock)
+                        lines.AddRange(GetListItemText(childBlock));
+                }
+                return lines;
+
+            default:
+                return new List<string>();
+        }
+    }
+
+    private static List<string> GetInlineText(ContainerInline? inline)
+    {
+        if (inline is null)
+            return new List<string>();
+
+        return CollectLines(inline)
+            .Select(line => string.Concat(Merge(line).Select(segment => segment.Text)))
+            .ToList();
     }
 
     private static Control CreateQuote(QuoteBlock quote)

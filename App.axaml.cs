@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using OloopApp.ViewModels;
@@ -8,6 +9,15 @@ namespace OloopApp;
 
 public partial class App : Application
 {
+    private async void OnAboutClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime
+            { MainWindow: { } owner })
+            return;
+
+        await new AboutDialog().ShowDialog(owner);
+    }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

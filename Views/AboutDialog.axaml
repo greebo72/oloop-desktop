@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:OloopApp"
+        x:Class="OloopApp.Views.AboutDialog"
+        Title="About oloop"
+        Width="420"
+        SizeToContent="Height"
+        MinWidth="360"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="28">
+        <StackPanel Spacing="14" HorizontalAlignment="Center">
+            <Image Source="/Assets/oloop.png" Width="104" Height="104" Stretch="Uniform" />
+            <TextBlock Text="oloop" Classes="TitleLarge" HorizontalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                <TextBlock Text="Version" Classes="Muted" />
+                <TextBlock Text="{x:Static app:AppVersion.Text}" Classes="Muted" />
+            </StackPanel>
+            <TextBlock Text="A local cross-project tracker for todos, questions, decisions, features and bugs."
+                       Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="340"
+                       TextAlignment="Center" />
+            <Button Classes="Text" Content="Oloop on GitHub" Click="OnProjectLinkClick"
+                    HorizontalAlignment="Center" />
+            <Button Classes="Outlined" Content="Close" Click="OnCloseClick"
+                    HorizontalAlignment="Center" />
+        </StackPanel>
+    </Border>
+</Window>

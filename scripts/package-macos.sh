@@ -70,6 +70,8 @@ cat > "$bundle/Contents/Info.plist" <<PLIST
     <string>oloop</string>
     <key>CFBundleDisplayName</key>
     <string>oloop</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>oloop needs access to Documents to store project data there.</string>
     <key>CFBundleIdentifier</key>
     <string>app.oloop.desktop</string>
     <key>CFBundleVersion</key>
