@@ -60,7 +60,7 @@ public class SplitViewUiTests
         UpdatedAt = "2026-01-01T09:00:00Z",
         UpdatedBy = "alice",
         Labels = ["docs"],
-        Description = "# Heading\n\nSome **bold** text.\n\n```csharp\nvar x = 1;\n```\n",
+        Description = "# Heading\n\nSome **bold** text.\n\n| AP | Beschreibung | Status |\n| --- | --- | --- |\n| AP1 | Spring-Boot-Modulith-Grundgeruest ddp-server | erledigt |\n\n```csharp\nvar x = 1;\n```\n",
         Comments =
         [
             new TaskComment { Body = "First!", CreatedAt = "2026-01-01T10:00:00Z" },
@@ -119,6 +119,13 @@ public class SplitViewUiTests
 
             // The Markdown of the description is rendered, the code block included.
             Assert.NotEmpty(Descendants<CodeBlockView>(window));
+            var table = Descendants<Panel>(window).Single(panel => panel.Classes.Contains("MarkdownTable"));
+            var headerCells = table.Children.Cast<Border>().Take(3).ToList();
+            Assert.True(headerCells[0].Bounds.Width < headerCells[1].Bounds.Width);
+            texts = Descendants<TextBlock>(window).Select(t => t.Text).ToList();
+            Assert.Contains("AP", texts);
+            Assert.Contains("Beschreibung", texts);
+            Assert.Contains("Status", texts);
 
             window.Close();
         });

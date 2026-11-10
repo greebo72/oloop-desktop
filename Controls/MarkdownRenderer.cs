@@ -5,6 +5,8 @@ using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Markdig;
+using Markdig.Extensions.Tables;
 using Markdig.Helpers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -25,6 +27,9 @@ namespace OloopApp.Controls;
 public static class MarkdownRenderer
 {
     private const string Monospace = "Cascadia Code, JetBrains Mono, Consolas, monospace";
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+        .UsePipeTables()
+        .Build();
 
     /// <summary>
     /// Parses the Markdown and returns the control tree of the document.
@@ -37,7 +42,7 @@ public static class MarkdownRenderer
         if (string.IsNullOrWhiteSpace(markdown))
             return panel;
 
-        var document = Markdig.Markdown.Parse(markdown);
+        var document = Markdig.Markdown.Parse(markdown, Pipeline);
 
         foreach (var item in document)
         {
@@ -67,6 +72,10 @@ public static class MarkdownRenderer
 
             case ListBlock list:
                 parent.Children.Add(CreateList(list));
+                break;
+
+            case Table table:
+                parent.Children.Add(CreateTable(table));
                 break;
 
             case QuoteBlock quote:
@@ -100,6 +109,160 @@ public static class MarkdownRenderer
                     if (item is Block child)
                         AppendBlock(parent, child);
                 }
+                break;
+        }
+    }
+
+    private static Panel CreateTable(Table table)
+    {
+        var rows = table.OfType<TableRow>().ToList();
+        var grid = new MarkdownTablePanel { Classes = { "MarkdownTable" } };
+
+        for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+        {
+            var cells = rows[rowIndex].OfType<TableCell>().ToList();
+
+            for (var columnIndex = 0; columnIndex < cells.Count; columnIndex++)
+            {
+                var content = new StackPanel { Spacing = 2 };
+                foreach (var item in cells[columnIndex])
+                {
+                    if (item is Block block)
+                        AppendBlock(content, block);
+                }
+
+                var border = new Border
+                {
+                    BorderBrush = new SolidColorBrush(Color.Parse("#5B5B66")),
+                    BorderThickness = new Thickness(1),
+                    Padding = new Thickness(8, 6),
+                    Child = content,
+                };
+
+                if (rows[rowIndex].IsHeader)
+                    SetBold(content);
+
+                Grid.SetRow(border, rowIndex);
+                Grid.SetColumn(border, columnIndex);
+                grid.Children.Add(border);
+            }
+        }
+
+        return grid;
+    }
+
+    private sealed class MarkdownTablePanel : Panel
+    {
+        private double[] _intrinsicColumnWidths = [];
+        private double[] _columnWidths = [];
+        private double[] _rowHeights = [];
+
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            var columnCount = Children.Count == 0 ? 0 : Children.Max(child => Grid.GetColumn(child)) + 1;
+            var rowCount = Children.Count == 0 ? 0 : Children.Max(child => Grid.GetRow(child)) + 1;
+            if (columnCount == 0 || rowCount == 0)
+                return default;
+
+            _intrinsicColumnWidths = new double[columnCount];
+            foreach (var child in Children)
+            {
+                child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                var column = Grid.GetColumn(child);
+                _intrinsicColumnWidths[column] = Math.Max(_intrinsicColumnWidths[column], child.DesiredSize.Width);
+            }
+
+            var availableWidth = double.IsFinite(availableSize.Width)
+                ? Math.Max(0, availableSize.Width)
+                : _intrinsicColumnWidths.Sum();
+            _columnWidths = DistributeWidth(availableWidth, _intrinsicColumnWidths);
+            _rowHeights = new double[rowCount];
+
+            foreach (var child in Children)
+            {
+                var row = Grid.GetRow(child);
+                var column = Grid.GetColumn(child);
+                child.Measure(new Size(_columnWidths[column], availableSize.Height));
+                _rowHeights[row] = Math.Max(_rowHeights[row], child.DesiredSize.Height);
+            }
+
+            return new Size(availableWidth, _rowHeights.Sum());
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            if (_columnWidths.Length == 0 || _rowHeights.Length == 0)
+                return finalSize;
+
+            _columnWidths = DistributeWidth(finalSize.Width, _intrinsicColumnWidths);
+            var columnOffsets = new double[_columnWidths.Length];
+            var rowOffsets = new double[_rowHeights.Length];
+
+            for (var column = 1; column < columnOffsets.Length; column++)
+                columnOffsets[column] = columnOffsets[column - 1] + _columnWidths[column - 1];
+
+            for (var row = 1; row < rowOffsets.Length; row++)
+                rowOffsets[row] = rowOffsets[row - 1] + _rowHeights[row - 1];
+
+            foreach (var child in Children)
+            {
+                var row = Grid.GetRow(child);
+                var column = Grid.GetColumn(child);
+                child.Arrange(new Rect(
+                    columnOffsets[column],
+                    rowOffsets[row],
+                    _columnWidths[column],
+                    _rowHeights[row]));
+            }
+
+            return finalSize;
+        }
+
+        private static double[] DistributeWidth(double availableWidth, double[] intrinsicWidths)
+        {
+            var widths = new double[intrinsicWidths.Length];
+            var remainingColumns = Enumerable.Range(0, intrinsicWidths.Length).ToList();
+            var remainingWidth = availableWidth;
+
+            while (remainingColumns.Count > 0)
+            {
+                var equalShare = remainingWidth / remainingColumns.Count;
+                var compactColumns = remainingColumns
+                    .Where(column => intrinsicWidths[column] <= equalShare)
+                    .ToArray();
+
+                if (compactColumns.Length == 0)
+                {
+                    foreach (var column in remainingColumns)
+                        widths[column] = equalShare;
+                    break;
+                }
+
+                foreach (var column in compactColumns)
+                {
+                    widths[column] = intrinsicWidths[column];
+                    remainingWidth -= widths[column];
+                    remainingColumns.Remove(column);
+                }
+            }
+
+            return widths;
+        }
+    }
+
+    private static void SetBold(Control control)
+    {
+        switch (control)
+        {
+            case TextBlock text:
+                text.FontWeight = FontWeight.SemiBold;
+                break;
+            case Panel panel:
+                foreach (var child in panel.Children)
+                    SetBold(child);
+                break;
+            case Border { Child: { } child }:
+                SetBold(child);
                 break;
         }
     }
