@@ -144,6 +144,7 @@ public class DialogViewModelTests
         Assert.Equal("Original description", vm.Description);
         Assert.Equal("ui, backend", vm.LabelsText);
         Assert.Equal(TaskType.bug, vm.Type);
+        Assert.True(vm.TypeOptions.Single(o => o.Type == TaskType.bug).IsSelected);
     }
 
     [Fact]
@@ -182,6 +183,19 @@ public class DialogViewModelTests
         vm.LabelsText = "ui";
 
         Assert.True(vm.IsDirty);
+    }
+
+    [Fact]
+    public void EditTask_Is_Dirty_When_The_Type_Changes()
+    {
+        var vm = new EditTaskViewModel(Task());
+
+        vm.TypeOptions.Single(o => o.Type == TaskType.feature).SelectCommand.Execute(null);
+
+        Assert.Equal(TaskType.feature, vm.Type);
+        Assert.True(vm.IsDirty);
+        Assert.True(vm.TypeOptions.Single(o => o.Type == TaskType.feature).IsSelected);
+        Assert.False(vm.TypeOptions.Single(o => o.Type == TaskType.bug).IsSelected);
     }
 
     [Fact]

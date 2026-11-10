@@ -120,6 +120,7 @@ public sealed class OloopTask
     public bool SameContentAs(OloopTask? other)
         => other is not null
            && Id == other.Id
+           && Type == other.Type
            && Title == other.Title
            && Status == other.Status
            && Description == other.Description
@@ -141,14 +142,15 @@ public sealed class OloopTask
         string? updatedBy = null,
         IReadOnlyList<TaskComment>? comments = null,
         bool setDueDate = false,
-        string? dueDate = null)
+        string? dueDate = null,
+        TaskType? type = null)
     {
         return new OloopTask
         {
             FormatVersion = FormatVersion,
             Id = Id,
             ProjectId = ProjectId,
-            Type = Type,
+            Type = type ?? Type,
             Title = title ?? Title,
             Status = status ?? Status,
             ImagePath = ImagePath,

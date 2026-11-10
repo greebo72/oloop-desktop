@@ -76,6 +76,21 @@ public class StoreTests : IDisposable
     }
 
     [Fact]
+    public async Task EditTask_Updates_And_Persists_Type()
+    {
+        var store = Store;
+        var project = await store.CreateProjectAsync("My Project");
+        var task = await store.CreateTaskAsync(project, TaskType.todo, "Title", "Body", [], "alice");
+
+        var edited = await store.EditTaskAsync(task, project, null, null, null, "bob", type: TaskType.bug);
+        var path = Path.Combine(_root, project.FolderName, "tasks", task.Id + ".md");
+        var reread = TaskIo.Read(task.Id, await File.ReadAllTextAsync(path), project.Id);
+
+        Assert.Equal(TaskType.bug, edited.Type);
+        Assert.Equal(TaskType.bug, reread.Type);
+    }
+
+    [Fact]
     public async Task SetStatus_Closes_And_Reopens()
     {
         var store = Store;

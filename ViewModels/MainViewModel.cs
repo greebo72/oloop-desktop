@@ -696,7 +696,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>Changes title, description and labels of a task.</summary>
+    /// <summary>Changes the type, title, description and labels of a task.</summary>
     public async Task<bool> EditTaskAsync(
         OloopTask task,
         OloopProject project,
@@ -704,7 +704,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         string description,
         IReadOnlyList<string> labels,
         bool setDueDate = false,
-        string? dueDate = null)
+        string? dueDate = null,
+        TaskType? type = null)
     {
         var store = Store;
         if (store is null)
@@ -719,13 +720,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         return await MutateAsync(store, task, baseTask =>
             store.EditTaskAsync(baseTask, project, title, description, labels, actor,
-                setDueDate: setDueDate, dueDate: dueDate));
+                setDueDate: setDueDate, dueDate: dueDate, type: type));
     }
 
     /// <summary>
-    /// Changes title, description and labels of a task for the edit mode of
-    /// the detail pane. The outcome tells the pane whether to keep what the
-    /// user typed: only "Reload" in the conflict dialog throws it away.
+    /// Changes the type, title, description and labels of a task for the edit
+    /// mode of the detail pane. The outcome tells the pane whether to keep
+    /// what the user typed: only "Reload" in the conflict dialog throws it away.
     /// </summary>
     public async Task<WriteOutcome> SaveTaskEditAsync(
         OloopTask task,
@@ -734,7 +735,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         string description,
         IReadOnlyList<string> labels,
         bool setDueDate = false,
-        string? dueDate = null)
+        string? dueDate = null,
+        TaskType? type = null)
     {
         var store = Store;
         if (store is null)
@@ -749,7 +751,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         var outcome = await MutateOutcomeAsync(store, task, baseTask =>
             store.EditTaskAsync(baseTask, project, title, description, labels, actor,
-                setDueDate: setDueDate, dueDate: dueDate));
+                setDueDate: setDueDate, dueDate: dueDate, type: type));
 
         if (outcome == WriteOutcome.Saved)
             StatusMessage = $"Task '{title}' saved.";

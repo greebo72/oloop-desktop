@@ -7,12 +7,8 @@ using OloopApp.Core.Models;
 namespace OloopApp.ViewModels;
 
 /// <summary>
-/// Collects the input of the edit task dialog: title, description and labels
-/// of an existing task.
-///
-/// The type of a task is immutable in the oloop format, so it is shown but
-/// not editable. Like the new task dialog this view model only gathers the
-/// values — the shell performs the write.
+/// Collects the input for editing an existing task. Like the new task dialog
+/// this view model only gathers the values — the shell performs the write.
 /// </summary>
 public partial class EditTaskViewModel : ViewModelBase
 {
@@ -20,6 +16,7 @@ public partial class EditTaskViewModel : ViewModelBase
     private readonly string _originalDescription;
     private readonly IReadOnlyList<string> _originalLabels;
     private readonly DateTime? _originalDueDate;
+    private readonly TaskType _originalType;
 
     /// <summary>The task behind the dialog.</summary>
     public OloopTask Task { get; }
@@ -35,16 +32,22 @@ public partial class EditTaskViewModel : ViewModelBase
     {
         Task = task;
         KnownLabels = knownLabels ?? [];
+        TypeOptions = TaskTypeExtensions.All
+            .Select(type => new TaskTypeOption(type, SelectType))
+            .ToList();
 
         _originalTitle = task.Title;
         _originalDescription = task.Description ?? "";
         _originalLabels = task.Labels;
         _originalDueDate = Core.Grouping.DueDate.Parse(task.DueDate);
+        _originalType = task.Type;
         _dueDate = _originalDueDate;
 
         _title = task.Title;
         _description = task.Description ?? "";
         _labelsText = string.Join(", ", task.Labels);
+        Type = task.Type;
+        UpdateSelection(Type);
     }
 
     /// <summary>The title of the task. Required, 1 to 300 characters.</summary>
@@ -58,6 +61,13 @@ public partial class EditTaskViewModel : ViewModelBase
     /// <summary>The labels of the task as comma separated free text.</summary>
     [ObservableProperty]
     private string _labelsText;
+
+    /// <summary>The selected type options.</summary>
+    public IReadOnlyList<TaskTypeOption> TypeOptions { get; }
+
+    /// <summary>The type of the task.</summary>
+    [ObservableProperty]
+    private TaskType _type;
 
     /// <summary>
     /// The due date picked in the calendar, null for none. Only the date part
@@ -86,16 +96,14 @@ public partial class EditTaskViewModel : ViewModelBase
         !string.Equals(TrimmedTitle, _originalTitle.Trim(), StringComparison.Ordinal) ||
         !string.Equals(TrimmedDescription, _originalDescription.Trim('\n'), StringComparison.Ordinal) ||
         !Labels.SequenceEqual(_originalLabels, StringComparer.Ordinal) ||
-        DueDate?.Date != _originalDueDate?.Date;
-
-    /// <summary>The type of the task — immutable, shown but not editable.</summary>
-    public TaskType Type => Task.Type;
+        DueDate?.Date != _originalDueDate?.Date ||
+        Type != _originalType;
 
     /// <summary>The name of the type of the task ("Todo", "Bug", …).</summary>
-    public string TypeName => Task.Type.DisplayName();
+    public string TypeName => Type.DisplayName();
 
     /// <summary>The theme key of the icon of the type.</summary>
-    public string IconKey => Task.Type switch
+    public string IconKey => Type switch
     {
         TaskType.todo => "IconChecklist",
         TaskType.question => "IconHelp",
@@ -106,7 +114,7 @@ public partial class EditTaskViewModel : ViewModelBase
     };
 
     /// <summary>The theme key of the container brush of the type.</summary>
-    public string BackgroundKey => Task.Type switch
+    public string BackgroundKey => Type switch
     {
         TaskType.todo => "TypeTodoBgBrush",
         TaskType.question => "TypeQuestionBgBrush",
@@ -117,7 +125,7 @@ public partial class EditTaskViewModel : ViewModelBase
     };
 
     /// <summary>The theme key of the foreground brush of the type.</summary>
-    public string ForegroundKey => Task.Type switch
+    public string ForegroundKey => Type switch
     {
         TaskType.todo => "TypeTodoBrush",
         TaskType.question => "TypeQuestionBrush",
@@ -162,6 +170,25 @@ public partial class EditTaskViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(DueDateStorage));
         NotifyState();
+    }
+
+    partial void OnTypeChanged(TaskType value)
+    {
+        UpdateSelection(value);
+        OnPropertyChanged(nameof(TypeName));
+        OnPropertyChanged(nameof(IconKey));
+        OnPropertyChanged(nameof(BackgroundKey));
+        OnPropertyChanged(nameof(ForegroundKey));
+        NotifyState();
+    }
+
+    /// <summary>Picks a type from the type row.</summary>
+    public void SelectType(TaskType type) => Type = type;
+
+    private void UpdateSelection(TaskType type)
+    {
+        foreach (var option in TypeOptions)
+            option.IsSelected = option.Type == type;
     }
 
     private void NotifyState()

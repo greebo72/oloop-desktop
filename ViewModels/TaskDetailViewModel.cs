@@ -14,10 +14,10 @@ namespace OloopApp.ViewModels;
 /// The right pane of the split view: everything about one task — the type,
 /// the status, the description and the comments.
 ///
-/// The pane edits in place: title, description and labels turn into input
-/// fields with an explicit Save. It never writes on its own: every change
-/// goes through the shell, which owns the write path and asks the user what
-/// to do when the file on disk has changed.
+/// The pane edits in place: type, title, description and labels turn into
+/// input fields with an explicit Save. It never writes on its own: every
+/// change goes through the shell, which owns the write path and asks the user
+/// what to do when the file on disk has changed.
 ///
 /// Input that is not written yet (an edit that changed something, a typed
 /// comment) is registered with the shell as a draft, so it is not lost when
@@ -386,7 +386,7 @@ public partial class TaskDetailViewModel : ViewModelBase
         {
             var outcome = await Shell.SaveTaskEditAsync(
                 Task, Project, editor.TrimmedTitle, editor.TrimmedDescription, editor.Labels,
-                setDueDate: true, dueDate: editor.DueDateStorage);
+                setDueDate: true, dueDate: editor.DueDateStorage, type: editor.Type);
 
             // Saved: the list shows the new detail. Discarded: the user chose
             // to reload. Either way the edit of this detail is over.

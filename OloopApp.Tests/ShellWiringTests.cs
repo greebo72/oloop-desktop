@@ -126,13 +126,14 @@ public class ShellWiringTests : IDisposable
         await shell.RefreshAsync();
 
         var outcome = await shell.SaveTaskEditAsync(
-            task, project, "New title", task.Description ?? "", task.Labels);
+            task, project, "New title", task.Description ?? "", task.Labels, type: TaskType.bug);
 
         Assert.Equal(WriteOutcome.Saved, outcome);
 
         var path = Path.Combine(_root, "my-project", "tasks", task.Id + ".md");
         var onDisk = TaskIo.Read(task.Id, await File.ReadAllTextAsync(path), project.Id);
         Assert.Equal("New title", onDisk.Title);
+        Assert.Equal(TaskType.bug, onDisk.Type);
     }
 
     // ---------------- The status ----------------
