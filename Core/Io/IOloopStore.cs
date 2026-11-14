@@ -22,6 +22,12 @@ public sealed record ImageOpenResult(Stream? Stream, string? Error);
 public interface IOloopStore
 {
     /// <summary>
+    /// Why the data cannot be read right now, for example because the folder
+    /// is gone. Null when the store is usable.
+    /// </summary>
+    string? CheckAvailable();
+
+    /// <summary>
     /// A cheap fingerprint of everything the app shows. Two equal
     /// fingerprints mean that a reload would show the same.
     /// </summary>

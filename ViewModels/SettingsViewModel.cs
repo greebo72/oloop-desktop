@@ -14,6 +14,49 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly OloopSettings _settings;
     private string? _error;
 
+    /// <summary>Where the data lives.</summary>
+    [ObservableProperty]
+    private StorageBackend _backend;
+
+    /// <summary>The address of the oloop server.</summary>
+    [ObservableProperty]
+    private string _serverUrl = "";
+
+    /// <summary>The user name on the oloop server.</summary>
+    [ObservableProperty]
+    private string _serverUser = "";
+
+    /// <summary>
+    /// Whether this build can talk to a server. As long as it cannot, the
+    /// dialog does not offer the choice. A test switches it on.
+    /// </summary>
+    public bool ServerBackendAvailable { get; init; }
+
+    /// <summary>Whether the data lives in a folder, so the folder is asked for.</summary>
+    public bool IsFolderBackend => Backend == StorageBackend.Folder;
+
+    /// <summary>Whether the data lives on a server, so the server is asked for.</summary>
+    public bool IsServerBackend => Backend == StorageBackend.Server;
+
+    /// <summary>The names of the backends, in the order of the combo box.</summary>
+    public IReadOnlyList<string> BackendNames { get; } = ["Folder", "Server"];
+
+    /// <summary>
+    /// The backend as the index of the combo box; -1 while nothing is
+    /// selected is ignored, like for the grouping.
+    /// </summary>
+    public int BackendIndex
+    {
+        get => (int)Backend;
+        set
+        {
+            if (value < 0 || value >= BackendNames.Count)
+                return;
+
+            Backend = (StorageBackend)value;
+        }
+    }
+
     /// <summary>The data root the app reads the projects from.</summary>
     [ObservableProperty]
     private string _dataRoot = "";
@@ -52,6 +95,9 @@ public partial class SettingsViewModel : ViewModelBase
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
+        Backend = settings.ResolveBackend();
+        ServerUrl = settings.ServerUrl ?? "";
+        ServerUser = settings.ServerUser ?? "";
         DataRoot = settings.ResolveDataRoot() ?? "";
         Actor = settings.ResolveActor();
         ShowClosed = settings.ShowClosed;
@@ -78,7 +124,10 @@ public partial class SettingsViewModel : ViewModelBase
     /// because there is nothing to show without it.
     /// </summary>
     public bool CanSave
-        => !string.IsNullOrWhiteSpace(Actor) && !string.IsNullOrWhiteSpace(DataRoot);
+        => !string.IsNullOrWhiteSpace(Actor)
+           && (IsServerBackend
+               ? !string.IsNullOrWhiteSpace(ServerUrl) && !string.IsNullOrWhiteSpace(ServerUser)
+               : !string.IsNullOrWhiteSpace(DataRoot));
 
     /// <summary>All grouping modes, in the order of the combo box.</summary>
     public IReadOnlyList<GroupingMode> GroupingModes { get; } = Enum.GetValues<GroupingMode>();
@@ -152,7 +201,13 @@ public partial class SettingsViewModel : ViewModelBase
         if (Error is not null)
             return;
 
+        _settings.Backend = Backend == StorageBackend.Server ? "server" : "folder";
         _settings.DataRoot = DataRoot?.Trim();
+        if (Backend == StorageBackend.Server)
+        {
+            _settings.ServerUrl = ServerEndpoint.Normalize(ServerUrl, out _);
+            _settings.ServerUser = ServerUser.Trim();
+        }
         _settings.Actor = Actor?.Trim() ?? "";
         _settings.ShowClosed = ShowClosed;
         _settings.Grouping = Grouping.ToString();
@@ -194,6 +249,19 @@ public partial class SettingsViewModel : ViewModelBase
             return;
         }
 
+        if (IsServerBackend)
+        {
+            ServerEndpoint.Normalize(ServerUrl, out var urlError);
+            if (urlError is not null)
+            {
+                Error = urlError;
+                return;
+            }
+
+            Error = string.IsNullOrWhiteSpace(ServerUser) ? "The user name on the server is required." : null;
+            return;
+        }
+
         var root = DataRoot?.Trim() ?? "";
         if (root.Length == 0)
         {
@@ -211,6 +279,27 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     partial void OnDataRootChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSave));
+        UpdateValidation();
+    }
+
+    partial void OnBackendChanged(StorageBackend value)
+    {
+        OnPropertyChanged(nameof(BackendIndex));
+        OnPropertyChanged(nameof(IsFolderBackend));
+        OnPropertyChanged(nameof(IsServerBackend));
+        OnPropertyChanged(nameof(CanSave));
+        UpdateValidation();
+    }
+
+    partial void OnServerUrlChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSave));
+        UpdateValidation();
+    }
+
+    partial void OnServerUserChanged(string value)
     {
         OnPropertyChanged(nameof(CanSave));
         UpdateValidation();

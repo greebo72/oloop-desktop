@@ -15,6 +15,8 @@ public abstract class OloopStoreBase : IOloopStore
     /// <summary>The only <c>formatVersion</c> this client knows.</summary>
     public const int SupportedFormatVersion = 1;
 
+    public abstract string? CheckAvailable();
+
     public abstract string Fingerprint();
 
     public abstract IChangeSource CreateChangeSource(TimeSpan debounce);

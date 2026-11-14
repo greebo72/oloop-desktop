@@ -25,6 +25,10 @@ public sealed class FileOloopStore : OloopStoreBase
     /// <summary>The data root this store works on.</summary>
     public string Root => _root;
 
+    /// <inheritdoc />
+    public override string? CheckAvailable()
+        => Directory.Exists(_root) ? null : $"The data folder '{_root}' does not exist.";
+
     // ---------------- Scanning ----------------
 
     /// <summary>

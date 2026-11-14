@@ -26,9 +26,32 @@
             </StackPanel>
 
             <!-- ============================================================
+                 Backend. Only offered when this build can use a server.
+                 ============================================================ -->
+            <StackPanel Spacing="6" IsVisible="{Binding ServerBackendAvailable}">
+                <TextBlock Text="Storage" Classes="LabelMedium" />
+                <ComboBox HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding BackendNames}"
+                          SelectedIndex="{Binding BackendIndex, Mode=TwoWay}" />
+            </StackPanel>
+
+            <!-- ============================================================
+                 Server
+                 ============================================================ -->
+            <StackPanel Spacing="6" IsVisible="{Binding IsServerBackend}">
+                <TextBlock Text="Server address" Classes="LabelMedium" />
+                <TextBox Text="{Binding ServerUrl, Mode=TwoWay}"
+                         PlaceholderText="https://oloop.example.org" />
+                <TextBlock Text="User name" Classes="LabelMedium" />
+                <TextBox Text="{Binding ServerUser, Mode=TwoWay}" />
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
+                           Text="The data is encrypted on this computer before it is sent. The server never sees it in clear text." />
+            </StackPanel>
+
+            <!-- ============================================================
                  Data folder
                  ============================================================ -->
-            <StackPanel Spacing="6">
+            <StackPanel Spacing="6" IsVisible="{Binding IsFolderBackend}">
                 <TextBlock Text="Data folder" Classes="LabelMedium" />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                     <TextBox Grid.Column="0"

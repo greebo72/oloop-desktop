@@ -237,10 +237,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            if (!Directory.Exists(root))
+            var store = CreateStore(root);
+            var unavailable = store.CheckAvailable();
+            if (unavailable is not null)
             {
                 StopWatching();
-                StatusMessage = $"The data folder '{root}' does not exist.";
+                StatusMessage = unavailable;
                 Dashboard.HasNoDataRoot = true;
                 Dashboard.Update(OloopSnapshot.Empty);
                 Projects.Clear();
@@ -249,8 +251,6 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 Silent?.Refresh();
                 return;
             }
-
-            var store = CreateStore(root);
 
             // Taken before the read: a file that changes while the folder is
             // read makes the next check differ, so the change is not lost.
@@ -395,10 +395,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public async Task ReloadIfChangedAsync()
     {
         var root = DataRoot?.Trim() ?? "";
-        if (root.Length == 0 || !Directory.Exists(root))
+        if (root.Length == 0)
             return;
 
-        if (CreateStore(root).Fingerprint() == _fingerprint)
+        var store = CreateStore(root);
+        if (store.CheckAvailable() is not null)
+            return;
+
+        if (store.Fingerprint() == _fingerprint)
             return;
 
         await RefreshAsync();
