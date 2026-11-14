@@ -108,7 +108,7 @@ public class FormatDriftTests : IDisposable
     [CliFact]
     public async Task The_CLI_Reads_Every_Title_That_This_Client_Writes()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Drift");
 
         var written = new List<(string Title, string Id)>();
@@ -144,7 +144,7 @@ public class FormatDriftTests : IDisposable
     [CliFact]
     public async Task The_CLI_Reads_Every_Title_That_Looks_Harmless_Too()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Drift");
 
         var written = new List<(string Title, string Id)>();
@@ -171,7 +171,7 @@ public class FormatDriftTests : IDisposable
     [CliFact]
     public async Task The_CLI_Reads_A_Title_With_A_Line_Break()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Drift");
 
         var title = "First line\nSecond line";
@@ -188,7 +188,7 @@ public class FormatDriftTests : IDisposable
     [CliFact]
     public async Task The_CLI_Reads_A_Project_Without_Reference_Fields()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         await store.CreateProjectAsync("No Reference");
 
         // The reference fields are omitted, not written as null — the schema
@@ -215,7 +215,7 @@ public class FormatDriftTests : IDisposable
         var output = RunCliIn(_cliRoot, "task", "add", "-p", "CLI Project", "-t", "bug", title, "-d", "body", "-l", "x");
         Assert.Contains("Task created", output, StringComparison.Ordinal);
 
-        var store = new OloopStore(_cliRoot);
+        var store = new FileOloopStore(_cliRoot);
         var snapshot = await store.LoadAsync();
 
         Assert.Empty(snapshot.Unreadable);
@@ -244,7 +244,7 @@ public class FormatDriftTests : IDisposable
             RunCliIn(_cliRoot, "comment", "add", id, "A comment");
         }
 
-        var store = new OloopStore(_cliRoot);
+        var store = new FileOloopStore(_cliRoot);
         var snapshot = await store.LoadAsync();
 
         Assert.Empty(snapshot.Unreadable);

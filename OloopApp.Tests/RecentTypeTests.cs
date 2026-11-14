@@ -77,7 +77,7 @@ public class RecentTypeTests : IDisposable
         var dialogs = new RecordingDialogService();
         shell.Dialogs = dialogs;
 
-        var project = await new OloopStore(_root).CreateProjectAsync("Example");
+        var project = await new FileOloopStore(_root).CreateProjectAsync("Example");
 
         await shell.OpenNewTaskAsync(project);
 
@@ -92,7 +92,7 @@ public class RecentTypeTests : IDisposable
         var dialogs = new RecordingDialogService();
         shell.Dialogs = dialogs;
 
-        var project = await new OloopStore(_root).CreateProjectAsync("Example");
+        var project = await new FileOloopStore(_root).CreateProjectAsync("Example");
 
         // The user picks another type in the dialog.
         dialogs.OnNewTask = vm => vm.Type = TaskType.feature;
@@ -110,7 +110,7 @@ public class RecentTypeTests : IDisposable
         var dialogs = new RecordingDialogService();
         shell.Dialogs = dialogs;
 
-        var project = await new OloopStore(_root).CreateProjectAsync("Example");
+        var project = await new FileOloopStore(_root).CreateProjectAsync("Example");
         dialogs.OnNewTask = vm => vm.Type = TaskType.question;
 
         await shell.OpenNewTaskAsync(project);
@@ -133,7 +133,7 @@ public class RecentTypeTests : IDisposable
         var dialogs = new RecordingDialogService { CancelNewTask = true };
         shell.Dialogs = dialogs;
 
-        var project = await new OloopStore(_root).CreateProjectAsync("Example");
+        var project = await new FileOloopStore(_root).CreateProjectAsync("Example");
 
         await shell.OpenNewTaskAsync(project);
 

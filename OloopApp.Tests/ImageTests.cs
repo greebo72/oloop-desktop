@@ -100,7 +100,7 @@ public class ImageTests : IDisposable
     [Fact]
     public void The_Image_Path_Is_Relative_To_The_Project_Folder()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         Directory.CreateDirectory(Path.Combine(_root, "example-project"));
 
         var path = store.ResolveImagePath(Project(), "images/abc.png");
@@ -113,7 +113,7 @@ public class ImageTests : IDisposable
     [Fact]
     public void A_Path_That_Leaves_The_Project_Is_Refused()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         Directory.CreateDirectory(Path.Combine(_root, "example-project"));
 
         // The path comes from a file on disk — it must not reach the rest

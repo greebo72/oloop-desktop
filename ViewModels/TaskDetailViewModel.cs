@@ -463,24 +463,17 @@ public partial class TaskDetailViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(_imagePath) || _imageProject is null)
             return;
 
-        var store = Shell.StoreOrNull;
-        var path = store?.ResolveImagePath(_imageProject, _imagePath);
-
-        if (path is null)
+        var opened = Shell.StoreOrNull?.OpenImage(_imageProject, _imagePath);
+        if (opened?.Stream is null)
         {
-            _imageError = "The image path of the task is not valid.";
-            return;
-        }
-
-        if (!File.Exists(path))
-        {
-            _imageError = "The image of the task is missing.";
+            _imageError = opened?.Error ?? "The image path of the task is not valid.";
             return;
         }
 
         try
         {
-            _image = new Bitmap(path);
+            using (opened.Stream)
+                _image = new Bitmap(opened.Stream);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or ArgumentException or NotSupportedException)

@@ -133,9 +133,9 @@ public class LabelFilterTests : IDisposable
         Actor = "claude",
     };
 
-    private async Task<(MainViewModel shell, OloopStore store, OloopProject project)> Seeded()
+    private async Task<(MainViewModel shell, FileOloopStore store, OloopProject project)> Seeded()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
         await store.CreateTaskAsync(project, TaskType.bug, "one", "", ["bug", "ui"], "claude");
         await store.CreateTaskAsync(project, TaskType.todo, "two", "", ["Bug"], "claude");

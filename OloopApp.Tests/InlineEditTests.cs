@@ -51,9 +51,9 @@ public class InlineEditTests : IDisposable
     }
 
     /// <summary>A project with two tasks, opened in the split view.</summary>
-    private async Task<(MainViewModel Shell, OloopStore Store, OloopProject Project, OloopTask First, OloopTask Second)> OpenAsync()
+    private async Task<(MainViewModel Shell, FileOloopStore Store, OloopProject Project, OloopTask First, OloopTask Second)> OpenAsync()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("My Project");
         var first = await store.CreateTaskAsync(project, TaskType.todo, "First", "First body", ["a"], "claude");
         var second = await store.CreateTaskAsync(project, TaskType.bug, "Second", "", [], "claude");
@@ -236,7 +236,7 @@ public class InlineEditTests : IDisposable
 
     // ---------------------------------- Conflicts ----------------------------------
 
-    private async Task ChangeBehindTheBackAsync(OloopStore store, OloopProject project, OloopTask task)
+    private async Task ChangeBehindTheBackAsync(FileOloopStore store, OloopProject project, OloopTask task)
     {
         var onDisk = await ReadAsync(project, task.Id);
         await store.WriteTaskAsync(

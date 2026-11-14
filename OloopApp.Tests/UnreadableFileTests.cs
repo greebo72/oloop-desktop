@@ -56,7 +56,7 @@ public class UnreadableFileTests : IDisposable
     /// </summary>
     private async Task<string> WriteBrokenTaskAsync()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Broken");
         var id = "33333333-3333-4333-8333-333333333333";
 
@@ -91,7 +91,7 @@ public class UnreadableFileTests : IDisposable
     {
         var path = await WriteBrokenTaskAsync();
 
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var snapshot = await store.LoadAsync();
 
         var unreadable = Assert.Single(snapshot.Unreadable);
@@ -105,7 +105,7 @@ public class UnreadableFileTests : IDisposable
         var path = await WriteBrokenTaskAsync();
         var before = await File.ReadAllTextAsync(path);
 
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var snapshot = await store.LoadAsync();
 
         Assert.NotEmpty(snapshot.Unreadable);
@@ -124,7 +124,7 @@ public class UnreadableFileTests : IDisposable
     {
         await WriteBrokenTaskAsync();
 
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var snapshot = await store.LoadAsync();
 
         var shell = new MainViewModel { DataRoot = _root, Actor = "alice" };

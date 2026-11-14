@@ -93,7 +93,7 @@ public class WatchDataFolderTests : IDisposable
     [Fact]
     public void The_Fingerprint_Changes_With_Content_And_Not_With_Backups_Or_Temp_Files()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var before = store.Fingerprint();
         Assert.Equal(before, store.Fingerprint());
 
@@ -115,7 +115,7 @@ public class WatchDataFolderTests : IDisposable
     [Fact]
     public async Task A_Task_Written_From_Outside_Shows_Up_Without_A_Reload()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
         await store.CreateTaskAsync(project, TaskType.todo, "First", "", [], "cli");
 
@@ -133,7 +133,7 @@ public class WatchDataFolderTests : IDisposable
     [Fact]
     public async Task A_New_Project_And_A_Change_Of_A_Task_Show_Up()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
         var task = await store.CreateTaskAsync(project, TaskType.todo, "First", "", [], "cli");
 
@@ -150,7 +150,7 @@ public class WatchDataFolderTests : IDisposable
     [Fact]
     public async Task The_Apps_Own_Write_Reloads_Once_Not_Twice()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
 
         using var shell = Shell();
@@ -172,7 +172,7 @@ public class WatchDataFolderTests : IDisposable
     [Fact]
     public async Task Selection_And_A_Typed_Comment_Survive_A_Reload_From_Outside()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
         await store.CreateTaskAsync(project, TaskType.todo, "Selected one", "", [], "cli");
 
@@ -199,7 +199,7 @@ public class WatchDataFolderTests : IDisposable
     [Fact]
     public async Task An_Edit_That_Is_Under_Way_Survives_A_Change_Of_The_Same_Task_From_Outside()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
         var task = await store.CreateTaskAsync(project, TaskType.todo, "Original", "", [], "cli");
 
@@ -222,7 +222,7 @@ public class WatchDataFolderTests : IDisposable
     [Fact]
     public async Task Without_The_Switch_The_Shell_Does_Not_Watch()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
 
         using var shell = Shell();

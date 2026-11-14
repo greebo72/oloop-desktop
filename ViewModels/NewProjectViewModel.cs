@@ -10,7 +10,7 @@ namespace OloopApp.ViewModels;
 /// </summary>
 public partial class NewProjectViewModel : ViewModelBase
 {
-    private readonly OloopStore _store;
+    private readonly IOloopStore _store;
     private string? _error;
 
     /// <summary>The name of the project. Required, at most 200 characters.</summary>
@@ -60,7 +60,7 @@ public partial class NewProjectViewModel : ViewModelBase
     /// Creates the view model for a store and the actor who creates the
     /// project.
     /// </summary>
-    public NewProjectViewModel(OloopStore store, string actor)
+    public NewProjectViewModel(IOloopStore store, string actor)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         Actor = actor ?? "";

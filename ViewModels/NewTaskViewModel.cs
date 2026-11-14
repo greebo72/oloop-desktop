@@ -10,7 +10,7 @@ namespace OloopApp.ViewModels;
 /// the type of the task.
 ///
 /// The view model only gathers the values — writing them to disk is the job
-/// of the shell, which calls <see cref="OloopApp.Core.Io.OloopStore"/>
+/// of the shell, which calls <see cref="OloopApp.Core.Io.IOloopStore"/>
 /// after the dialog was confirmed.
 /// </summary>
 public partial class NewTaskViewModel : ViewModelBase

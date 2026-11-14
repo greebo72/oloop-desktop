@@ -7,7 +7,7 @@ namespace OloopApp.ViewModels;
 /// list the store expects.
 ///
 /// The normalization rules (trim, drop empty labels, remove duplicates) are
-/// not re-implemented here: <see cref="OloopStore.NormalizeLabels"/> is the
+/// not re-implemented here: <see cref="OloopStoreBase.NormalizeLabels"/> is the
 /// very method the store applies when it writes, so the dialog and the store
 /// always agree.
 /// </summary>
@@ -23,6 +23,6 @@ public static class LabelParser
             return [];
 
         var parts = commaSeparated.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        return OloopStore.NormalizeLabels(parts);
+        return OloopStoreBase.NormalizeLabels(parts);
     }
 }

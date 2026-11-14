@@ -22,7 +22,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private const string RootChanged = "The data folder changed, so nothing was written. Please try again.";
 
     private readonly OloopSettings _settings;
-    private OloopStore? _store;
+    private IOloopStore? _store;
     private string? _storeRoot;
 
     /// <summary>
@@ -250,7 +250,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            var store = new OloopStore(root);
+            var store = CreateStore(root);
 
             // Taken before the read: a file that changes while the folder is
             // read makes the next check differ, so the change is not lost.
@@ -299,7 +299,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     // ---------------- Watching the data folder ----------------
 
-    private DataFolderWatcher? _watcher;
+    private IChangeSource? _watcher;
+    private string? _watchedRoot;
     private string? _fingerprint;
     private SynchronizationContext? _uiContext;
 
@@ -332,7 +333,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             return;
 
         if (_watcher is not null
-            && string.Equals(_watcher.Folder, root, StringComparison.Ordinal))
+            && string.Equals(_watchedRoot, root, StringComparison.Ordinal))
         {
             return;
         }
@@ -345,10 +346,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var watcher = new DataFolderWatcher(root, WatchDebounce);
+            var watcher = CreateStore(root).CreateChangeSource(WatchDebounce);
             watcher.Changed += OnWatcherChanged;
             watcher.Failed += OnWatcherFailed;
             _watcher = watcher;
+            _watchedRoot = root;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or ArgumentException or PlatformNotSupportedException)
@@ -362,6 +364,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         _watcher?.Dispose();
         _watcher = null;
+        _watchedRoot = null;
         _fingerprint = null;
     }
 
@@ -395,7 +398,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         if (root.Length == 0 || !Directory.Exists(root))
             return;
 
-        if (new OloopStore(root).Fingerprint() == _fingerprint)
+        if (CreateStore(root).Fingerprint() == _fingerprint)
             return;
 
         await RefreshAsync();
@@ -803,13 +806,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// the conflict dialog: the user reloads, overwrites or cancels.
     /// </summary>
     private async Task<bool> MutateAsync(
-        OloopStore store,
+        IOloopStore store,
         OloopTask task,
         Func<OloopTask, Task<OloopTask>> write)
         => await MutateOutcomeAsync(store, task, write) == WriteOutcome.Saved;
 
     private async Task<WriteOutcome> MutateOutcomeAsync(
-        OloopStore store,
+        IOloopStore store,
         OloopTask task,
         Func<OloopTask, Task<OloopTask>> write)
     {
@@ -836,7 +839,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// file changed on disk.
     /// </summary>
     private async Task<WriteOutcome> HandleConflictAsync(
-        OloopStore store,
+        IOloopStore store,
         OloopTask task,
         OloopConflictException conflict,
         Func<OloopTask, Task<OloopTask>> write)
@@ -865,7 +868,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// the change is applied on top of that version.
     /// </summary>
     private async Task<bool> OverwriteAsync(
-        OloopStore store,
+        IOloopStore store,
         OloopTask task,
         Func<OloopTask, Task<OloopTask>> write)
     {
@@ -897,9 +900,17 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     // ---------------- Helpers ----------------
 
     /// <summary>
+    /// Creates the store for a data root. The folder store is the default; a
+    /// test or another backend replaces it.
+    /// </summary>
+    public Func<string, IOloopStore> StoreFactory { get; set; } = root => new FileOloopStore(root);
+
+    private IOloopStore CreateStore(string root) => StoreFactory(root);
+
+    /// <summary>
     /// The store for the current data root. Null when no data root is set.
     /// </summary>
-    private OloopStore? Store
+    private IOloopStore? Store
     {
         get
         {
@@ -909,7 +920,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
             if (_store is null || _storeRoot != root)
             {
-                _store = new OloopStore(root);
+                _store = CreateStore(root);
                 _storeRoot = root;
             }
 
@@ -921,7 +932,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// The store of the current data root, also when there is none. The views
     /// use it to look up files that belong to a task, like its image.
     /// </summary>
-    public OloopStore? StoreOrNull
+    public IOloopStore? StoreOrNull
     {
         get
         {

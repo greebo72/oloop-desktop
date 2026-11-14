@@ -205,9 +205,9 @@ public class UnknownFieldsTests : IDisposable
 
     // ---------------- The app keeps them when it changes a task ----------------
 
-    private async Task<(OloopStore Store, OloopProject Project, OloopTask Task)> StoreWithExtrasAsync()
+    private async Task<(FileOloopStore Store, OloopProject Project, OloopTask Task)> StoreWithExtrasAsync()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("My Project");
         var task = await store.CreateTaskAsync(project, TaskType.todo, "A task", "Body", [], "claude");
 
@@ -334,7 +334,7 @@ public class UnknownFieldsTests : IDisposable
     [Fact]
     public async Task Edit_Close_And_Comment_Keep_The_Due_Date()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("My Project");
         var task = await store.CreateTaskAsync(project, TaskType.todo, "A task", "", [], "claude");
 
