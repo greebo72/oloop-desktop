@@ -1,4 +1,7 @@
+using Avalonia.Headless;
+using OloopApp.Core.Crypto;
 using OloopApp.Core.Io;
+using OloopApp.Core.Models;
 using OloopApp.Core.Server;
 using OloopApp.ViewModels;
 using Xunit;
@@ -15,6 +18,9 @@ public class ServerShellTests : IDisposable
     private readonly MemorySecrets _secrets = new();
     private readonly ScriptedDialogs _dialogs = new();
     private readonly Dictionary<Guid, MemoryRevisionLedger> _ledgers = [];
+
+    private static HeadlessUnitTestSession Headless { get; } =
+        HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ServerShellTests).Assembly);
 
     public ServerShellTests() => Directory.CreateDirectory(_dir);
 
@@ -305,5 +311,70 @@ public class ServerShellTests : IDisposable
         await shell.OpenSettingsAsync();
 
         Assert.False(seen!.CanForgetRevisions);
+    }
+
+    // ---------------- Images ----------------
+
+    /// <summary>A task with an image on the server, as an agent leaves it, and the shell that shows it.</summary>
+    private async Task<(MainViewModel Shell, OloopProject Project, OloopTask Task)> ShellWithImageTaskAsync(byte[] picture)
+    {
+        var shell = await FirstStartAsync();
+        var store = shell.StoreOrNull!;
+        var project = await store.CreateProjectAsync("Garden");
+        var task = await store.CreateTaskAsync(project, TaskType.todo, "Look", "", null, "claude");
+
+        // What an agent would do: open the key of the project with the keys of the user, as a
+        // second device does with the passphrase, and encrypt the picture for this task.
+        var api = new ServerApi(_server.CreateClient(), FakeOloopServer.BaseUrl);
+        await api.LoginAsync("timo", "secret", "an agent");
+        var keys = new KeyService(api);
+        var user = await keys.UnlockWithPassphraseAsync((await keys.FetchBundleAsync())!, Passphrase);
+
+        var blobId = Guid.NewGuid();
+        _server.AddBlob(blobId, Guid.Parse(task.Id), Envelope.Seal(
+            _server.ProjectKey(Guid.Parse(project.Id), user.SecretKey, user.PublicKey), picture,
+            AssociatedData.Blob(blobId, Guid.Parse(task.Id), 1)));
+        var written = TaskIo.Read(task.Id,
+            TaskIo.Write(task).Replace("imagePath: null", "imagePath: blob:" + blobId.ToString("D")), project.Id);
+        await store.WriteTaskAsync(project, written, task.UpdatedAt);
+        written.ProjectName = project.Name;
+        return (shell, project, written);
+    }
+
+    private static byte[] RealPicture() => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Assets", "oloop.png"));
+
+    [Fact]
+    public async Task The_Image_Of_A_Task_On_The_Server_Is_Shown_In_The_Detail()
+    {
+        var (shell, project, task) = await ShellWithImageTaskAsync(RealPicture());
+        using var _ = shell;
+
+        await Headless.Dispatch(() =>
+        {
+            var detail = new TaskDetailViewModel(task, project, shell);
+
+            // The fake answers at once, so the picture is there with the first look.
+            Assert.False(detail.HasImageError, detail.ImageError);
+            Assert.True(detail.HasImage);
+            Assert.NotNull(detail.Image);
+            Assert.False(detail.IsImageLoading);
+        }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task An_Image_That_Is_Not_A_Picture_Shows_The_Reason_And_No_Broken_Image()
+    {
+        var (shell, project, task) = await ShellWithImageTaskAsync("not a picture at all"u8.ToArray());
+        using var _ = shell;
+
+        await Headless.Dispatch(() =>
+        {
+            var detail = new TaskDetailViewModel(task, project, shell);
+
+            // The fake answers at once, so the result is there with the first look.
+            Assert.False(detail.HasImage);
+            Assert.True(detail.HasImageError);
+            Assert.Contains("PNG, JPEG, GIF or WebP", detail.ImageError);
+        }, CancellationToken.None);
     }
 }

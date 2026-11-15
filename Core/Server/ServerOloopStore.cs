@@ -331,7 +331,125 @@ public sealed class ServerOloopStore : OloopStoreBase
 
     /// <inheritdoc />
     public override ImageOpenResult OpenImage(OloopProject project, string? imagePath)
-        => new(null, "Images are not supported on the server yet.");
+        => new(null, "An image on the server is fetched over the network: use OpenImageAsync.");
+
+    // ---------------- Images ----------------
+
+    private const string BlobPrefix = "blob:";
+
+    // The most an image may weigh (SERVER.md, "Limits"), and the envelope around it.
+    private const int MaxBlobBytes = 10 * 1024 * 1024 + 1024;
+
+    // The decrypted images that were shown. A blob never changes, so the same image is not fetched
+    // and decrypted again at every reload of the data; the oldest go when the total is too big.
+    private const long ImageCacheBytes = 64L * 1024 * 1024;
+    private readonly Dictionary<(Guid Blob, Guid Task), byte[]> _images = [];
+    private readonly Queue<(Guid Blob, Guid Task)> _imageOrder = new();
+    private long _imageBytes;
+
+    private void KeepImage((Guid Blob, Guid Task) key, byte[] bytes)
+    {
+        lock (_gate)
+        {
+            if (_images.ContainsKey(key) || bytes.Length > ImageCacheBytes)
+                return;
+
+            _images[key] = bytes;
+            _imageOrder.Enqueue(key);
+            _imageBytes += bytes.Length;
+            while (_imageBytes > ImageCacheBytes && _imageOrder.TryDequeue(out var oldest))
+            {
+                if (_images.Remove(oldest, out var gone))
+                    _imageBytes -= gone.Length;
+            }
+        }
+    }
+
+    /// <summary>The blob id of an <c>imagePath</c> of the form <c>blob:&lt;id&gt;</c>, or null for anything else.</summary>
+    private static Guid? BlobOf(string? imagePath)
+        => imagePath is not null
+           && imagePath.StartsWith(BlobPrefix, StringComparison.Ordinal)
+           && Guid.TryParse(imagePath[BlobPrefix.Length..], out var id)
+            ? id
+            : null;
+
+    /// <summary>
+    /// Fetches and decrypts the image of a task (SERVER.md, "Images"). The blob is bound to its task
+    /// and to a key version by the associated data. The key version is not on the blob, so the
+    /// versions of the project key that this client holds are tried, the newest first; the tag
+    /// tells the right one. A blob that is not there, or not an image of a known kind, is reported
+    /// and is not an error of the app.
+    /// </summary>
+    public override async Task<ImageOpenResult> OpenImageAsync(
+        OloopProject project, OloopTask task, CancellationToken ct = default)
+    {
+        if (BlobOf(task.ImagePath) is not { } blobId
+            || !Guid.TryParse(task.Id, out var taskId)
+            || !Guid.TryParse(project.Id, out var projectId))
+        {
+            return new ImageOpenResult(null, "The image path of the task is not valid.");
+        }
+
+        lock (_gate)
+        {
+            if (_images.TryGetValue((blobId, taskId), out var kept))
+                return new ImageOpenResult(new MemoryStream(kept, writable: false), null);
+        }
+
+        byte[] envelope;
+        try
+        {
+            envelope = (await _api.SendAsync(HttpMethod.Get, "v1/blobs/" + blobId.ToString("D"), ct: ct)
+                .ConfigureAwait(false)).Body;
+        }
+        catch (ServerApiException ex) when (ex.IsNotFound)
+        {
+            return new ImageOpenResult(null, "The image of the task is missing.");
+        }
+        catch (IOException ex)
+        {
+            return new ImageOpenResult(null, "The image of the task could not be loaded: " + ex.Message);
+        }
+
+        if (envelope.Length > MaxBlobBytes)
+            return new ImageOpenResult(null, "The image of the task is larger than the server allows.");
+
+        List<KeyValuePair<int, byte[]>> keys;
+        lock (_gate)
+        {
+            keys = _projectKeys.TryGetValue(projectId, out var versions)
+                ? versions.OrderByDescending(v => v.Key).ToList()
+                : [];
+        }
+
+        if (keys.Count == 0)
+            return new ImageOpenResult(null, "There is no key for the project of this image. Reload the data.");
+
+        foreach (var (version, key) in keys)
+        {
+            byte[] bytes;
+            try
+            {
+                bytes = Envelope.Open(key, envelope, AssociatedData.Blob(blobId, taskId, version));
+            }
+            catch (UnknownEnvelopeException)
+            {
+                return new ImageOpenResult(null, "The image of the task is in a format this version of oloop does not know.");
+            }
+            catch (OloopCryptoException)
+            {
+                continue; // another key version, or an image that is not this task's
+            }
+
+            if (!ImageKind.IsKnown(bytes))
+                return new ImageOpenResult(null, "The image of the task is not a PNG, JPEG, GIF or WebP picture.");
+
+            KeepImage((blobId, taskId), bytes);
+            return new ImageOpenResult(new MemoryStream(bytes, writable: false), null);
+        }
+
+        return new ImageOpenResult(null, "The image of the task could not be decrypted. It may have been changed on the server.");
+    }
 
     // ---------------- Writing ----------------
 
@@ -403,6 +521,7 @@ public sealed class ServerOloopStore : OloopStoreBase
         // Never write something this client would refuse to read back.
         TaskIo.Read(task.Id, text, project.Id);
         var bytes = Encoding.UTF8.GetBytes(text);
+        var blobRef = BlobOf(task.ImagePath);
 
         int keyVersion;
         byte[] key;
@@ -419,7 +538,7 @@ public sealed class ServerOloopStore : OloopStoreBase
         {
             try
             {
-                await PutAsync(taskId, "task", projectId, keyVersion, 1, key, bytes, baseRev: null, key: null, ct)
+                await PutAsync(taskId, "task", projectId, keyVersion, 1, key, bytes, baseRev: null, key: null, ct, blobRef)
                     .ConfigureAwait(false);
             }
             catch (ServerApiException ex) when (ex.IsConflict)
@@ -441,7 +560,7 @@ public sealed class ServerOloopStore : OloopStoreBase
         {
             try
             {
-                await PutAsync(taskId, "task", projectId, keyVersion, baseRev + 1, key, bytes, baseRev, key: null, ct)
+                await PutAsync(taskId, "task", projectId, keyVersion, baseRev + 1, key, bytes, baseRev, key: null, ct, blobRef)
                     .ConfigureAwait(false);
                 ForgetConflict(taskId);
                 return;
@@ -470,7 +589,7 @@ public sealed class ServerOloopStore : OloopStoreBase
 
         try
         {
-            await PutAsync(taskId, "task", projectId, keyVersion, current.Rev + 1, key, bytes, current.Rev, key: null, ct)
+            await PutAsync(taskId, "task", projectId, keyVersion, current.Rev + 1, key, bytes, current.Rev, key: null, ct, blobRef)
                 .ConfigureAwait(false);
             ForgetConflict(taskId);
         }
@@ -521,7 +640,8 @@ public sealed class ServerOloopStore : OloopStoreBase
         byte[] payload,
         int? baseRev,
         object? key,
-        CancellationToken ct)
+        CancellationToken ct,
+        Guid? blobRef = null)
     {
         var envelope = Envelope.Seal(projectKey, payload, AssociatedData.Document(kind, id, keyVersion, rev));
 
@@ -536,6 +656,11 @@ public sealed class ServerOloopStore : OloopStoreBase
             body["projectId"] = projectId.Value.ToString("D");
         if (key is not null)
             body["key"] = key;
+
+        // A write of a task that has an image must name the blob again. A revision without the
+        // reference lets the server drop it, and the blob is cleaned up after 30 days.
+        if (blobRef is not null)
+            body["blobRef"] = blobRef.Value.ToString("D");
 
         var headers = new Dictionary<string, string>
         {

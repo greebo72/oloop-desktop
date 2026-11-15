@@ -211,6 +211,9 @@
                        MaxHeight="320" />
             </Border>
 
+            <!-- An image on the server is on its way. -->
+            <TextBlock Text="Loading image …" Classes="Muted" IsVisible="{Binding IsImageLoading}" />
+
             <!-- The image is missing or cannot be read — the task says so
                  instead of showing a broken picture. -->
             <Border Classes="Card" Padding="12" IsVisible="{Binding HasImageError}">

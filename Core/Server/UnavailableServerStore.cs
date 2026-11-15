@@ -25,6 +25,9 @@ public sealed class UnavailableServerStore : OloopStoreBase
 
     public override ImageOpenResult OpenImage(OloopProject project, string? imagePath) => new(null, _reason);
 
+    public override Task<ImageOpenResult> OpenImageAsync(OloopProject project, OloopTask task, CancellationToken ct = default)
+        => Task.FromResult(new ImageOpenResult(null, _reason));
+
     public override Task<OloopProject> CreateProjectAsync(
         string name, string? referencePath = null, string? referenceHost = null, CancellationToken ct = default)
         => throw new IOException(_reason);

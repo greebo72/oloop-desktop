@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using OloopApp.Controls;
 using OloopApp.Core.Filters;
 using OloopApp.Core.Grouping;
+using OloopApp.Core.Io;
 using OloopApp.Core.Models;
 
 namespace OloopApp.ViewModels;
@@ -29,8 +30,7 @@ public partial class TaskDetailViewModel : ViewModelBase
     private Bitmap? _image;
     private string? _imageError;
     private bool _imageLoaded;
-    private string? _imagePath;
-    private OloopProject? _imageProject;
+    private bool _imageLoading;
     private bool _isWriting;
     private bool _retired;
 
@@ -111,8 +111,6 @@ public partial class TaskDetailViewModel : ViewModelBase
         HasDescription = !string.IsNullOrWhiteSpace(Description);
 
         // The image is read on the first access, not here.
-        _imagePath = task.ImagePath;
-        _imageProject = project;
 
         CreatedText = BuildStamp("Created", task.CreatedAt, task.CreatedBy);
         UpdatedText = BuildStamp("Updated", task.UpdatedAt, task.UpdatedBy);
@@ -229,6 +227,16 @@ public partial class TaskDetailViewModel : ViewModelBase
 
     /// <summary>Whether the image could not be loaded.</summary>
     public bool HasImageError => ImageError is not null;
+
+    /// <summary>Whether the image is being fetched from the server.</summary>
+    public bool IsImageLoading
+    {
+        get
+        {
+            EnsureImageLoaded();
+            return _imageLoading;
+        }
+    }
 
     /// <summary>"Created 2 h ago by alice".</summary>
     public string CreatedText { get; }
@@ -451,7 +459,9 @@ public partial class TaskDetailViewModel : ViewModelBase
     /// Loads the image of the task. A path that points nowhere, or a file that
     /// is not an image, is reported instead of shown as a broken picture.
     ///
-    /// The file is read only once — the result is kept.
+    /// The image is asked for only once — the result is kept. A folder answers at once and the
+    /// result is there before the first access returns. An image on a server has to be fetched:
+    /// it is shown as loading, the window is not held up, and the view is told when it is there.
     /// </summary>
     private void EnsureImageLoaded()
     {
@@ -460,13 +470,76 @@ public partial class TaskDetailViewModel : ViewModelBase
 
         _imageLoaded = true;
 
-        if (string.IsNullOrWhiteSpace(_imagePath) || _imageProject is null)
+        if (string.IsNullOrWhiteSpace(Task.ImagePath))
             return;
 
-        var opened = Shell.StoreOrNull?.OpenImage(_imageProject, _imagePath);
-        if (opened?.Stream is null)
+        var store = Shell.StoreOrNull;
+        if (store is null)
         {
-            _imageError = opened?.Error ?? "The image path of the task is not valid.";
+            _imageError = "The image path of the task is not valid.";
+            return;
+        }
+
+        var pending = store.OpenImageAsync(Project, Task);
+        if (pending.IsCompleted)
+        {
+            ShowImage(pending.GetAwaiter().GetResult());
+            return;
+        }
+
+        _imageLoading = true;
+        _ = FinishImageAsync(pending);
+    }
+
+    private async System.Threading.Tasks.Task FinishImageAsync(Task<ImageOpenResult> pending)
+    {
+        ImageOpenResult result;
+        try
+        {
+            result = await pending;
+        }
+        catch (Exception ex) when (ex is IOException or OperationCanceledException)
+        {
+            result = new ImageOpenResult(null, "The image of the task could not be loaded: " + ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // Nobody waits for this method: an unexpected failure must not leave the view on
+            // "loading" for ever, so it ends as a message like every other failure.
+            result = new ImageOpenResult(null, "The image of the task could not be shown: " + ex.Message);
+        }
+
+        // The user may have gone to another task meanwhile: nobody looks at this one any more.
+        if (_retired)
+        {
+            result.Stream?.Dispose();
+            return;
+        }
+
+        try
+        {
+            ShowImage(result);
+        }
+        catch (Exception ex)
+        {
+            _imageError = "The image of the task could not be shown: " + ex.Message;
+        }
+        finally
+        {
+            _imageLoading = false;
+            OnPropertyChanged(nameof(Image));
+            OnPropertyChanged(nameof(HasImage));
+            OnPropertyChanged(nameof(ImageError));
+            OnPropertyChanged(nameof(HasImageError));
+            OnPropertyChanged(nameof(IsImageLoading));
+        }
+    }
+
+    private void ShowImage(ImageOpenResult opened)
+    {
+        if (opened.Stream is null)
+        {
+            _imageError = opened.Error ?? "The image path of the task is not valid.";
             return;
         }
 

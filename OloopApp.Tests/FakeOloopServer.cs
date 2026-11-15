@@ -20,6 +20,7 @@ internal sealed class FakeOloopServer : HttpMessageHandler
     private readonly object _gate = new();
     private readonly Dictionary<Guid, StoredDocument> _documents = [];
     private readonly Dictionary<Guid, JsonObject> _projectKeys = [];
+    private readonly Dictionary<Guid, (Guid TaskId, byte[] Envelope)> _blobs = [];
     private readonly HashSet<string> _validAccess = [];
     private readonly HashSet<string> _validRefresh = [];
     private int _counter;
@@ -37,7 +38,7 @@ internal sealed class FakeOloopServer : HttpMessageHandler
     public int Refreshes { get; private set; }
 
     public sealed record StoredDocument(
-        Guid Id, string Kind, Guid? ProjectId, int KeyVersion, int Rev, byte[] Envelope, long Seq);
+        Guid Id, string Kind, Guid? ProjectId, int KeyVersion, int Rev, byte[] Envelope, long Seq, Guid? BlobRef = null);
 
     public IReadOnlyList<StoredDocument> Stored
     {
@@ -71,6 +72,40 @@ internal sealed class FakeOloopServer : HttpMessageHandler
             var bytes = (byte[])doc.Envelope.Clone();
             bytes[^1] ^= 0xFF;
             _documents[id] = doc with { Envelope = bytes };
+        }
+    }
+
+    /// <summary>Puts a blob on the server as an upload for that task would, for a test that needs an image.</summary>
+    public void AddBlob(Guid blobId, Guid taskId, byte[] envelope)
+    {
+        lock (_gate)
+            _blobs[blobId] = (taskId, envelope);
+    }
+
+    /// <summary>Takes a blob away, as when it was cleaned up.</summary>
+    public void RemoveBlob(Guid blobId)
+    {
+        lock (_gate)
+            _blobs.Remove(blobId);
+    }
+
+    /// <summary>The number of times a blob was fetched.</summary>
+    public int BlobFetches { get; private set; }
+
+    /// <summary>
+    /// The project key of a project, opened with the keys of a user: what a test needs to make an
+    /// image. Without keys it is the fixed pair of this server; a test whose keys came from a real
+    /// setup gives them.
+    /// </summary>
+    public byte[] ProjectKey(Guid projectId, byte[]? secretKey = null, byte[]? publicKey = null)
+    {
+        lock (_gate)
+        {
+            var entry = _projectKeys[projectId];
+            return ProjectKeyBox.Unwrap(
+                Base64Url.Decode(entry["wrapped"]!.GetValue<string>()),
+                secretKey ?? UserKeys.PrivateKey, publicKey ?? UserKeys.PublicKey,
+                projectId, entry["keyVersion"]!.GetValue<int>());
         }
     }
 
@@ -114,6 +149,15 @@ internal sealed class FakeOloopServer : HttpMessageHandler
 
             if (path == "/v1/keys")
                 return Keys(request, body);
+            if (path.StartsWith("/v1/blobs/", StringComparison.Ordinal) && request.Method == HttpMethod.Get
+                && Guid.TryParse(path["/v1/blobs/".Length..], out var blobId))
+            {
+                BlobFetches++;
+                return _blobs.TryGetValue(blobId, out var blob)
+                    ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(blob.Envelope) }
+                    : Error(HttpStatusCode.NotFound, "not_found", "no such blob");
+            }
+
             if (path == "/v1/head" && request.Method == HttpMethod.Get)
                 return Json(new JsonObject { ["cursor"] = _counter.ToString() });
             if (path == "/v1/projects" && request.Method == HttpMethod.Get)
@@ -266,8 +310,17 @@ internal sealed class FakeOloopServer : HttpMessageHandler
             };
         }
 
+        // As the real server: a reference is only for a task, and only to a blob uploaded for it.
+        Guid? blobRef = null;
+        if (json["blobRef"] is { } reference)
+        {
+            blobRef = Guid.Parse(reference.GetValue<string>());
+            if (kind != "task" || !_blobs.TryGetValue(blobRef.Value, out var blob) || blob.TaskId != id)
+                return Error(HttpStatusCode.BadRequest, "bad_request", "blobRef is not a blob that was uploaded for this task");
+        }
+
         _counter++;
-        _documents[id] = new StoredDocument(id, kind, projectId, keyVersion, rev, envelope, _counter);
+        _documents[id] = new StoredDocument(id, kind, projectId, keyVersion, rev, envelope, _counter, blobRef);
         return Json(new JsonObject { ["rev"] = rev, ["cursor"] = _counter.ToString() });
     }
 
@@ -286,6 +339,7 @@ internal sealed class FakeOloopServer : HttpMessageHandler
         };
         if (doc.ProjectId is { } projectId)
             json["projectId"] = projectId.ToString("D");
+        json["blobRef"] = doc.BlobRef?.ToString("D");
         return json;
     }
 

@@ -25,6 +25,9 @@ public abstract class OloopStoreBase : IOloopStore
 
     public abstract ImageOpenResult OpenImage(OloopProject project, string? imagePath);
 
+    public virtual Task<ImageOpenResult> OpenImageAsync(OloopProject project, OloopTask task, CancellationToken ct = default)
+        => Task.FromResult(OpenImage(project, task.ImagePath));
+
     public abstract Task<OloopProject> CreateProjectAsync(
         string name,
         string? referencePath = null,

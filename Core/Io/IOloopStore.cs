@@ -46,6 +46,14 @@ public interface IOloopStore
     /// <summary>Opens the image of a task. The path is the <c>imagePath</c> of the task.</summary>
     ImageOpenResult OpenImage(OloopProject project, string? imagePath);
 
+    /// <summary>
+    /// The image of a task. A store that has to fetch it over a network does it here without
+    /// blocking the caller; the others answer at once. The task is given and not only its path:
+    /// an image on a server is bound to its task by the encryption.
+    /// </summary>
+    Task<ImageOpenResult> OpenImageAsync(OloopProject project, OloopTask task, CancellationToken ct = default)
+        => Task.FromResult(OpenImage(project, task.ImagePath));
+
     Task<OloopProject> CreateProjectAsync(
         string name,
         string? referencePath = null,
