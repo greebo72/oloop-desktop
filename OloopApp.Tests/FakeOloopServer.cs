@@ -55,6 +55,13 @@ internal sealed class FakeOloopServer : HttpMessageHandler
             _validAccess.Clear();
     }
 
+    /// <summary>Makes every refresh token invalid, as if the device had been revoked.</summary>
+    public void RevokeRefreshTokens()
+    {
+        lock (_gate)
+            _validRefresh.Clear();
+    }
+
     /// <summary>Replaces the envelope of a document without changing its revision.</summary>
     public void Tamper(Guid id)
     {

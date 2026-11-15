@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using OloopApp.Core.Crypto;
+using Sodium;
 
 namespace OloopApp.Core.Server;
 
@@ -96,6 +97,22 @@ public sealed class KeyService
             ?? throw new OloopCryptoException("that is not a recovery code");
         var userId = RequireUserId();
         return new UnlockedUser(userId, bundle.UnlockWithRecoveryCode(code, userId), bundle.PublicKey);
+    }
+
+    /// <summary>
+    /// The user from a secret key that this device kept (the keychain). Checked like an unlocked
+    /// one: its public key has to be the one of the bundle, or the kept key is out of date.
+    /// Throws <see cref="OloopCryptoException"/> when it is not.
+    /// </summary>
+    public UnlockedUser UnlockWithKeptKey(KeyBundle bundle, byte[] secretKey)
+    {
+        if (secretKey.Length != KeyBundle.SecretKeyBytes
+            || !PublicKeyBox.GenerateKeyPair(secretKey).PublicKey.AsSpan().SequenceEqual(bundle.PublicKey))
+        {
+            throw new OloopCryptoException("the key kept on this device does not belong to the key bundle");
+        }
+
+        return new UnlockedUser(RequireUserId(), secretKey, bundle.PublicKey);
     }
 
     private Guid RequireUserId()
