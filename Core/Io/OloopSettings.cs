@@ -152,7 +152,14 @@ public sealed class OloopSettings
     /// The path of the settings file: %APPDATA%/oloop/settings.json on Windows,
     /// ~/.config/oloop/settings.json elsewhere.
     /// </summary>
-    public static string DefaultPath => Path.Combine(AppDataFolder(), "oloop", "settings.json");
+    public static string DefaultPath => PathOverride ?? Path.Combine(AppDataFolder(), "oloop", "settings.json");
+
+    /// <summary>
+    /// Another file in place of the settings of the user. The tests set it before anything else
+    /// runs: a view model that is made without settings reads the default file, and a test must
+    /// never see the real settings (the server, the user) or act on them.
+    /// </summary>
+    public static string? PathOverride { get; set; }
 
     /// <summary>The folder the app keeps its data in.</summary>
     public static string AppDataFolder()

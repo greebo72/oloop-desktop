@@ -139,6 +139,14 @@ public partial class KeySetupViewModel : ViewModelBase
             Error = "Another device has set up the keys in the meantime. Cancel this dialog and unlock with the passphrase of that device.";
             return false;
         }
+        catch (ServerApiException ex) when (ex.Status == 401)
+        {
+            // The token is gone (revoked, or used up by another copy of the app). The bundle did
+            // not reach the server, so the code on the screen opens nothing.
+            Error = "The sign-in to the server has ended, so the keys were not stored and the recovery code shown here is void. "
+                + "Cancel this dialog, reload (F5) and set up again: a new code is made.";
+            return false;
+        }
         catch (IOException ex)
         {
             Error = ex.Message;

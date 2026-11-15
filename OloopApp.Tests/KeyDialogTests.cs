@@ -146,6 +146,25 @@ public class KeyDialogTests
         Assert.Contains("Another device", late.Error);
     }
 
+    [Fact]
+    public async Task A_Sign_In_That_Ended_During_The_Setup_Is_Said_Plainly_And_The_Code_Is_Void()
+    {
+        var vm = new KeySetupViewModel(await SignInAsync());
+        vm.Passphrase = Passphrase;
+        vm.Confirmation = Passphrase;
+        await vm.ContinueAsync();
+        vm.CodeIsKept = true;
+
+        _server.RevokeRefreshTokens();
+        _server.ExpireAccessTokens(); // as when another copy of the app has used the token up
+
+        Assert.False(await vm.FinishAsync());
+        Assert.Contains("void", vm.Error);
+        Assert.Contains("F5", vm.Error);
+        Assert.Null(_server.Bundle);
+        Assert.Null(vm.Result);
+    }
+
     // ---------------- Unlock ----------------
 
     private async Task<(KeyService Keys, KeyBundle Bundle, string Code)> SetUpAsync()
