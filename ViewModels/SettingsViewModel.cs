@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Io;
 
@@ -31,6 +32,61 @@ public partial class SettingsViewModel : ViewModelBase
     /// dialog does not offer the choice. A test switches it on.
     /// </summary>
     public bool ServerBackendAvailable { get; init; }
+
+    /// <summary>
+    /// What the dialog may do with the open session: show where it stands, lock the keys, sign out.
+    /// Null where there is no session (a test of the plain settings).
+    /// </summary>
+    public IServerSessionControl? ServerControl { get; init; }
+
+    /// <summary>Whether the session can be looked at and controlled from here.</summary>
+    public bool HasServerControl => ServerControl is not null;
+
+    private ServerSessionState ServerState => ServerControl?.State ?? ServerSessionState.SignedOut;
+
+    /// <summary>Where the session stands, in words.</summary>
+    public string ServerStatus => ServerState switch
+    {
+        ServerSessionState.OpenKeyKept => "Signed in. The keys are kept on this computer, so the passphrase is not asked again.",
+        ServerSessionState.Open => "Signed in. The keys are not kept: this computer has no safe place for them, so the passphrase is asked at every start.",
+        ServerSessionState.Locked => "Signed in, keys locked. The passphrase is asked at the next load.",
+        _ => "Not signed in on this computer.",
+    };
+
+    /// <summary>Whether there are keys to lock.</summary>
+    public bool CanLockKeys => ServerState is ServerSessionState.Open or ServerSessionState.OpenKeyKept;
+
+    /// <summary>Whether there is a sign-in to end.</summary>
+    public bool CanSignOut => ServerState != ServerSessionState.SignedOut;
+
+    /// <summary>Forgets the keys on this computer; the sign-in stays.</summary>
+    [RelayCommand]
+    private async Task LockKeysAsync()
+    {
+        if (ServerControl is null)
+            return;
+
+        await ServerControl.LockAsync();
+        RaiseServerState();
+    }
+
+    /// <summary>Cuts this computer off at the server and forgets everything kept here.</summary>
+    [RelayCommand]
+    private async Task SignOutAsync()
+    {
+        if (ServerControl is null)
+            return;
+
+        await ServerControl.SignOutAsync();
+        RaiseServerState();
+    }
+
+    private void RaiseServerState()
+    {
+        OnPropertyChanged(nameof(ServerStatus));
+        OnPropertyChanged(nameof(CanLockKeys));
+        OnPropertyChanged(nameof(CanSignOut));
+    }
 
     /// <summary>Whether the data lives in a folder, so the folder is asked for.</summary>
     public bool IsFolderBackend => Backend == StorageBackend.Folder;

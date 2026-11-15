@@ -289,4 +289,46 @@ public class KeyDialogTests
             dialog.Close();
         }, CancellationToken.None);
     }
+
+    private sealed class FakeControl : IServerSessionControl
+    {
+        public ServerSessionState State { get; set; } = ServerSessionState.OpenKeyKept;
+        public Task LockAsync() { State = ServerSessionState.Locked; return Task.CompletedTask; }
+        public Task SignOutAsync() { State = ServerSessionState.SignedOut; return Task.CompletedTask; }
+    }
+
+    [Fact]
+    public async Task The_Settings_Dialog_Shows_The_State_Of_The_Session_And_The_Two_Buttons()
+    {
+        var control = new FakeControl();
+        var vm = new SettingsViewModel(new OloopApp.Core.Io.OloopSettings
+        {
+            Backend = "server", ServerUrl = "https://oloop.example", ServerUser = "timo", Actor = "x",
+        })
+        {
+            ServerBackendAvailable = true,
+            ServerControl = control,
+        };
+
+        await Session.Dispatch(() =>
+        {
+            var dialog = new SettingsDialog(vm);
+            dialog.Show();
+            dialog.UpdateLayout();
+
+            var shown = Descendants<TextBlock>(dialog).Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
+            Assert.Contains("This computer", shown);
+            Assert.Contains(shown, t => t != null && t.StartsWith("Signed in. The keys are kept"));
+
+            var lockButton = Descendants<Button>(dialog).Single(b => b.Content as string == "Lock keys");
+            var signOut = Descendants<Button>(dialog).Single(b => b.Content as string == "Sign out");
+            Assert.True(lockButton.IsEffectivelyEnabled);
+            Assert.True(signOut.IsEffectivelyEnabled);
+
+            lockButton.Command!.Execute(null);
+            Assert.False(lockButton.IsEffectivelyEnabled);
+            Assert.True(signOut.IsEffectivelyEnabled);
+            dialog.Close();
+        }, CancellationToken.None);
+    }
 }

@@ -1,0 +1,32 @@
+namespace OloopApp.ViewModels;
+
+/// <summary>Where a session with the server stands.</summary>
+public enum ServerSessionState
+{
+    /// <summary>This computer is not signed in.</summary>
+    SignedOut,
+
+    /// <summary>Signed in, the keys are locked.</summary>
+    Locked,
+
+    /// <summary>Signed in and open, the keys are kept in memory only.</summary>
+    Open,
+
+    /// <summary>Signed in and open, the keys are also kept in the secret store of the system.</summary>
+    OpenKeyKept,
+}
+
+/// <summary>
+/// What the settings dialog may do with the session with the server. The shell implements it, so
+/// the dialog changes the session and the shell stops showing the data that is no longer open.
+/// </summary>
+public interface IServerSessionControl
+{
+    ServerSessionState State { get; }
+
+    /// <summary>Forgets the keys on this computer; the sign-in stays.</summary>
+    Task LockAsync();
+
+    /// <summary>Cuts this computer off at the server and forgets the token and the keys.</summary>
+    Task SignOutAsync();
+}

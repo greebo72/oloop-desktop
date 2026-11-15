@@ -25,13 +25,18 @@ public sealed class ServerSession : IDisposable
 {
     private readonly HttpClient _http;
     private readonly ISecretStore _secrets;
-    private readonly IDialogService _dialogs;
+    private readonly Func<IDialogService> _dialogs;
+    private readonly SemaphoreSlim _connecting = new(1, 1);
 
     private ServerApi? _api;
     private string? _endpoint;
     private string? _userName;
 
-    public ServerSession(HttpClient http, ISecretStore secrets, IDialogService dialogs)
+    /// <param name="dialogs">
+    /// Asked for at every dialog: the app sets its dialog service only after the window exists,
+    /// and a session is made before.
+    /// </param>
+    public ServerSession(HttpClient http, ISecretStore secrets, Func<IDialogService> dialogs)
     {
         _http = http;
         _secrets = secrets;
@@ -40,6 +45,9 @@ public sealed class ServerSession : IDisposable
 
     /// <summary>The store of the unlocked session, or null while the session is not open or is locked.</summary>
     public ServerOloopStore? Store { get; private set; }
+
+    /// <summary>True while this device is signed in, whether or not the keys are open.</summary>
+    public bool IsSignedIn => _api is { SignedIn: true };
 
     /// <summary>True when the secret key is kept on this device, so the next start does not ask for the passphrase.</summary>
     public bool KeyIsKept { get; private set; }
@@ -51,6 +59,21 @@ public sealed class ServerSession : IDisposable
     /// </summary>
     /// <exception cref="IOException">The server could not be reached or refused something other than a login.</exception>
     public async Task<ServerOloopStore?> ConnectAsync(string serverUrl, string userName, CancellationToken ct = default)
+    {
+        // One at a time: a reload that the change source starts while a dialog is open must not
+        // open a second dialog, it waits and finds the store.
+        await _connecting.WaitAsync(ct);
+        try
+        {
+            return await ConnectCoreAsync(serverUrl, userName, ct);
+        }
+        finally
+        {
+            _connecting.Release();
+        }
+    }
+
+    private async Task<ServerOloopStore?> ConnectCoreAsync(string serverUrl, string userName, CancellationToken ct)
     {
         if (Store is not null && IsFor(serverUrl, userName))
             return Store;
@@ -67,7 +90,7 @@ public sealed class ServerSession : IDisposable
         if (!_api.SignedIn && !await TryResumeAsync(ct))
         {
             var login = new LoginViewModel(_api, serverUrl, userName);
-            if (!await _dialogs.ShowLoginAsync(login))
+            if (!await _dialogs().ShowLoginAsync(login))
                 return null;
 
             loginPassword = login.TakePassword();
@@ -79,12 +102,12 @@ public sealed class ServerSession : IDisposable
         UnlockedUser? user;
         if (bundle is null)
         {
-            user = await _dialogs.ShowKeySetupAsync(new KeySetupViewModel(keys, loginPassword));
+            user = await _dialogs().ShowKeySetupAsync(new KeySetupViewModel(keys, loginPassword));
         }
         else
         {
             user = TryKeptKey(keys, bundle)
-                ?? await _dialogs.ShowKeyUnlockAsync(new KeyUnlockViewModel(keys, bundle));
+                ?? await _dialogs().ShowKeyUnlockAsync(new KeyUnlockViewModel(keys, bundle));
         }
 
         if (user is null)

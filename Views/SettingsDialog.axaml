@@ -46,6 +46,20 @@
                 <TextBox Text="{Binding ServerUser, Mode=TwoWay}" />
                 <TextBlock Classes="Muted" TextWrapping="Wrap"
                            Text="The data is encrypted on this computer before it is sent. The server never sees it in clear text." />
+
+                <!-- Where this computer stands with the server, and the two ways out of it. -->
+                <StackPanel Spacing="6" Margin="0,8,0,0" IsVisible="{Binding HasServerControl}">
+                    <TextBlock Text="This computer" Classes="LabelMedium" />
+                    <TextBlock Name="ServerStatusText" Text="{Binding ServerStatus}" Classes="BodyMedium" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="Outlined" Content="Lock keys"
+                                Command="{Binding LockKeysCommand}" IsEnabled="{Binding CanLockKeys}" />
+                        <Button Classes="Outlined" Content="Sign out"
+                                Command="{Binding SignOutCommand}" IsEnabled="{Binding CanSignOut}" />
+                    </StackPanel>
+                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                               Text="Lock keys forgets the keys on this computer; you stay signed in. Sign out also ends this computer's access on the server." />
+                </StackPanel>
             </StackPanel>
 
             <!-- ============================================================

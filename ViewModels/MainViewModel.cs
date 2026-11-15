@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Filters;
 using OloopApp.Core.Io;
 using OloopApp.Core.Models;
+using OloopApp.Core.Secrets;
+using OloopApp.Core.Server;
 
 namespace OloopApp.ViewModels;
 
@@ -45,6 +47,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _dataRoot = _settings.ResolveDataRoot() ?? "";
         _actor = _settings.ResolveActor();
 
+        StoreFactory = root => IsServerRoot(root)
+            ? (IOloopStore?)Session.Store ?? new UnavailableServerStore(_serverProblem.Length > 0 ? _serverProblem : NotSignedIn)
+            : new FileOloopStore(root);
+
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         OpenProjectCommand = new RelayCommand<ProjectCardViewModel>(OpenProject);
         BackToDashboardCommand = new RelayCommand(BackToDashboard);
@@ -68,8 +74,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         // Without a data folder the dashboard shows the empty state right
         // away — before the first refresh, too.
-        Dashboard.HasNoDataRoot = _dataRoot.Length == 0;
-        Dashboard.IsEmpty = _dataRoot.Length == 0;
+        Dashboard.HasNoDataRoot = EffectiveRoot.Length == 0;
+        Dashboard.IsEmpty = EffectiveRoot.Length == 0;
 
         SettingsCommand = new AsyncRelayCommand(OpenSettingsAsync);
         NewProjectCommand = new AsyncRelayCommand(OpenNewProjectAsync);
@@ -219,36 +225,27 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public async Task RefreshAsync()
     {
         IsBusy = true;
+        var root = "";
         try
         {
-            var root = DataRoot?.Trim() ?? "";
+            root = EffectiveRoot;
             if (root.Length == 0)
             {
-                StopWatching();
                 // The empty card of the dashboard says it — a second line
                 // with the same words would only be noise.
-                StatusMessage = "";
-                Dashboard.HasNoDataRoot = true;
-                Dashboard.Update(OloopSnapshot.Empty);
-                Projects.Clear();
-                Tasks.Clear();
-                Unreadable.Clear();
-                Silent?.Refresh();
+                ShowNoData("");
                 return;
             }
+
+            // The server needs a sign-in first, and that is a dialog.
+            if (IsServerRoot(root))
+                await ConnectServerAsync();
 
             var store = CreateStore(root);
             var unavailable = store.CheckAvailable();
             if (unavailable is not null)
             {
-                StopWatching();
-                StatusMessage = unavailable;
-                Dashboard.HasNoDataRoot = true;
-                Dashboard.Update(OloopSnapshot.Empty);
-                Projects.Clear();
-                Tasks.Clear();
-                Unreadable.Clear();
-                Silent?.Refresh();
+                ShowNoData(unavailable);
                 return;
             }
 
@@ -289,12 +286,27 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            StatusMessage = $"Could not read the data folder: {ex.Message}";
+            StatusMessage = IsServerRoot(root)
+                ? $"Could not read from the server: {ex.Message}"
+                : $"Could not read the data folder: {ex.Message}";
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    /// <summary>Shows the empty dashboard, with the reason when there is one, and stops watching.</summary>
+    private void ShowNoData(string message)
+    {
+        StopWatching();
+        StatusMessage = message;
+        Dashboard.HasNoDataRoot = message.Length == 0 || !IsServerRoot(EffectiveRoot);
+        Dashboard.Update(OloopSnapshot.Empty);
+        Projects.Clear();
+        Tasks.Clear();
+        Unreadable.Clear();
+        Silent?.Refresh();
     }
 
     // ---------------- Watching the data folder ----------------
@@ -394,7 +406,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public async Task ReloadIfChangedAsync()
     {
-        var root = DataRoot?.Trim() ?? "";
+        var root = EffectiveRoot;
         if (root.Length == 0)
             return;
 
@@ -412,6 +424,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         StopWatching();
+        _session?.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -423,7 +436,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public async Task OpenSettingsAsync()
     {
-        var viewModel = new SettingsViewModel(_settings);
+        var viewModel = NewSettingsViewModel();
         if (!await Dialogs.ShowSettingsAsync(viewModel))
             return;
 
@@ -439,6 +452,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         // The dialog wrote the values into the settings instance.
         DataRoot = _settings.ResolveDataRoot() ?? "";
+        Dashboard.HasNoDataRoot = EffectiveRoot.Length == 0;
         Actor = _settings.ResolveActor();
         UiScale.Factor = _settings.UiScaleFactor;
     }
@@ -457,9 +471,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         if (actor.Length > 0)
             return actor;
 
-        var rootBefore = DataRoot?.Trim() ?? "";
+        var rootBefore = EffectiveRoot;
 
-        var viewModel = new SettingsViewModel(_settings);
+        var viewModel = NewSettingsViewModel();
         if (!await Dialogs.ShowSettingsAsync(viewModel))
         {
             StatusMessage = NoActorGiven;
@@ -471,7 +485,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         // The settings can also change the data folder. A write against the
         // old folder would land in the wrong place, so it is refused and
         // the new folder is loaded.
-        if ((DataRoot?.Trim() ?? "") != rootBefore)
+        if (EffectiveRoot != rootBefore)
         {
             await RefreshAsync();
             StatusMessage = RootChanged;
@@ -901,13 +915,104 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
+    // ---------------- The server ----------------
+
+    private const string ServerRootPrefix = "server:";
+    private const string NotSignedIn = "Not signed in to the server. Reload (F5) to sign in.";
+
+    private ServerSession? _session;
+    private string _serverProblem = NotSignedIn;
+
+    /// <summary>
+    /// The session with the server: sign-in, keys and the one store. Made on first use; a test
+    /// hands in one that talks to a fake server.
+    /// </summary>
+    public ServerSession Session
+    {
+        get => _session ??= new ServerSession(
+            new HttpClient { Timeout = TimeSpan.FromSeconds(30) }, SecretStoreFactory.Create(), () => Dialogs);
+        set => _session = value;
+    }
+
+    /// <summary>
+    /// What identifies the data the app shows: the data folder, or for the server backend the
+    /// server and the user. Empty when there is nothing to show yet. The caches, the watcher and the
+    /// check "did the data change under a write" all go by it.
+    /// </summary>
+    private string EffectiveRoot
+    {
+        get
+        {
+            if (_settings.ResolveBackend() != StorageBackend.Server)
+                return DataRoot?.Trim() ?? "";
+
+            var url = ServerEndpoint.Normalize(_settings.ServerUrl, out _);
+            var user = _settings.ServerUser?.Trim() ?? "";
+            return url is null || user.Length == 0 ? "" : $"{ServerRootPrefix}{url}|{user}";
+        }
+    }
+
+    private static bool IsServerRoot(string root) => root.StartsWith(ServerRootPrefix, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Opens the session when it is not open: the dialogs ask for what is missing. Leaves the
+    /// reason in <see cref="_serverProblem"/> when it does not work, which the store of an unopened
+    /// session then reports.
+    /// </summary>
+    private async Task ConnectServerAsync()
+    {
+        var url = ServerEndpoint.Normalize(_settings.ServerUrl, out _)!;
+        try
+        {
+            _serverProblem = await Session.ConnectAsync(url, _settings.ServerUser!.Trim()) is null
+                ? NotSignedIn
+                : "";
+        }
+        catch (IOException ex)
+        {
+            _serverProblem = $"Could not reach the server: {ex.Message}";
+        }
+    }
+
+    private SettingsViewModel NewSettingsViewModel()
+        => new(_settings) { ServerBackendAvailable = true, ServerControl = new ServerControl(this) };
+
+    /// <summary>What the settings dialog may do with the session: look at it, lock it, sign out.</summary>
+    private sealed class ServerControl(MainViewModel main) : IServerSessionControl
+    {
+        public ServerSessionState State
+            => main.Session.Store is not null
+                ? (main.Session.KeyIsKept ? ServerSessionState.OpenKeyKept : ServerSessionState.Open)
+                : main.Session.IsSignedIn ? ServerSessionState.Locked : ServerSessionState.SignedOut;
+
+        public Task LockAsync()
+        {
+            main.Session.Lock();
+            main.AfterServerDisconnected("The keys are locked. Reload (F5) to unlock them.");
+            return Task.CompletedTask;
+        }
+
+        public async Task SignOutAsync()
+        {
+            await main.Session.SignOutAsync();
+            main.AfterServerDisconnected("Signed out. Reload (F5) to sign in.");
+        }
+    }
+
+    /// <summary>The data of the server is no longer open: stop watching and show it.</summary>
+    private void AfterServerDisconnected(string message)
+    {
+        _serverProblem = message;
+        ShowNoData(message);
+    }
+
     // ---------------- Helpers ----------------
 
     /// <summary>
     /// Creates the store for a data root. The folder store is the default; a
     /// test or another backend replaces it.
     /// </summary>
-    public Func<string, IOloopStore> StoreFactory { get; set; } = root => new FileOloopStore(root);
+    public Func<string, IOloopStore> StoreFactory { get; set; }
 
     private IOloopStore CreateStore(string root) => StoreFactory(root);
 
@@ -918,9 +1023,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         get
         {
-            var root = DataRoot?.Trim() ?? "";
+            var root = EffectiveRoot;
             if (root.Length == 0)
                 return null;
+
+            // The store of a session is the session's own: it changes when the keys are locked or
+            // the device signs in again, so a copy kept here would go stale.
+            if (IsServerRoot(root))
+                return CreateStore(root);
 
             if (_store is null || _storeRoot != root)
             {
@@ -940,8 +1050,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         get
         {
-            var root = DataRoot?.Trim() ?? "";
-            return root.Length == 0 ? null : Store;
+            return EffectiveRoot.Length == 0 ? null : Store;
         }
     }
 
@@ -1044,5 +1153,5 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         => Dashboard.SearchText = value;
 
     partial void OnDataRootChanged(string value)
-        => Dashboard.HasNoDataRoot = string.IsNullOrWhiteSpace(value);
+        => Dashboard.HasNoDataRoot = EffectiveRoot.Length == 0;
 }
