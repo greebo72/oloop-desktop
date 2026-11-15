@@ -333,11 +333,16 @@ public class DialogUiTests
             dialog.Show();
             dialog.UpdateLayout();
 
+            // The focus is set once the tab of the actor is laid out.
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            dialog.UpdateLayout();
+
             var actor = Descendants<TextBox>(dialog)
                 .SingleOrDefault(t => t.Name == "ActorBox");
 
             Assert.NotNull(actor);
             Assert.True(actor!.IsFocused);
+            Assert.Equal("Tasks", ((TabItem)dialog.FindControl<TabControl>("Tabs")!.SelectedItem!).Header);
 
             dialog.Close();
         });
@@ -354,12 +359,14 @@ public class DialogUiTests
 
             dialog.Show();
             dialog.UpdateLayout();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-            var actor = Descendants<TextBox>(dialog)
-                .SingleOrDefault(t => t.Name == "ActorBox");
+            // The actor field is on the second tab: it exists, but it is not shown and has no focus.
+            var actor = dialog.FindControl<TextBox>("ActorBox");
 
             Assert.NotNull(actor);
             Assert.False(actor!.IsFocused);
+            Assert.Equal("Storage", ((TabItem)dialog.FindControl<TabControl>("Tabs")!.SelectedItem!).Header);
 
             dialog.Close();
         });
