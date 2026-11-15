@@ -13,11 +13,34 @@
         Background="{StaticResource SurfaceBrush}">
 
     <Window.Styles>
-        <!-- The headers of the tabs: the size of a title, and the first one in line with the content. -->
+        <!-- The tabs look like tabs: a frame with rounded top corners, the chosen one filled. -->
         <Style Selector="TabItem">
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="Padding" Value="0,6,20,12" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="16,7" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource OutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1,1,1,0" />
+            <Setter Property="CornerRadius" Value="8,8,0,0" />
+        </Style>
+        <!-- The standard marker under the chosen tab: the filled tab says it already. -->
+        <Style Selector="TabItem /template/ Border#PART_SelectedPipe">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="TabItem:selected /template/ Border#PART_SelectedPipe">
+            <Setter Property="IsVisible" Value="False" />
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+        <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="{StaticResource SurfaceContainerBrush}" />
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="{StaticResource OnSecondaryContainerBrush}" />
+        </Style>
+        <Style Selector="TabItem:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="{StaticResource SecondaryContainerBrush}" />
         </Style>
     </Window.Styles>
 
@@ -44,164 +67,176 @@
                      Storage: where the data lives, and this computer's place with the server
                      ======================================================== -->
                 <TabItem Header="Storage" Name="StorageTab">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="18" Margin="0,16,12,8">
+                    <Border Classes="TabPanel" Background="Transparent"
+                            BorderBrush="{StaticResource OutlineBrush}" BorderThickness="1"
+                            CornerRadius="0,8,8,8" Padding="16,0,4,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="18" Margin="0,16,12,12">
 
-                            <!-- Only offered when this build can use a server. -->
-                            <StackPanel Spacing="6" IsVisible="{Binding ServerBackendAvailable}">
-                                <TextBlock Text="Storage" Classes="LabelMedium" />
-                                <ComboBox HorizontalAlignment="Stretch"
-                                          ItemsSource="{Binding BackendNames}"
-                                          SelectedIndex="{Binding BackendIndex, Mode=TwoWay}" />
-                            </StackPanel>
-
-                            <StackPanel Spacing="6" IsVisible="{Binding IsServerBackend}">
-                                <TextBlock Text="Server address" Classes="LabelMedium" />
-                                <TextBox Text="{Binding ServerUrl, Mode=TwoWay}"
-                                         PlaceholderText="https://oloop.example.org" />
-                                <TextBlock Text="User name" Classes="LabelMedium" Margin="0,6,0,0" />
-                                <TextBox Text="{Binding ServerUser, Mode=TwoWay}" />
-                                <TextBlock Classes="Muted" TextWrapping="Wrap"
-                                           Text="The data is encrypted on this computer before it is sent. The server never sees it in clear text." />
-
-                                <!-- Where this computer stands with the server, and the two ways out of it. -->
-                                <StackPanel Spacing="6" Margin="0,8,0,0" IsVisible="{Binding HasServerControl}">
-                                    <TextBlock Text="This computer" Classes="LabelMedium" />
-                                    <TextBlock Name="ServerStatusText" Text="{Binding ServerStatus}" Classes="BodyMedium" TextWrapping="Wrap" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Button Classes="Outlined" Content="Lock keys"
-                                                Command="{Binding LockKeysCommand}" IsEnabled="{Binding CanLockKeys}" />
-                                        <Button Classes="Outlined" Content="Sign out"
-                                                Command="{Binding SignOutCommand}" IsEnabled="{Binding CanSignOut}" />
-                                    </StackPanel>
-                                    <TextBlock Classes="Muted" TextWrapping="Wrap"
-                                               Text="Lock keys forgets the keys on this computer; you stay signed in. Sign out also ends this computer's access on the server." />
+                                <!-- Only offered when this build can use a server. -->
+                                <StackPanel Spacing="6" IsVisible="{Binding ServerBackendAvailable}">
+                                    <TextBlock Text="Storage" Classes="LabelMedium" />
+                                    <ComboBox HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding BackendNames}"
+                                              SelectedIndex="{Binding BackendIndex, Mode=TwoWay}" />
                                 </StackPanel>
-                            </StackPanel>
 
-                            <StackPanel Spacing="6" IsVisible="{Binding IsFolderBackend}">
-                                <TextBlock Text="Data folder" Classes="LabelMedium" />
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding DataRoot, Mode=OneWay}"
-                                             IsReadOnly="True"
-                                             ToolTip.Tip="{Binding DataRoot}"
-                                             PlaceholderText="No data folder chosen" />
-                                    <Button Grid.Column="1" Classes="Outlined" Click="OnBrowseDataRootClick"
-                                            VerticalAlignment="Stretch">
-                                        Browse…
-                                    </Button>
-                                </Grid>
-                                <TextBlock Classes="Muted" TextWrapping="Wrap"
-                                           Text="The folder with one subfolder per project. Everything oloop knows lives there." />
-                            </StackPanel>
+                                <StackPanel Spacing="6" IsVisible="{Binding IsServerBackend}">
+                                    <TextBlock Text="Server address" Classes="LabelMedium" />
+                                    <TextBox Text="{Binding ServerUrl, Mode=TwoWay}"
+                                             PlaceholderText="https://oloop.example.org" />
+                                    <TextBlock Text="User name" Classes="LabelMedium" Margin="0,6,0,0" />
+                                    <TextBox Text="{Binding ServerUser, Mode=TwoWay}" />
+                                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                               Text="The data is encrypted on this computer before it is sent. The server never sees it in clear text." />
 
-                        </StackPanel>
-                    </ScrollViewer>
+                                    <!-- Where this computer stands with the server, and the two ways out of it. -->
+                                    <StackPanel Spacing="6" Margin="0,8,0,0" IsVisible="{Binding HasServerControl}">
+                                        <TextBlock Text="This computer" Classes="LabelMedium" />
+                                        <TextBlock Name="ServerStatusText" Text="{Binding ServerStatus}" Classes="BodyMedium" TextWrapping="Wrap" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button Classes="Outlined" Content="Lock keys"
+                                                    Command="{Binding LockKeysCommand}" IsEnabled="{Binding CanLockKeys}" />
+                                            <Button Classes="Outlined" Content="Sign out"
+                                                    Command="{Binding SignOutCommand}" IsEnabled="{Binding CanSignOut}" />
+                                        </StackPanel>
+                                        <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                                   Text="Lock keys forgets the keys on this computer; you stay signed in. Sign out also ends this computer's access on the server." />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Spacing="6" IsVisible="{Binding IsFolderBackend}">
+                                    <TextBlock Text="Data folder" Classes="LabelMedium" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding DataRoot, Mode=OneWay}"
+                                                 IsReadOnly="True"
+                                                 ToolTip.Tip="{Binding DataRoot}"
+                                                 PlaceholderText="No data folder chosen" />
+                                        <Button Grid.Column="1" Classes="Outlined" Click="OnBrowseDataRootClick"
+                                                VerticalAlignment="Stretch">
+                                            Browse…
+                                        </Button>
+                                    </Grid>
+                                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                               Text="The folder with one subfolder per project. Everything oloop knows lives there." />
+                                </StackPanel>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </TabItem>
 
                 <!-- ========================================================
                      Tasks: who writes, and how the list looks
                      ======================================================== -->
                 <TabItem Header="Tasks" Name="TasksTab">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="18" Margin="0,16,12,8">
+                    <Border Classes="TabPanel" Background="Transparent"
+                            BorderBrush="{StaticResource OutlineBrush}" BorderThickness="1"
+                            CornerRadius="0,8,8,8" Padding="16,0,4,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="18" Margin="0,16,12,12">
 
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="Actor name *" Classes="LabelMedium" />
-                                <TextBox Name="ActorBox"
-                                         Text="{Binding Actor, Mode=TwoWay}"
-                                         PlaceholderText="Your name" />
-                                <TextBlock Classes="Muted"
-                                           Text="Required. It is written into createdBy and updatedBy of every task." />
-                                <TextBlock Classes="Muted" TextWrapping="Wrap"
-                                           IsVisible="{Binding HasNoActor}"
-                                           Text="No name yet. oloop asks for it before the first write — until a name is entered, no task is written." />
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Actor name *" Classes="LabelMedium" />
+                                    <TextBox Name="ActorBox"
+                                             Text="{Binding Actor, Mode=TwoWay}"
+                                             PlaceholderText="Your name" />
+                                    <TextBlock Classes="Muted"
+                                               Text="Required. It is written into createdBy and updatedBy of every task." />
+                                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasNoActor}"
+                                               Text="No name yet. oloop asks for it before the first write — until a name is entered, no task is written." />
+                                </StackPanel>
+
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Task list" Classes="LabelMedium" />
+
+                                    <CheckBox Content="Show closed tasks"
+                                              IsChecked="{Binding ShowClosed, Mode=TwoWay}" />
+
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8"
+                                          RowDefinitions="Auto,Auto">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Group by" Classes="BodyMedium"
+                                                   VerticalAlignment="Center" />
+                                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                                  HorizontalAlignment="Stretch"
+                                                  ItemsSource="{Binding GroupingModes}"
+                                                  SelectedItem="{Binding Grouping, Mode=TwoWay}" />
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Stale since (days)" Classes="BodyMedium"
+                                                   VerticalAlignment="Center" />
+                                        <NumericUpDown Grid.Row="1" Grid.Column="1"
+                                                       HorizontalAlignment="Stretch"
+                                                       Minimum="0" Maximum="3650" Increment="1"
+                                                       FormatString="0.##"
+                                                       PlaceholderText="off"
+                                                       Value="{Binding StaleDaysValue, Mode=TwoWay}" />
+                                    </Grid>
+
+                                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                               Text="Stale since hides the tasks that were not touched for that many days. Leave it empty to switch the filter off." />
+                                </StackPanel>
+
                             </StackPanel>
-
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="Task list" Classes="LabelMedium" />
-
-                                <CheckBox Content="Show closed tasks"
-                                          IsChecked="{Binding ShowClosed, Mode=TwoWay}" />
-
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8"
-                                      RowDefinitions="Auto,Auto">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Group by" Classes="BodyMedium"
-                                               VerticalAlignment="Center" />
-                                    <ComboBox Grid.Row="0" Grid.Column="1"
-                                              HorizontalAlignment="Stretch"
-                                              ItemsSource="{Binding GroupingModes}"
-                                              SelectedItem="{Binding Grouping, Mode=TwoWay}" />
-
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Stale since (days)" Classes="BodyMedium"
-                                               VerticalAlignment="Center" />
-                                    <NumericUpDown Grid.Row="1" Grid.Column="1"
-                                                   HorizontalAlignment="Stretch"
-                                                   Minimum="0" Maximum="3650" Increment="1"
-                                                   FormatString="0.##"
-                                                   PlaceholderText="off"
-                                                   Value="{Binding StaleDaysValue, Mode=TwoWay}" />
-                                </Grid>
-
-                                <TextBlock Classes="Muted" TextWrapping="Wrap"
-                                           Text="Stale since hides the tasks that were not touched for that many days. Leave it empty to switch the filter off." />
-                            </StackPanel>
-
-                        </StackPanel>
-                    </ScrollViewer>
+                        </ScrollViewer>
+                    </Border>
                 </TabItem>
 
                 <!-- ========================================================
                      Interface: the size of the text, and the keys
                      ======================================================== -->
                 <TabItem Header="Interface" Name="InterfaceTab">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="18" Margin="0,16,12,8">
+                    <Border Classes="TabPanel" Background="Transparent"
+                            BorderBrush="{StaticResource OutlineBrush}" BorderThickness="1"
+                            CornerRadius="0,8,8,8" Padding="16,0,4,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="18" Margin="0,16,12,12">
 
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="Appearance" Classes="LabelMedium" />
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                    <TextBlock Grid.Column="0" Text="Text size (%)" Classes="BodyMedium"
-                                               VerticalAlignment="Center" />
-                                    <NumericUpDown Grid.Column="1" Name="UiScaleBox"
-                                                   HorizontalAlignment="Stretch"
-                                                   Minimum="{Binding MinUiScalePercent}"
-                                                   Maximum="{Binding MaxUiScalePercent}"
-                                                   Increment="10"
-                                                   FormatString="0"
-                                                   Value="{Binding UiScaleValue, Mode=TwoWay}" />
-                                </Grid>
-                                <TextBlock Classes="Muted" TextWrapping="Wrap"
-                                           Text="Scales the whole window. 100 is the normal size. The value is kept on this computer only, so every screen can have its own." />
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Appearance" Classes="LabelMedium" />
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <TextBlock Grid.Column="0" Text="Text size (%)" Classes="BodyMedium"
+                                                   VerticalAlignment="Center" />
+                                        <NumericUpDown Grid.Column="1" Name="UiScaleBox"
+                                                       HorizontalAlignment="Stretch"
+                                                       Minimum="{Binding MinUiScalePercent}"
+                                                       Maximum="{Binding MaxUiScalePercent}"
+                                                       Increment="10"
+                                                       FormatString="0"
+                                                       Value="{Binding UiScaleValue, Mode=TwoWay}" />
+                                    </Grid>
+                                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                               Text="Scales the whole window. 100 is the normal size. The value is kept on this computer only, so every screen can have its own." />
+                                </StackPanel>
+
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Shortcuts" Classes="LabelMedium" />
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowSpacing="4"
+                                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+F" Classes="BodyMedium" />
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Focus the search" Classes="Muted" />
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+N" Classes="BodyMedium" />
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="New task in the open project" Classes="Muted" />
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+E" Classes="BodyMedium" />
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Edit the selected task" Classes="Muted" />
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+," Classes="BodyMedium" />
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Text="These settings" Classes="Muted" />
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Escape" Classes="BodyMedium" />
+                                        <TextBlock Grid.Row="4" Grid.Column="1" Text="Clear the search, or back to the projects" Classes="Muted" />
+
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="F5" Classes="BodyMedium" />
+                                        <TextBlock Grid.Row="5" Grid.Column="1" Text="Reload the data folder" Classes="Muted" />
+                                    </Grid>
+                                </StackPanel>
+
                             </StackPanel>
-
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="Shortcuts" Classes="LabelMedium" />
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowSpacing="4"
-                                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+F" Classes="BodyMedium" />
-                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Focus the search" Classes="Muted" />
-
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+N" Classes="BodyMedium" />
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="New task in the open project" Classes="Muted" />
-
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+E" Classes="BodyMedium" />
-                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="Edit the selected task" Classes="Muted" />
-
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+," Classes="BodyMedium" />
-                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="These settings" Classes="Muted" />
-
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Escape" Classes="BodyMedium" />
-                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="Clear the search, or back to the projects" Classes="Muted" />
-
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="F5" Classes="BodyMedium" />
-                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="Reload the data folder" Classes="Muted" />
-                                </Grid>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </ScrollViewer>
+                        </ScrollViewer>
+                    </Border>
                 </TabItem>
 
             </TabControl>
