@@ -427,4 +427,23 @@ public class ServerCryptoVectorsTests
 
         Assert.Equal(["envelope", "envelope-header", "grant", "statement"], kinds.Order());
     }
+
+    // ---------------- Recovery code ----------------
+
+    [Fact]
+    public void The_Recovery_Code_Is_Written_As_The_Vectors_Show_It()
+    {
+        Assert.Equal(Keys.GetProperty("recoveryCodeText").GetString(), RecoveryCode.Format(Hex(Keys, "recoveryCodeHex")));
+    }
+
+    [Fact]
+    public void The_Texts_Of_The_Vectors_Are_Read_Or_Refused_As_Listed()
+    {
+        var codes = Root.GetProperty("recoveryCode");
+        foreach (var item in codes.GetProperty("accept").EnumerateArray())
+            Assert.Equal(Hex(item, "bytesHex"), RecoveryCode.TryParse(item.GetProperty("text").GetString()!));
+
+        foreach (var item in codes.GetProperty("refuse").EnumerateArray())
+            Assert.Null(RecoveryCode.TryParse(item.GetProperty("text").GetString()!));
+    }
 }
