@@ -52,4 +52,10 @@ public interface IDialogService
     /// Shows the unlock of the keys. Returns the unlocked user, or null when the user cancelled.
     /// </summary>
     Task<UnlockedUser?> ShowKeyUnlockAsync(KeyUnlockViewModel viewModel) => Task.FromResult<UnlockedUser?>(null);
+
+    /// <summary>
+    /// Shows the sign-in to the server. Returns true when the device is signed in, false when the
+    /// user cancelled.
+    /// </summary>
+    Task<bool> ShowLoginAsync(LoginViewModel viewModel) => Task.FromResult(false);
 }

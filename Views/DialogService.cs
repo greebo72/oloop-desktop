@@ -92,4 +92,11 @@ public sealed class DialogService : IDialogService
         var owner = _owner();
         return owner is null ? null : await KeyUnlockDialog.ShowAsync(owner, viewModel);
     }
+
+    /// <inheritdoc />
+    public async Task<bool> ShowLoginAsync(LoginViewModel viewModel)
+    {
+        var owner = _owner();
+        return owner is not null && await LoginDialog.ShowAsync(owner, viewModel);
+    }
 }

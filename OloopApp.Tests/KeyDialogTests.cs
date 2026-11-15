@@ -260,4 +260,33 @@ public class KeyDialogTests
             dialog.Close();
         }, CancellationToken.None);
     }
+
+    [Fact]
+    public async Task The_Login_Dialog_Shows_Server_And_User_With_A_Hidden_Password_Field()
+    {
+        var api = new ServerApi(_server.CreateClient(), FakeOloopServer.BaseUrl);
+        var vm = new LoginViewModel(api, "https://oloop.example", "timo", "Test Mac");
+
+        await Session.Dispatch(() =>
+        {
+            var dialog = new LoginDialog(vm);
+            dialog.Show();
+            dialog.UpdateLayout();
+
+            var texts = Descendants<TextBlock>(dialog).Select(t => t.Text).ToList();
+            Assert.Contains("Sign in to the server", texts);
+            Assert.Contains("https://oloop.example", texts);
+            Assert.Contains("timo", texts);
+
+            var boxes = Descendants<TextBox>(dialog).ToList();
+            Assert.Equal('●', boxes.Single(b => b.Name == "PasswordBox").PasswordChar);
+            Assert.Contains(boxes, b => b.Text == "Test Mac");
+
+            var signIn = Descendants<Button>(dialog).Single(b => b.Content as string == "Sign in");
+            Assert.False(signIn.IsEnabled);
+            vm.Password = "secret";
+            Assert.True(signIn.IsEnabled);
+            dialog.Close();
+        }, CancellationToken.None);
+    }
 }
