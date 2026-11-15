@@ -20,7 +20,9 @@
     <!-- The executable is called oloop, not OloopApp — the name shows up in
          the task bar, in the app bundle and in the file manager. -->
     <AssemblyName>oloop</AssemblyName>
-    <!-- The app has no network access, so the default is fine. -->
+    <!-- Invariant mode: no ICU is needed, so the Linux package runs on every
+         distribution. Mind that string.Normalize() then leaves non-ASCII text
+         unchanged without a word; see Core/Crypto/Passphrase.cs. -->
     <InvariantGlobalization>true</InvariantGlobalization>
     <!-- No debug symbols in a release: they double the size of the
          package and nobody needs them without a matching build. -->

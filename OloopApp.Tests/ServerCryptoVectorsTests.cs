@@ -59,12 +59,80 @@ public class ServerCryptoVectorsTests
         foreach (var c in Cases(Root.GetProperty("kdf")))
         {
             var key = KeyDerivation.DerivePassphraseKey(
-                Encoding.UTF8.GetBytes(c.GetProperty("passphrase").GetString()!),
+                Passphrase.ToKeyBytes(c.GetProperty("passphrase").GetString()!),
                 Hex(c, "saltHex"), c.GetProperty("m").GetInt64(), c.GetProperty("t").GetInt64());
 
             Assert.Equal(Hex(c, "keyHex"), key);
         }
     }
+
+    // ---------------- From typed text to bytes ----------------
+
+    /// <summary>Text from code points, so that nothing changes how a vector is spelled. A surrogate half stays a lone char.</summary>
+    private static string TextOf(JsonElement codePoints)
+    {
+        var text = new StringBuilder();
+        foreach (var point in codePoints.EnumerateArray())
+        {
+            var cp = point.GetInt32();
+            text.Append(cp is >= 0xD800 and <= 0xDFFF ? ((char)cp).ToString() : char.ConvertFromUtf32(cp));
+        }
+        return text.ToString();
+    }
+
+    private static JsonElement PassphraseEncoding => Root.GetProperty("kdf").GetProperty("encoding");
+
+    [Fact]
+    public void Typed_Text_Becomes_The_Utf8_Bytes_Of_The_Vectors_Without_Normalization()
+    {
+        foreach (var c in PassphraseEncoding.GetProperty("cases").EnumerateArray())
+        {
+            var bytes = Passphrase.ToKeyBytes(TextOf(c.GetProperty("codePoints")));
+
+            Assert.True(Hex(c, "utf8Hex").SequenceEqual(bytes), c.GetProperty("name").GetString());
+        }
+    }
+
+    [Fact]
+    public void The_Two_Spellings_Of_An_Umlaut_Are_Two_Passphrases()
+    {
+        var keys = PassphraseEncoding.GetProperty("keys");
+        var derived = new List<byte[]>();
+
+        foreach (var c in keys.GetProperty("cases").EnumerateArray())
+        {
+            var key = KeyDerivation.DerivePassphraseKey(
+                Passphrase.ToKeyBytes(TextOf(c.GetProperty("codePoints"))),
+                Hex(keys, "saltHex"), keys.GetProperty("m").GetInt64(), keys.GetProperty("t").GetInt64());
+
+            Assert.Equal(Hex(c, "keyHex"), key);
+            derived.Add(key);
+        }
+
+        Assert.Equal(2, derived.Count);
+        Assert.NotEqual(derived[0], derived[1]);
+    }
+
+    [Fact]
+    public void Text_That_Is_Not_Valid_Unicode_Is_Refused()
+    {
+        var refused = PassphraseEncoding.GetProperty("refused").EnumerateArray().ToList();
+
+        Assert.NotEmpty(refused);
+        foreach (var c in refused)
+        {
+            var text = TextOf(c.GetProperty("codePoints"));
+            Assert.Throws<OloopCryptoException>(() => Passphrase.ToKeyBytes(text));
+        }
+    }
+
+    [Fact]
+    public void An_Emoji_Is_Four_Bytes_Not_Two_Surrogate_Halves()
+        => Assert.Equal(Convert.FromHexString("F09F9491"), Passphrase.ToKeyBytes("\U0001F511"));
+
+    [Fact]
+    public void An_Empty_Text_Gives_No_Bytes_The_Caller_Decides_Whether_That_Is_Allowed()
+        => Assert.Empty(Passphrase.ToKeyBytes(""));
 
     [Fact]
     public void The_Policy_Of_The_Vectors_Is_Applied()
@@ -133,7 +201,7 @@ public class ServerCryptoVectorsTests
         var bundle = KeyBundle.FromJson(Keys.GetProperty("bundle").GetRawText());
         var passphrase = Root.GetProperty("kdf").GetProperty("cases")[0];
         var key = KeyDerivation.DerivePassphraseKey(
-            Encoding.UTF8.GetBytes(passphrase.GetProperty("passphrase").GetString()!),
+            Passphrase.ToKeyBytes(passphrase.GetProperty("passphrase").GetString()!),
             bundle.Salt, bundle.MemoryBytes, bundle.Passes);
 
         Assert.Equal(UserSecret, bundle.UnlockWithPassphraseKey(key, Id(Keys, "userId")));
