@@ -19,6 +19,30 @@ public sealed record KeyBundle(
     public const int PublicKeyBytes = 32;
     public const int SecretKeyBytes = 32;
 
+    /// <summary>
+    /// A new bundle: a fresh key pair, its secret key encrypted with the key of the passphrase and
+    /// with the recovery code. The cost is the default of the spec. The secret key comes back too,
+    /// so that the device that made the bundle is unlocked without a second Argon2id run.
+    /// </summary>
+    public static (KeyBundle Bundle, byte[] SecretKey) Create(
+        byte[] passphrase, byte[] recoveryCode, Guid userId,
+        long memoryBytes = KeyDerivation.DefaultMemoryBytes, long passes = KeyDerivation.DefaultPasses)
+    {
+        if (recoveryCode.Length != RecoveryCode.Bytes)
+            throw new ArgumentException($"a recovery code is {RecoveryCode.Bytes} bytes", nameof(recoveryCode));
+
+        var salt = SodiumCore.GetRandomBytes(KeyDerivation.SaltBytes);
+        var passphraseKey = KeyDerivation.DerivePassphraseKey(passphrase, salt, memoryBytes, passes);
+
+        var pair = PublicKeyBox.GenerateKeyPair();
+        var associatedData = AssociatedData.Key(userId);
+        var bundle = new KeyBundle(
+            salt, memoryBytes, passes, pair.PublicKey,
+            Envelope.Seal(passphraseKey, pair.PrivateKey, associatedData),
+            Envelope.Seal(recoveryCode, pair.PrivateKey, associatedData));
+        return (bundle, pair.PrivateKey);
+    }
+
     /// <summary>Reads the bundle as the API carries it. A bundle of another version or kind is refused.</summary>
     public static KeyBundle FromJson(string json)
     {

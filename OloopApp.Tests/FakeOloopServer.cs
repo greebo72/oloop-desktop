@@ -105,6 +105,8 @@ internal sealed class FakeOloopServer : HttpMessageHandler
                 return new HttpResponseMessage(HttpStatusCode.NoContent);
             }
 
+            if (path == "/v1/keys")
+                return Keys(request, body);
             if (path == "/v1/head" && request.Method == HttpMethod.Get)
                 return Json(new JsonObject { ["cursor"] = _counter.ToString() });
             if (path == "/v1/projects" && request.Method == HttpMethod.Get)
@@ -125,6 +127,29 @@ internal sealed class FakeOloopServer : HttpMessageHandler
 
             return Error(HttpStatusCode.NotFound, "not_found", "no such route");
         }
+    }
+
+    /// <summary>The key bundle as it is stored; the server checks the form only (SERVER.md, "Key bundle").</summary>
+    public JsonNode? Bundle { get; private set; }
+
+    private int _keyRev;
+
+    private HttpResponseMessage Keys(HttpRequestMessage request, byte[] body)
+    {
+        if (request.Method == HttpMethod.Get)
+            return Bundle is null
+                ? Error(HttpStatusCode.NotFound, "not_found", "no key bundle yet")
+                : Json(new JsonObject { ["keyRev"] = _keyRev, ["bundle"] = Bundle.DeepClone() });
+
+        var first = request.Headers.IfNoneMatch.Any(t => t.Tag == "*");
+        if (first && Bundle is not null)
+            return Error(HttpStatusCode.Conflict, "conflict", "a bundle exists");
+        if (!first)
+            return Error(HttpStatusCode.BadRequest, "bad_request", "only the first setup is supported here");
+
+        Bundle = JsonNode.Parse(body)!["bundle"]!.DeepClone();
+        _keyRev = 1;
+        return Json(new JsonObject { ["keyRev"] = _keyRev });
     }
 
     private HttpResponseMessage Login(byte[] body)
