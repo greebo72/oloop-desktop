@@ -997,6 +997,16 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             await main.Session.SignOutAsync();
             main.AfterServerDisconnected("Signed out. Reload (F5) to sign in.");
         }
+
+        public async Task ForgetRevisionsAsync()
+        {
+            main.Session.ForgetSeenRevisions();
+
+            // What was refused as an older state can be read now. When the keys are locked the next
+            // load does it; opening the unlock dialog from here, on top of the settings, would be odd.
+            if (main.Session.Store is not null)
+                await main.RefreshAsync();
+        }
     }
 
     /// <summary>The data of the server is no longer open: stop watching and show it.</summary>

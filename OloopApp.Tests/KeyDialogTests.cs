@@ -314,6 +314,7 @@ public class KeyDialogTests
         public ServerSessionState State { get; set; } = ServerSessionState.OpenKeyKept;
         public Task LockAsync() { State = ServerSessionState.Locked; return Task.CompletedTask; }
         public Task SignOutAsync() { State = ServerSessionState.SignedOut; return Task.CompletedTask; }
+        public Task ForgetRevisionsAsync() => Task.CompletedTask;
     }
 
     [Fact]
@@ -333,6 +334,9 @@ public class KeyDialogTests
         {
             var dialog = new SettingsDialog(vm);
             dialog.Show();
+
+            // The state of the session and its buttons are on the tab "Security", which is there for the server.
+            dialog.FindControl<TabControl>("Tabs")!.SelectedItem = dialog.FindControl<TabItem>("SecurityTab");
             dialog.UpdateLayout();
 
             var shown = Descendants<TextBlock>(dialog).Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();

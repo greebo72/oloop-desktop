@@ -1,5 +1,6 @@
 using System.Text;
 using OloopApp.Core.Crypto;
+using OloopApp.Core.Io;
 using OloopApp.Core.Secrets;
 using OloopApp.Core.Server;
 
@@ -28,6 +29,8 @@ public sealed class ServerSession : IDisposable
     private readonly Func<IDialogService> _dialogs;
     private readonly SemaphoreSlim _connecting = new(1, 1);
 
+    private readonly Func<string, Guid, IRevisionLedger> _ledgers;
+
     private ServerApi? _api;
     private string? _endpoint;
     private string? _userName;
@@ -36,12 +39,22 @@ public sealed class ServerSession : IDisposable
     /// Asked for at every dialog: the app sets its dialog service only after the window exists,
     /// and a session is made before.
     /// </param>
-    public ServerSession(HttpClient http, ISecretStore secrets, Func<IDialogService> dialogs)
+    /// <param name="ledgers">
+    /// Makes the ledger of the revisions seen for a server and a user. The default keeps a file next
+    /// to the settings of the user.
+    /// </param>
+    public ServerSession(
+        HttpClient http, ISecretStore secrets, Func<IDialogService> dialogs,
+        Func<string, Guid, IRevisionLedger>? ledgers = null)
     {
         _http = http;
         _secrets = secrets;
         _dialogs = dialogs;
+        _ledgers = ledgers ?? DefaultLedger;
     }
+
+    private static IRevisionLedger DefaultLedger(string serverUrl, Guid userId)
+        => FileRevisionLedger.For(Path.GetDirectoryName(OloopSettings.DefaultPath)!, serverUrl, userId);
 
     /// <summary>The store of the unlocked session, or null while the session is not open or is locked.</summary>
     public ServerOloopStore? Store { get; private set; }
@@ -115,8 +128,23 @@ public sealed class ServerSession : IDisposable
 
         Remember(KeyName, user.SecretKey);
         KeyIsKept = _secrets.IsPersistent;
-        Store = new ServerOloopStore(_api, user);
+        Store = new ServerOloopStore(_api, user, _ledgers(serverUrl, user.UserId));
         return Store;
+    }
+
+    /// <summary>
+    /// Forgets the revisions that this device has seen of the documents of the signed-in user. For a
+    /// server that was restored from a backup. Works while the keys are locked, too.
+    /// </summary>
+    public void ForgetSeenRevisions()
+    {
+        if (_api is not { SignedIn: true } || _endpoint is null)
+            return;
+
+        if (Store is not null)
+            Store.ForgetRevisions();
+        else
+            _ledgers(_endpoint, _api.UserId).Clear();
     }
 
     /// <summary>Forgets the secret key, here and on the device. The sign-in stays; the next <see cref="ConnectAsync"/> asks for the passphrase.</summary>

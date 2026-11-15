@@ -29,4 +29,10 @@ public interface IServerSessionControl
 
     /// <summary>Cuts this computer off at the server and forgets the token and the keys.</summary>
     Task SignOutAsync();
+
+    /// <summary>
+    /// Forgets the highest revisions this computer has seen, for a server that was restored from a
+    /// backup on purpose. The data is read again afterwards.
+    /// </summary>
+    Task ForgetRevisionsAsync();
 }

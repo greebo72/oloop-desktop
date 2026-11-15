@@ -59,6 +59,22 @@ public partial class SettingsViewModel : ViewModelBase
     /// <summary>Whether there is a sign-in to end.</summary>
     public bool CanSignOut => ServerState != ServerSessionState.SignedOut;
 
+    /// <summary>Whether there is a session whose seen revisions can be forgotten.</summary>
+    public bool CanForgetRevisions => ServerState != ServerSessionState.SignedOut;
+
+    /// <summary>
+    /// Forgets the highest revisions seen, for a server that was restored from a backup on purpose.
+    /// </summary>
+    [RelayCommand]
+    private async Task ForgetRevisionsAsync()
+    {
+        if (ServerControl is null)
+            return;
+
+        await ServerControl.ForgetRevisionsAsync();
+        RaiseServerState();
+    }
+
     /// <summary>Forgets the keys on this computer; the sign-in stays.</summary>
     [RelayCommand]
     private async Task LockKeysAsync()
@@ -86,6 +102,7 @@ public partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(ServerStatus));
         OnPropertyChanged(nameof(CanLockKeys));
         OnPropertyChanged(nameof(CanSignOut));
+        OnPropertyChanged(nameof(CanForgetRevisions));
     }
 
     /// <summary>Whether the data lives in a folder, so the folder is asked for.</summary>

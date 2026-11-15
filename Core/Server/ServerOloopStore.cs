@@ -28,12 +28,15 @@ public sealed class ServerOloopStore : OloopStoreBase
 
     private readonly ServerApi _api;
     private readonly UnlockedUser _user;
+    private readonly IRevisionLedger _ledger;
 
     // The keys of the projects, by project and key version. Filled by every load.
     private readonly Dictionary<Guid, Dictionary<int, byte[]>> _projectKeys = [];
 
     // The revision of each document as this store last saw it. A change is written on top of it.
-    private readonly Dictionary<Guid, int> _revisions = [];
+    // It starts from the ledger of this device, so that what was seen in an earlier run counts too.
+    private readonly Dictionary<Guid, int> _revisions;
+    private bool _revisionsChanged;
 
     // The conflicts that were reported to the user, by task: the revision and the updatedAt that
     // were shown. A write that expects exactly this is the user's choice to overwrite.
@@ -43,10 +46,13 @@ public sealed class ServerOloopStore : OloopStoreBase
     private string? _knownHead;
     private IReadOnlyList<OloopProject> _projects = [];
 
-    public ServerOloopStore(ServerApi api, UnlockedUser user)
+    /// <param name="ledger">Where the highest revisions seen are kept between runs. Without one they live as long as this object.</param>
+    public ServerOloopStore(ServerApi api, UnlockedUser user, IRevisionLedger? ledger = null)
     {
         _api = api;
         _user = user;
+        _ledger = ledger ?? new MemoryRevisionLedger();
+        _revisions = new Dictionary<Guid, int>(_ledger.Load());
     }
 
     // ---------------- Availability and change detection ----------------
@@ -184,6 +190,8 @@ public sealed class ServerOloopStore : OloopStoreBase
         lock (_gate)
             _projects = ordered;
 
+        PersistRevisions();
+
         return new OloopSnapshot
         {
             Projects = ordered,
@@ -261,7 +269,8 @@ public sealed class ServerOloopStore : OloopStoreBase
 
             if (_revisions.TryGetValue(id, out var seen) && rev < seen)
                 throw new OloopCryptoException(
-                    $"the server shows revision {rev} of this document, after revision {seen} was seen: an older state");
+                    $"the server shows revision {rev} of this document, after revision {seen} was seen: an older state. "
+                    + "If the server was restored from a backup on purpose, use \"Forget seen revisions\" in the settings.");
         }
 
         var bytes = Envelope.Open(key, Base64Url.Decode(Text(item, "data")),
@@ -272,7 +281,52 @@ public sealed class ServerOloopStore : OloopStoreBase
     private void Remember(Guid id, int rev)
     {
         if (!_revisions.TryGetValue(id, out var seen) || rev > seen)
+        {
             _revisions[id] = rev;
+            _revisionsChanged = true;
+        }
+    }
+
+    /// <summary>
+    /// Writes the ledger when something was added to it. A ledger that cannot be written costs
+    /// the protection for the next run, not this one: it is not a reason to fail a load or a write.
+    /// </summary>
+    private void PersistRevisions()
+    {
+        Dictionary<Guid, int> snapshot;
+        lock (_gate)
+        {
+            if (!_revisionsChanged)
+                return;
+
+            snapshot = new Dictionary<Guid, int>(_revisions);
+            _revisionsChanged = false;
+        }
+
+        try
+        {
+            _ledger.Save(snapshot);
+        }
+        catch (IOException)
+        {
+            lock (_gate)
+                _revisionsChanged = true; // the next load or write tries again
+        }
+    }
+
+    /// <summary>
+    /// Forgets which revisions were seen, here and on the device. For a server that was restored
+    /// from a backup: it shows older states on purpose, and they would be refused for ever.
+    /// </summary>
+    public void ForgetRevisions()
+    {
+        lock (_gate)
+        {
+            _revisions.Clear();
+            _revisionsChanged = false;
+        }
+
+        _ledger.Clear();
     }
 
     /// <inheritdoc />
@@ -496,6 +550,7 @@ public sealed class ServerOloopStore : OloopStoreBase
         var stored = answer.GetProperty("rev").GetInt32();
         lock (_gate)
             Remember(id, stored);
+        PersistRevisions();
         return stored;
     }
 

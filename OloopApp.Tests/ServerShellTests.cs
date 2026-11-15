@@ -14,6 +14,7 @@ public class ServerShellTests : IDisposable
     private readonly FakeOloopServer _server = new();
     private readonly MemorySecrets _secrets = new();
     private readonly ScriptedDialogs _dialogs = new();
+    private readonly Dictionary<Guid, MemoryRevisionLedger> _ledgers = [];
 
     public ServerShellTests() => Directory.CreateDirectory(_dir);
 
@@ -31,7 +32,8 @@ public class ServerShellTests : IDisposable
         })
         {
             Dialogs = _dialogs,
-            Session = new ServerSession(_server.CreateClient(), _secrets, () => _dialogs),
+            Session = new ServerSession(_server.CreateClient(), _secrets, () => _dialogs,
+                (_, userId) => _ledgers.TryGetValue(userId, out var ledger) ? ledger : _ledgers[userId] = new MemoryRevisionLedger()),
         };
         return shell;
     }
@@ -226,5 +228,82 @@ public class ServerShellTests : IDisposable
 
         Assert.IsType<FileOloopStore>(shell.StoreOrNull);
         Assert.Equal("", shell.StatusMessage);
+    }
+
+    // ---------------- Seen revisions ----------------
+
+    [Fact]
+    public async Task The_Revisions_That_Were_Seen_Are_Kept_For_The_Next_Start()
+    {
+        using (var shell = await FirstStartAsync())
+        {
+            await shell.StoreOrNull!.CreateProjectAsync("Server project");
+            await shell.RefreshAsync();
+        }
+
+        var ledger = Assert.Single(_ledgers.Values);
+        Assert.Single(ledger.Load()); // the project
+        Assert.All(ledger.Load().Values, rev => Assert.Equal(1, rev));
+    }
+
+    [Fact]
+    public async Task Forget_Seen_Revisions_Reloads_The_Data()
+    {
+        using var shell = await FirstStartAsync();
+        await shell.StoreOrNull!.CreateProjectAsync("Server project");
+        await shell.RefreshAsync();
+        var ledger = Assert.Single(_ledgers.Values);
+        Assert.NotEmpty(ledger.Load());
+
+        var reloaded = false;
+        shell.DataReloaded += () => reloaded = true;
+        _dialogs.OnSettings = async vm =>
+        {
+            Assert.True(vm.CanForgetRevisions);
+            await vm.ForgetRevisionsCommand.ExecuteAsync(null);
+            return false;
+        };
+        await shell.OpenSettingsAsync();
+
+        // The reload that follows reads the server again; what it shows counts from here on.
+        Assert.True(reloaded);
+        Assert.Single(shell.Projects);
+    }
+
+    [Fact]
+    public async Task Forget_Seen_Revisions_Works_While_The_Keys_Are_Locked()
+    {
+        using var shell = await FirstStartAsync();
+        await shell.StoreOrNull!.CreateProjectAsync("Server project");
+        await shell.RefreshAsync();
+        var ledger = Assert.Single(_ledgers.Values);
+
+        shell.Session.Lock();
+        _dialogs.OnSettings = async vm =>
+        {
+            Assert.True(vm.CanForgetRevisions);
+            await vm.ForgetRevisionsCommand.ExecuteAsync(null);
+            return false;
+        };
+        await shell.OpenSettingsAsync();
+
+        Assert.Empty(ledger.Load());
+        Assert.Equal(0, _dialogs.Unlocks); // no unlock dialog was opened on top of the settings
+    }
+
+    [Fact]
+    public async Task Without_A_Session_There_Is_Nothing_To_Forget()
+    {
+        using var shell = NewShell();
+        SettingsViewModel? seen = null;
+        _dialogs.OnSettings = vm =>
+        {
+            seen = vm;
+            return Task.FromResult(false);
+        };
+
+        await shell.OpenSettingsAsync();
+
+        Assert.False(seen!.CanForgetRevisions);
     }
 }
