@@ -1,4 +1,5 @@
 using OloopApp.Core.Models;
+using OloopApp.Core.Server;
 
 namespace OloopApp.ViewModels;
 
@@ -40,4 +41,15 @@ public interface IDialogService
     /// concerned. Returns true to discard, false to keep editing.
     /// </summary>
     Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles);
+
+    /// <summary>
+    /// Shows the setup of the keys on the first device. Returns the unlocked user, or null when
+    /// the user cancelled. A service that does not know the dialog reports "cancelled".
+    /// </summary>
+    Task<UnlockedUser?> ShowKeySetupAsync(KeySetupViewModel viewModel) => Task.FromResult<UnlockedUser?>(null);
+
+    /// <summary>
+    /// Shows the unlock of the keys. Returns the unlocked user, or null when the user cancelled.
+    /// </summary>
+    Task<UnlockedUser?> ShowKeyUnlockAsync(KeyUnlockViewModel viewModel) => Task.FromResult<UnlockedUser?>(null);
 }

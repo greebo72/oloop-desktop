@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.KeyUnlockDialog"
+        x:DataType="vm:KeyUnlockViewModel"
+        Title="Unlock your keys"
+        Width="480"
+        SizeToContent="Height"
+        MinWidth="420"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <!-- Opaque surface: a dialog must never show the window behind it. -->
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
+        <StackPanel Spacing="18">
+
+            <StackPanel Spacing="2">
+                <TextBlock Text="Unlock your keys" Classes="TitleLarge" />
+                <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                           Text="Your tasks on the server are encrypted. This computer needs your passphrase once to read them." />
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <TextBlock Name="InputLabel" Classes="LabelMedium" Text="Passphrase" />
+                <TextBox Name="InputBox" Text="{Binding Input, Mode=TwoWay}" PasswordChar="●" />
+            </StackPanel>
+
+            <Border Classes="Field" Padding="12,8"
+                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" />
+            </Border>
+
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <Button Grid.Column="0" Classes="Text" HorizontalAlignment="Left" Name="SwitchButton"
+                        Click="OnSwitchClick" Content="Use the recovery code" />
+                <Button Grid.Column="1" Classes="Text" Click="OnCancelClick" Content="Cancel" />
+                <Button Grid.Column="2" Classes="Primary" Click="OnUnlockClick" Content="Unlock"
+                        IsEnabled="{Binding CanUnlock}" />
+            </Grid>
+
+        </StackPanel>
+    </Border>
+</Window>

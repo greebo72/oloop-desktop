@@ -1,0 +1,94 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.KeySetupDialog"
+        x:DataType="vm:KeySetupViewModel"
+        Title="Set up your keys"
+        Width="520"
+        SizeToContent="Height"
+        MinWidth="440"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <!-- Opaque surface: a dialog must never show the window behind it. -->
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
+        <StackPanel Spacing="18">
+
+            <!-- ============================================================
+                 Step 1: the passphrase
+                 ============================================================ -->
+            <StackPanel Spacing="18" IsVisible="{Binding IsPassphraseStep}">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Choose a passphrase" Classes="TitleLarge" />
+                    <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                               Text="Your tasks are encrypted on this computer before they go to the server. The passphrase makes the key. The server never sees it." />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Passphrase *" Classes="LabelMedium" />
+                    <TextBox Name="PassphraseBox" Text="{Binding Passphrase, Mode=TwoWay}" PasswordChar="●" />
+                    <TextBlock Text="Confirm *" Classes="LabelMedium" Margin="0,6,0,0" />
+                    <TextBox Name="ConfirmBox" Text="{Binding Confirmation, Mode=TwoWay}" PasswordChar="●" />
+                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                               Text="At least 12 characters. Not the password you use to sign in to the server." />
+                </StackPanel>
+
+                <Border Classes="Field" Padding="12,8"
+                        IsVisible="{Binding PassphraseHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding PassphraseHint}" Classes="BodyMedium" TextWrapping="Wrap" />
+                </Border>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                    <Button Classes="Text" Click="OnCancelClick" Content="Cancel" />
+                    <Button Classes="Primary" Click="OnContinueClick" Content="Continue"
+                            IsEnabled="{Binding CanContinue}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- ============================================================
+                 Step 2: the recovery code
+                 ============================================================ -->
+            <StackPanel Spacing="18" IsVisible="{Binding IsRecoveryStep}">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Keep your recovery code" Classes="TitleLarge" />
+                    <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                               Text="If you forget the passphrase, this code is the only way back to your data. It is shown only once." />
+                </StackPanel>
+
+                <Border Classes="Card" Padding="16">
+                    <SelectableTextBlock Name="CodeText" Text="{Binding RecoveryCodeText}"
+                                         FontFamily="Menlo, Consolas, monospace" FontSize="18"
+                                         TextWrapping="Wrap" HorizontalAlignment="Center" />
+                </Border>
+
+                <Border Classes="Field" Padding="12,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                                  VerticalAlignment="Center"
+                                  Foreground="{StaticResource StatusOpenBrush}" />
+                        <TextBlock Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="420"
+                                   Text="Without the passphrase and without this code, nobody can recover your data, not even the server's administrator." />
+                    </StackPanel>
+                </Border>
+
+                <CheckBox IsChecked="{Binding CodeIsKept, Mode=TwoWay}"
+                          Content="I have saved the recovery code in a safe place." />
+
+                <Border Classes="Field" Padding="12,8"
+                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" />
+                </Border>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                    <Button Classes="Text" Click="OnBackClick" Content="Back" />
+                    <Button Classes="Outlined" Click="OnCopyClick" Content="Copy" />
+                    <Button Classes="Primary" Click="OnFinishClick" Content="Finish"
+                            IsEnabled="{Binding CanFinish}" />
+                </StackPanel>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</Window>
