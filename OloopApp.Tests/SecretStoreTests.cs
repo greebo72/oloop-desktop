@@ -13,6 +13,16 @@ public sealed class MacOnlyFactAttribute : FactAttribute
     }
 }
 
+/// <summary>A fact that runs on Windows only: the Credential Manager is not on other systems.</summary>
+public sealed class WindowsOnlyFactAttribute : FactAttribute
+{
+    public WindowsOnlyFactAttribute()
+    {
+        if (!OperatingSystem.IsWindows())
+            Skip = "the Windows Credential Manager is not on this system";
+    }
+}
+
 public class SecretStoreTests
 {
     [Fact]
@@ -27,7 +37,7 @@ public class SecretStoreTests
 
     [Fact]
     public void The_Factory_Gives_A_Persistent_Store_Only_Where_There_Is_One()
-        => Assert.Equal(OperatingSystem.IsMacOS(), SecretStoreFactory.Create().IsPersistent);
+        => Assert.Equal(OperatingSystem.IsMacOS() || OperatingSystem.IsWindows(), SecretStoreFactory.Create().IsPersistent);
 
     // The real keychain, with a service name of its own so that the items of the app are not touched.
     private static MacKeychainSecretStore NewStore() => new("oloop-test-" + Guid.NewGuid().ToString("N"));
@@ -105,5 +115,58 @@ public class SecretStoreTests
         {
             store.Delete("Schlüssel für Grüße 🔑");
         }
+    }
+
+    // The real Credential Manager, with a service name of its own so that the items of the app are not touched.
+    private static WindowsCredentialSecretStore NewWindowsStore() => new("oloop-test-" + Guid.NewGuid().ToString("N"));
+
+    [WindowsOnlyFact]
+    public void Windows_Stores_Reads_Replaces_And_Deletes_A_Secret()
+    {
+        var store = NewWindowsStore();
+        try
+        {
+            Assert.Null(store.Get("refresh"));
+
+            store.Set("refresh", [1, 2, 3, 4]);
+            Assert.Equal(new byte[] { 1, 2, 3, 4 }, store.Get("refresh"));
+
+            store.Set("refresh", [9, 9]);
+            Assert.Equal(new byte[] { 9, 9 }, store.Get("refresh"));
+
+            store.Delete("refresh");
+            Assert.Null(store.Get("refresh"));
+            store.Delete("refresh"); // not there any more: no error
+        }
+        finally
+        {
+            store.Delete("refresh");
+        }
+    }
+
+    [WindowsOnlyFact]
+    public void Windows_Keeps_Binary_Data_Non_Ascii_Names_And_Separate_Services()
+    {
+        var one = NewWindowsStore();
+        var two = NewWindowsStore();
+        var key = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
+        const string name = "Schlüssel für Grüße 🔑";
+        try
+        {
+            one.Set(name, key);
+            Assert.Equal(key, one.Get(name));
+            Assert.Null(two.Get(name));
+        }
+        finally
+        {
+            one.Delete(name);
+        }
+    }
+
+    [WindowsOnlyFact]
+    public void Windows_Refuses_A_Secret_That_Is_Too_Large()
+    {
+        var store = NewWindowsStore();
+        Assert.Throws<IOException>(() => store.Set("big", new byte[2561]));
     }
 }

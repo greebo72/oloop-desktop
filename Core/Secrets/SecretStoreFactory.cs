@@ -13,5 +13,13 @@ public static class SecretStoreFactory
     public static Func<ISecretStore>? Override { get; set; }
 
     public static ISecretStore Create()
-        => Override?.Invoke() ?? (OperatingSystem.IsMacOS() ? new MacKeychainSecretStore(ServiceName) : NoSecretStore.Instance);
+    {
+        if (Override is not null)
+            return Override();
+        if (OperatingSystem.IsMacOS())
+            return new MacKeychainSecretStore(ServiceName);
+        if (OperatingSystem.IsWindows())
+            return new WindowsCredentialSecretStore(ServiceName);
+        return NoSecretStore.Instance;
+    }
 }
