@@ -9,10 +9,11 @@
 
     <!-- The version of the app. The release workflow overrides it with the
          tag it builds (-p:Version=...), so the package and the binary
-         cannot disagree. The other version numbers follow it. -->
+         cannot disagree. The other version numbers follow it; a suffix such as
+         -rc1 is cut off where a plain number is needed. -->
     <Version>0.5.1</Version>
-    <AssemblyVersion>$(Version).0</AssemblyVersion>
-    <FileVersion>$(Version).0</FileVersion>
+    <AssemblyVersion>$([System.Text.RegularExpressions.Regex]::Match($(Version), '^\d+\.\d+\.\d+').Value).0</AssemblyVersion>
+    <FileVersion>$([System.Text.RegularExpressions.Regex]::Match($(Version), '^\d+\.\d+\.\d+').Value).0</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
     <Product>oloop</Product>
     <AssemblyTitle>oloop</AssemblyTitle>
