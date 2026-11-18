@@ -31,7 +31,9 @@
                     <TextBox Name="PassphraseBox" Text="{Binding Passphrase, Mode=TwoWay}" PasswordChar="●" />
                     <TextBlock Text="Confirm *" Classes="LabelMedium" Margin="0,6,0,0" />
                     <TextBox Name="ConfirmBox" Text="{Binding Confirmation, Mode=TwoWay}" PasswordChar="●" />
+                    <!-- The general rule; while a hint says what is wrong now, the hint takes its place. -->
                     <TextBlock Classes="Muted" TextWrapping="Wrap"
+                               IsVisible="{Binding PassphraseHint, Converter={x:Static StringConverters.IsNullOrEmpty}}"
                                Text="At least 12 characters. Not the password you use to sign in to the server." />
                 </StackPanel>
 
