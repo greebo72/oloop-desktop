@@ -20,7 +20,7 @@
                  Step 1: the passphrase
                  ============================================================ -->
             <StackPanel Spacing="18" IsVisible="{Binding IsPassphraseStep}">
-                <StackPanel Spacing="2">
+                <StackPanel Spacing="6">
                     <TextBlock Text="Choose a passphrase" Classes="TitleLarge" />
                     <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
                                Text="Your tasks are encrypted on this computer before they go to the server. The passphrase makes the key. The server never sees it." />
@@ -39,7 +39,12 @@
 
                 <Border Classes="Field" Padding="12,8"
                         IsVisible="{Binding PassphraseHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <TextBlock Text="{Binding PassphraseHint}" Classes="BodyMedium" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                                  VerticalAlignment="Center"
+                                  Foreground="{StaticResource StatusOpenBrush}" />
+                        <TextBlock Text="{Binding PassphraseHint}" Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="400" />
+                    </StackPanel>
                 </Border>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
@@ -53,7 +58,7 @@
                  Step 2: the recovery code
                  ============================================================ -->
             <StackPanel Spacing="18" IsVisible="{Binding IsRecoveryStep}">
-                <StackPanel Spacing="2">
+                <StackPanel Spacing="6">
                     <TextBlock Text="Keep your recovery code" Classes="TitleLarge" />
                     <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
                                Text="If you forget the passphrase, this code is the only way back to your data. It is shown only once." />
@@ -80,7 +85,12 @@
 
                 <Border Classes="Field" Padding="12,8"
                         IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                                  VerticalAlignment="Center"
+                                  Foreground="{StaticResource StatusOpenBrush}" />
+                        <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="400" />
+                    </StackPanel>
                 </Border>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">

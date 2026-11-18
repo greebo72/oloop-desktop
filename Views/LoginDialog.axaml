@@ -16,7 +16,7 @@
     <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
         <StackPanel Spacing="18">
 
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="6">
                 <TextBlock Text="Sign in to the server" Classes="TitleLarge" />
                 <TextBlock Classes="BodyMedium" TextWrapping="Wrap" Text="{Binding ServerUrl}" />
             </StackPanel>

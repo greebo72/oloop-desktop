@@ -16,7 +16,7 @@
     <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
         <StackPanel Spacing="18">
 
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="6">
                 <TextBlock Text="Unlock your keys" Classes="TitleLarge" />
                 <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
                            Text="Your tasks on the server are encrypted. This computer needs your passphrase once to read them." />
@@ -29,7 +29,12 @@
 
             <Border Classes="Field" Padding="12,8"
                     IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource StatusOpenBrush}" />
+                    <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="380" />
+                </StackPanel>
             </Border>
 
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">

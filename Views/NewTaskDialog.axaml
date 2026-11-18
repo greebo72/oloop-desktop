@@ -37,7 +37,7 @@
             <!-- ============================================================
                  Header
                  ============================================================ -->
-            <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,16">
+            <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,16">
                 <TextBlock Text="New task" Classes="TitleLarge" />
                 <TextBlock Text="{Binding Project.Name}" Classes="BodyMedium" />
             </StackPanel>

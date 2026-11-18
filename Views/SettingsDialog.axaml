@@ -55,7 +55,7 @@
             <!-- ============================================================
                  Header
                  ============================================================ -->
-            <StackPanel Grid.Row="0" Spacing="2">
+            <StackPanel Grid.Row="0" Spacing="6">
                 <TextBlock Text="Settings" Classes="TitleLarge" />
                 <TextBlock Classes="BodyMedium"
                            Text="Where oloop keeps the projects and who is written into the tasks." />
