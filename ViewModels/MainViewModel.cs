@@ -998,6 +998,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             main.AfterServerDisconnected("Signed out. Reload (F5) to sign in.");
         }
 
+        public AgentsViewModel? CreateAgentsViewModel()
+            => main.Session.Agents is { } agents ? new AgentsViewModel(agents, () => [.. main.Projects]) : null;
+
         public async Task ForgetRevisionsAsync()
         {
             main.Session.ForgetSeenRevisions();

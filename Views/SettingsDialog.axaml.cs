@@ -51,6 +51,16 @@ public partial class SettingsDialog : Window
     }
 
     /// <summary>
+    /// Opens the agents of the signed-in user on top of this dialog. The view model is asked for here
+    /// and not earlier, so it belongs to the session as it is now (keys open or not).
+    /// </summary>
+    private async void OnManageAgentsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm && vm.CreateAgentsViewModel() is { } agents)
+            await AgentsDialog.ShowAsync(this, agents);
+    }
+
+    /// <summary>
     /// Opens the folder picker and puts the chosen folder into the data root.
     /// A platform without a storage provider (the headless tests) simply does
     /// nothing.

@@ -86,6 +86,12 @@ public partial class SettingsViewModel : ViewModelBase
         RaiseServerState();
     }
 
+    /// <summary>Whether the keys are open, which making and revoking agents needs.</summary>
+    public bool CanManageAgents => CanLockKeys;
+
+    /// <summary>The view model for the dialog of the agents, or null when the keys are not open.</summary>
+    public AgentsViewModel? CreateAgentsViewModel() => ServerControl?.CreateAgentsViewModel();
+
     /// <summary>Cuts this computer off at the server and forgets everything kept here.</summary>
     [RelayCommand]
     private async Task SignOutAsync()
@@ -101,6 +107,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(ServerStatus));
         OnPropertyChanged(nameof(CanLockKeys));
+        OnPropertyChanged(nameof(CanManageAgents));
         OnPropertyChanged(nameof(CanSignOut));
         OnPropertyChanged(nameof(CanForgetRevisions));
     }

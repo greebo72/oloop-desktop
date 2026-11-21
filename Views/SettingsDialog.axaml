@@ -135,6 +135,12 @@
                                 <TextBlock Classes="Muted" TextWrapping="Wrap"
                                            Text="Lock keys forgets the keys on this computer; you stay signed in. Sign out also ends this computer's access on the server." />
 
+                                <TextBlock Text="Agents" Classes="LabelMedium" Margin="0,8,0,0" />
+                                <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                           Text="An agent lets the command line work in chosen projects without your identity, for example for an LLM. Making one needs your keys to be open." />
+                                <Button Name="ManageAgentsButton" Classes="Outlined" Content="Manage agents…" HorizontalAlignment="Left"
+                                        Click="OnManageAgentsClick" IsEnabled="{Binding CanManageAgents}" />
+
                                 <TextBlock Text="Seen revisions" Classes="LabelMedium" Margin="0,8,0,0" />
                                 <TextBlock Classes="Muted" TextWrapping="Wrap"
                                            Text="This computer remembers the newest version it has seen of every task, and warns when the server shows an older one. Forget this only if the server was restored from a backup on purpose." />

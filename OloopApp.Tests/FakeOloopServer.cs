@@ -176,6 +176,23 @@ internal sealed class FakeOloopServer : HttpMessageHandler
                     return Put(id, request, body);
             }
 
+            if (path == "/v1/agents")
+                return request.Method == HttpMethod.Post ? CreateAgent(body) : ListAgents();
+            if (path.StartsWith("/v1/agents/", StringComparison.Ordinal))
+            {
+                var parts = path["/v1/agents/".Length..].Split('/');
+                if (parts.Length == 2 && Guid.TryParse(parts[0], out var agentId) && request.Method == HttpMethod.Post)
+                    return parts[1] == "revoke" ? RevokeAgent(agentId) : parts[1] == "token" ? NewAgentToken(agentId) : Error(HttpStatusCode.NotFound, "not_found", "no such route");
+            }
+
+            if (path.StartsWith("/v1/projects/", StringComparison.Ordinal) && request.Method == HttpMethod.Put)
+            {
+                var parts = path["/v1/projects/".Length..].Split('/');
+                if (parts.Length == 3 && parts[1] == "members"
+                    && Guid.TryParse(parts[0], out var memberProject) && Guid.TryParse(parts[2], out var memberId))
+                    return PutMember(memberProject, memberId, body);
+            }
+
             return Error(HttpStatusCode.NotFound, "not_found", "no such route");
         }
     }
@@ -240,6 +257,152 @@ internal sealed class FakeOloopServer : HttpMessageHandler
             ["refreshToken"] = refresh,
             ["userId"] = UserId.ToString("D"),
         });
+    }
+
+    // ---------------- Agents (AGENTS.md, "API") ----------------
+
+    public sealed class AgentRecord
+    {
+        public Guid Id { get; init; }
+        public string Name { get; init; } = "";
+        public byte[] PublicKey { get; init; } = [];
+        public byte[] Registration { get; init; } = [];
+        public DateTimeOffset ExpiresAt { get; set; }
+        public DateTimeOffset RenewUntil { get; init; }
+        public bool Revoked { get; set; }
+        public string Token { get; set; } = "";
+
+        /// <summary>The projects of the agent: role and the keys that were handed over, by project.</summary>
+        public Dictionary<Guid, (string Role, JsonArray Keys)> Members { get; } = [];
+    }
+
+    private readonly List<AgentRecord> _agents = [];
+    private int _memberPuts;
+
+    public IReadOnlyList<AgentRecord> Agents
+    {
+        get
+        {
+            lock (_gate)
+                return _agents.ToList();
+        }
+    }
+
+    /// <summary>The first n requests to create an agent answer 409, as for an id that is taken.</summary>
+    public int RejectAgentIds { get; set; }
+
+    /// <summary>The n-th request to hand a project to an agent (counting from 1) fails with a 500.</summary>
+    public int FailMemberPutNumber { get; set; }
+
+    private HttpResponseMessage CreateAgent(byte[] body)
+    {
+        var request = JsonNode.Parse(body)!.AsObject();
+        var allowed = new HashSet<string> { "id", "name", "publicKey", "registration", "expiresAt", "renewUntil" };
+        if (request.Any(p => !allowed.Contains(p.Key)))
+            return Error(HttpStatusCode.BadRequest, "bad_request", "unknown field");
+        if (!Guid.TryParse(request["id"]?.GetValue<string>(), out var id))
+            return Error(HttpStatusCode.BadRequest, "bad_request", "id must be a UUID");
+        var name = request["name"]!.GetValue<string>();
+        var registration = Base64Url.Decode(request["registration"]!.GetValue<string>());
+        if (registration.Length != 88)
+            return Error(HttpStatusCode.BadRequest, "bad_request", "registration must be 88 bytes");
+        if (RejectAgentIds > 0)
+        {
+            RejectAgentIds--;
+            return Error(HttpStatusCode.Conflict, "conflict", "an agent with this id exists already");
+        }
+
+        if (_agents.Any(a => a.Id == id))
+            return Error(HttpStatusCode.Conflict, "conflict", "an agent with this id exists already");
+        if (_agents.Any(a => !a.Revoked && string.Equals(a.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return Error(HttpStatusCode.Conflict, "conflict", "an agent of this name exists already");
+
+        var agent = new AgentRecord
+        {
+            Id = id,
+            Name = name.Trim(),
+            PublicKey = Base64Url.Decode(request["publicKey"]!.GetValue<string>()),
+            Registration = registration,
+            ExpiresAt = DateTimeOffset.Parse(request["expiresAt"]!.GetValue<string>(), System.Globalization.CultureInfo.InvariantCulture),
+            RenewUntil = DateTimeOffset.Parse(request["renewUntil"]!.GetValue<string>(), System.Globalization.CultureInfo.InvariantCulture),
+            Token = "agent-token-" + Guid.NewGuid().ToString("N"),
+        };
+        _agents.Add(agent);
+        return Json(new JsonObject
+        {
+            ["agentId"] = id.ToString("D"),
+            ["token"] = agent.Token,
+            ["expiresAt"] = agent.ExpiresAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture),
+        });
+    }
+
+    private HttpResponseMessage ListAgents()
+    {
+        var array = new JsonArray();
+        foreach (var a in _agents)
+        {
+            array.Add(new JsonObject
+            {
+                ["id"] = a.Id.ToString("D"),
+                ["name"] = a.Name,
+                ["publicKey"] = Base64Url.Encode(a.PublicKey),
+                ["registration"] = Base64Url.Encode(a.Registration),
+                ["keyChain"] = new JsonArray(),
+                ["createdAt"] = "2026-11-01T10:00:00Z",
+                ["expiresAt"] = a.ExpiresAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture),
+                ["renewUntil"] = a.RenewUntil.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture),
+                ["lastUsedAt"] = null,
+                ["revoked"] = a.Revoked,
+            });
+        }
+
+        return Json(array);
+    }
+
+    private HttpResponseMessage RevokeAgent(Guid id)
+    {
+        var agent = _agents.FirstOrDefault(a => a.Id == id);
+        if (agent is null)
+            return Error(HttpStatusCode.NotFound, "not_found", "not found");
+        agent.Revoked = true;
+        agent.Members.Clear();
+        return new HttpResponseMessage(HttpStatusCode.NoContent);
+    }
+
+    private HttpResponseMessage NewAgentToken(Guid id)
+    {
+        var agent = _agents.FirstOrDefault(a => a.Id == id);
+        if (agent is null)
+            return Error(HttpStatusCode.NotFound, "not_found", "not found");
+        if (agent.Revoked)
+            return Error(HttpStatusCode.Conflict, "conflict", "the agent is revoked");
+        agent.Token = "agent-token-" + Guid.NewGuid().ToString("N");
+        agent.ExpiresAt = agent.ExpiresAt.AddDays(90);
+        return Json(new JsonObject
+        {
+            ["token"] = agent.Token,
+            ["expiresAt"] = agent.ExpiresAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture),
+        });
+    }
+
+    private HttpResponseMessage PutMember(Guid projectId, Guid agentId, byte[] body)
+    {
+        _memberPuts++;
+        if (_memberPuts == FailMemberPutNumber)
+            return Error(HttpStatusCode.InternalServerError, "internal", "the server failed");
+
+        var agent = _agents.FirstOrDefault(a => a.Id == agentId && !a.Revoked);
+        if (agent is null || !_projectKeys.ContainsKey(projectId))
+            return Error(HttpStatusCode.NotFound, "not_found", "not found");
+
+        var request = JsonNode.Parse(body)!.AsObject();
+        var role = request["role"]!.GetValue<string>();
+        var keys = request["keys"]!.AsArray();
+        if (role is not ("write" or "read") || keys.Any(k => Base64Url.Decode(k!["wrapped"]!.GetValue<string>()).Length != 92))
+            return Error(HttpStatusCode.BadRequest, "bad_request", "role or keys are wrong");
+
+        agent.Members[projectId] = (role, JsonNode.Parse(keys.ToJsonString())!.AsArray());
+        return new HttpResponseMessage(HttpStatusCode.NoContent);
     }
 
     private HttpResponseMessage Projects()

@@ -32,6 +32,34 @@ public static class AgentCrypto
     }
 
     /// <summary>
+    /// Makes the registration that <see cref="OpenRegistration"/> opens: <c>nonce |
+    /// box(agentPublicKey | agentId)</c>, from the user to the user (88 bytes). The user makes it
+    /// when the agent is created; the server stores it and cannot make one itself.
+    /// </summary>
+    public static byte[] CreateRegistration(
+        byte[] agentPublicKey, Guid agentId, byte[] userSecretKey, byte[] userPublicKey)
+        => CreateRegistration(agentPublicKey, agentId, userSecretKey, userPublicKey,
+            SodiumCore.GetRandomBytes(NonceBytes));
+
+    /// <summary>For the tests, which need the same bytes as the test vectors.</summary>
+    internal static byte[] CreateRegistration(
+        byte[] agentPublicKey, Guid agentId, byte[] userSecretKey, byte[] userPublicKey, byte[] nonce)
+    {
+        if (agentPublicKey.Length != PublicKeyBytes)
+            throw new ArgumentException($"the public key of the agent must be {PublicKeyBytes} bytes", nameof(agentPublicKey));
+
+        var message = new byte[PublicKeyBytes + GuidBytes.Length];
+        agentPublicKey.CopyTo(message, 0);
+        GuidBytes.ToBytes(agentId).CopyTo(message, PublicKeyBytes);
+
+        var box = PublicKeyBox.Create(message, nonce, userSecretKey, userPublicKey);
+        var registration = new byte[NonceBytes + box.Length];
+        nonce.CopyTo(registration, 0);
+        box.CopyTo(registration, NonceBytes);
+        return registration;
+    }
+
+    /// <summary>
     /// The statement of a key rotation: <c>nonce | box(newPublicKey | agentId |
     /// keyNumber(4, big endian))</c>, made with the old secret key of the agent for
     /// the user. <c>keyNumber</c> is the number of the new key, the first rotation

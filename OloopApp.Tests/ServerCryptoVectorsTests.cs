@@ -355,6 +355,19 @@ public class ServerCryptoVectorsTests
     }
 
     [Fact]
+    public void The_Registration_That_Is_Made_Is_The_One_Of_The_Vectors()
+    {
+        var expected = Hex(Agents.GetProperty("registration"), "hex");
+
+        var made = AgentCrypto.CreateRegistration(
+            Hex(Agents.GetProperty("key1"), "publicKeyHex"), Id(Agents, "agentId"),
+            UserSecret, UserPublic, expected[..24]);
+
+        Assert.Equal(expected, made);
+        Assert.Equal(88, made.Length);
+    }
+
+    [Fact]
     public void The_Statement_Of_The_Key_Rotation_Opens_And_Leads_To_The_New_Key()
     {
         var statement = Agents.GetProperty("statement");

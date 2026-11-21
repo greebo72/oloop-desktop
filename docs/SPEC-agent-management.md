@@ -1,6 +1,6 @@
 # SPEC: Agent management in the desktop app
 
-**Status:** DRAFT (2026-11-21). Builds on `spec/AGENTS.md` and `spec/SERVER.md`, which stay authoritative for the protocol. This document only says what the desktop app has to do and how it looks.
+**Status:** implemented (2026-11-21), with the differences listed under "As built". Builds on `spec/AGENTS.md` and `spec/SERVER.md`, which stay authoritative for the protocol. This document only says what the desktop app has to do and how it looks.
 
 ## Purpose
 
@@ -32,7 +32,7 @@ Not in scope:
 
 ### Create an agent
 
-Entry: settings, section "Agents", button "Neuer Agent".
+Entry: settings, tab "Security", button "Manage agents…", which opens the list of agents; there the button "New agent…". The button is enabled while the keys are open.
 
 Input:
 
@@ -41,9 +41,9 @@ Input:
 | Name | Required, 1 to 100 characters after trimming. Unique among the agents of the user that are not revoked, compared without regard to case. The server answers `409` for a duplicate; the dialog also checks against the loaded list. |
 | Projects | At least one. Multi-select of the projects of the user. The agent gets nothing that is not selected. |
 | Role | `write` (default) or `read`. One role for all selected projects. |
-| Token valid for | Default 90 days. Choice of 30 days, 90 days, 1 year, custom date. Longer than 10 years is refused. |
-| Renewable until | Default 1 year. Choice of "not renewable", 1 year, custom date. Not before the end of the token validity, at most 10 years. "Not renewable" sends `renewUntil` equal to `expiresAt`. |
-| Save as | File chooser. Default `<name>.json` in a folder of the user's choice. An existing file is never overwritten without asking. |
+| Token valid for | Default 90 days. Choice of 30 days, 90 days, 1 year, 2 years. |
+| Renewable for | Default 1 year. Choice of "Not renewable", 1 year, 2 years, counted from now. "Not renewable" sends `renewUntil` equal to `expiresAt`. |
+| Save as | The file chooser of the system, asked when the user confirms. The suggested name is made from the agent name (letters, digits, dash and underscore; the rest becomes a dash). The chooser asks before it replaces a file. Cancelling it makes nothing. |
 
 Steps on confirm, in this order. If a step fails, the later ones do not run and the dialog shows the error.
 
@@ -67,11 +67,11 @@ Failure handling:
 | Column | Source |
 | --- | --- |
 | Name | `name` |
-| Status | `revoked`, or "abgelaufen" when `expiresAt` is in the past, otherwise "aktiv" |
+| Status | "revoked", "expired" when `expiresAt` is in the past, otherwise "active" |
 | Token valid until | `expiresAt` |
 | Renewable until | `renewUntil` |
-| Last used | `lastUsedAt`, or "nie" |
-| Projects | the projects the agent is a member of, when the app can tell from the members it already loads; otherwise the column is left out |
+| Last used | `lastUsedAt`, or "never" |
+| Renewable until | `renewUntil`, shown in the row data but not as a column |
 
 Revoked agents are shown greyed out and below the active ones. They stay in the list, because the app keeps `writtenBy` readable.
 
@@ -79,15 +79,15 @@ The list is reloaded when the section opens and after every action. It does not 
 
 ### New token
 
-Row action "Neues Token". Needs a confirmation that names the effect: the tokens of the agent end **at once** (no grace), and the old credentials file stops working. Then `POST /v1/agents/{id}/token` and a file chooser.
+Row action "New token". Needs a confirmation that names the effect: the tokens of the agent end **at once** (no grace), and the old credentials file stops working. Then `POST /v1/agents/{id}/token` and a file chooser.
 
 The new file has to contain the **secret key of the agent** (and keeps `name` and all other fields of the old file), which the app does not keep. So the app cannot write a complete file for an existing agent. This action is therefore only offered with a file the user picks that is the existing credentials file of this agent: the app reads it, checks that `agentId` matches, replaces `token` and `expiresAt`, keeps every other field (including `name` and fields it does not know), and writes it back atomically. Without such a file the app says that the agent has to be created again (this matches "Lost credentials file" in `AGENTS.md`). A revoked agent answers `409`; the action is disabled for it.
 
 ### Revoke
 
-Row action "Widerrufen" with a confirmation that names the agent. `POST /v1/agents/{id}/revoke` (`204`, can be repeated). Revoking ends the token and removes every membership of the agent. The agent is not deleted and the name is free again afterwards.
+Row action "Revoke" with a confirmation that names the agent. `POST /v1/agents/{id}/revoke` (`204`, can be repeated). Revoking ends the token and removes every membership of the agent. The agent is not deleted and the name is free again afterwards.
 
-The button is labelled "Widerrufen", not "Löschen", because an agent is never deleted (`AGENTS.md`, "What an agent is").
+The button is labelled "Revoke", not "Delete", because an agent is never deleted (`AGENTS.md`, "What an agent is").
 
 The confirmation also says what revoking does **not** do: project keys the agent already knew stay known to it. If the file may have leaked, the user also has to rotate the project keys. (A key rotation is not part of this feature.)
 
@@ -124,25 +124,23 @@ The app does not keep a copy of the file or of the agent's secret key. After ste
 
 ## Code
 
-New, following the existing layout:
-
 | Part | Where | Notes |
 | --- | --- | --- |
-| Key pair, registration | `Core/Crypto/AgentCrypto.cs` | Add `CreateRegistration(agentPublicKey, agentId, userSecretKey, userPublicKey)` next to `OpenRegistration`. Same layout, same test vectors. |
-| Agent API | `Core/Server/AgentService.cs` | `ListAsync`, `CreateAsync`, `NewTokenAsync`, `RevokeAsync`, on top of `ServerApi`. Maps `ServerApiException` as the existing services do. |
-| Member handover | `Core/Server/AgentService.cs` | `GrantAsync(projectId, agent, role)`, using `ProjectKeyBox.Wrap`. |
-| Credentials file | `Core/Io/AgentCredentialsFile.cs` | `Write(path, ...)`, `ReadAndReplaceToken(path, ...)`. Atomic, `0600`. |
-| View models | `ViewModels/AgentsViewModel.cs`, `ViewModels/NewAgentViewModel.cs` | Validation as in `TitleValidation` style; no I/O in the constructor. |
-| Views | `Views/AgentsView.axaml`, `Views/NewAgentDialog.axaml` | In the settings dialog as a section. |
-| Dialog service | `ViewModels/IDialogService.cs` | `ShowNewAgentAsync`, `ShowAgentCreatedAsync`, plus the confirmations. `NullDialogService` gets matching stubs. |
+| Registration | `Core/Crypto/AgentCrypto.cs` | `CreateRegistration(agentPublicKey, agentId, userSecretKey, userPublicKey)` next to `OpenRegistration`. |
+| Agent API | `Core/Server/AgentService.cs` | `ListAsync`, `CreateAsync`, `NewTokenAsync`, `RevokeAsync`, on top of `ServerApi`. `CreateAsync` also opens the project keys, hands them over (`PUT .../members/{agentId}`, every key version the user can open) and revokes the agent again when a step fails. |
+| Credentials file | `Core/Io/AgentCredentialsFile.cs` | `Write`, `ReplaceToken`, `CheckBelongsTo`. Atomic, mode `0600` from the moment of creation, ACL for the current user on Windows. |
+| Session | `ViewModels/ServerSession.cs` | `Agents`, set while the keys are open, `null` when locked or signed out. |
+| View models | `ViewModels/AgentsViewModel.cs`, `ViewModels/NewAgentViewModel.cs` | List and commands; the form and the result. |
+| Window services | `ViewModels/IAgentUi.cs` | The second dialog, the question and the two file choosers. The agents window implements it, so its dialogs open on top of it. |
+| Views | `Views/AgentsDialog`, `Views/NewAgentDialog`, `Views/ConfirmDialog` | Opened from the button in the settings (`Views/SettingsDialog.axaml`). |
 
-The view models talk to the dialogs only through `IDialogService`, so they stay testable.
+The view models reach the windows only through `IAgentUi`, so they stay testable.
 
 ## Tests
 
 Unit tests in `OloopApp.Tests`, in the style of `ServerStoreTests` and `ServerCryptoVectorsTests`:
 
-1. **Registration vectors.** `CreateRegistration` produces what `OpenRegistration` and the server's expected size (88 bytes) accept. Add a vector to `spec/fixtures/server/vectors.json` through `generate.py` so the CLI and the server can check the same bytes.
+1. **Registration vectors.** `CreateRegistration`, given the nonce of the registration in `vectors.json`, produces exactly the bytes of that vector (88 bytes), and `OpenRegistration` opens what it made. No new vector was needed.
 2. **Credentials file shape.** The written JSON has exactly the fields above (including `name`), `owner` as an object, base64url without padding, and mode `0600` (skipped on Windows, where the ACL is checked instead).
 3. **Atomic write.** A failure during the write leaves an existing file unchanged and no temporary file behind.
 4. **Create flow with a fake server.** Order of the calls, the body of `POST /v1/agents`, one `PUT` per project with a valid `wrapped` (opens with the agent's key and names the right project and key version).
@@ -150,7 +148,19 @@ Unit tests in `OloopApp.Tests`, in the style of `ServerStoreTests` and `ServerCr
 6. **Revoke and new token.** Right endpoints, `409` for a revoked agent, the file is only touched when `agentId` matches.
 7. **Id clash.** `409` on the id leads to one retry with a new id and a new registration; `409` on the name does not retry and shows the duplicate-name error.
 8. **Validation.** Empty name, 101 characters, duplicate name, no project, token longer than 10 years, `renewUntil` before `expiresAt`.
-9. **Interop with the CLI.** A file written by the app loads with `AgentCredentials.from_path` in `oloop-cli` and its public key matches the secret key. Run as a manual check or as a script in `scripts/`; it is not part of the C# test run.
+9. **Interop with the CLI.** A file written by the app loads with `AgentCredentials.from_json` in `oloop-cli`, and its public key matches the secret key. Manual check: `OLOOP_INTEROP_FILE=<path> dotnet test --filter Interop` writes the file, then load it in the CLI (`uv run python -c ...`). Without the variable the test does nothing.
+
+## As built
+
+Differences from the plan above:
+
+- The labels are English, like the rest of the app.
+- "Token valid for" and "Renewable for" offer fixed choices. A custom date is not offered.
+- The list has no column for the projects of an agent. Whether the server shows an agent's projects to its owner in one call is still not clear from `AGENTS.md`.
+- The project keys are handed over for every key version the user can open, not only the newest: the server requires the newest and the agent needs the older ones to read older documents.
+- A name that is taken is found in the list of agents before anything is registered. The server answers `409` for a name and for an id alike, so after the check a `409` is taken for the id and retried up to three times.
+- Windows: the ACL code is written but was not run on Windows.
+- The dialogs were checked headless (they open, show their content, enable the buttons as expected) but not looked at by a person on screen.
 
 ## Security notes
 

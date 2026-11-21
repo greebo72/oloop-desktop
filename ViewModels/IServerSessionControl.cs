@@ -35,4 +35,10 @@ public interface IServerSessionControl
     /// backup on purpose. The data is read again afterwards.
     /// </summary>
     Task ForgetRevisionsAsync();
+
+    /// <summary>
+    /// The view model of the agents of the signed-in user, or null while the keys are not open. Making
+    /// an agent needs the secret key. A control that does not know agents has none.
+    /// </summary>
+    AgentsViewModel? CreateAgentsViewModel() => null;
 }

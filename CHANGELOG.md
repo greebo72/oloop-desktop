@@ -3,6 +3,19 @@
 All notable changes to the oloop desktop app are listed here, newest first.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- **Agents for the server backend.** Settings, tab "Security", "Manage agents…"
+  lists the agents of the signed-in user and makes new ones. An agent lets the
+  command line work in chosen projects without your identity, for example for an
+  LLM. You name it, tick its projects, choose read-only or not and how long its
+  token is valid, and save its credentials file, which `oloop --credentials`
+  reads. "New token" puts a new token into the file of an agent; "Revoke" ends
+  its token and its projects. Needs the keys to be open and a server that takes
+  the agent id from the client (`oloop-server` from 2026-11-21).
+
 ## [0.5.1] - 2026-10-23
 
 ### Added

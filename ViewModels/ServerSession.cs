@@ -59,6 +59,12 @@ public sealed class ServerSession : IDisposable
     /// <summary>The store of the unlocked session, or null while the session is not open or is locked.</summary>
     public ServerOloopStore? Store { get; private set; }
 
+    /// <summary>
+    /// The agents of the user, or null while the session is not open or is locked: making one needs
+    /// the secret key.
+    /// </summary>
+    public AgentService? Agents { get; private set; }
+
     /// <summary>True while this device is signed in, whether or not the keys are open.</summary>
     public bool IsSignedIn => _api is { SignedIn: true };
 
@@ -129,6 +135,7 @@ public sealed class ServerSession : IDisposable
         Remember(KeyName, user.SecretKey);
         KeyIsKept = _secrets.IsPersistent;
         Store = new ServerOloopStore(_api, user, _ledgers(serverUrl, user.UserId));
+        Agents = new AgentService(_api, user, serverUrl);
         return Store;
     }
 
@@ -151,6 +158,7 @@ public sealed class ServerSession : IDisposable
     public void Lock()
     {
         Store = null;
+        Agents = null;
         KeyIsKept = false;
         if (_endpoint is not null)
             _secrets.Delete(KeyName);
@@ -266,6 +274,7 @@ public sealed class ServerSession : IDisposable
     private void ForgetSession()
     {
         Store = null;
+        Agents = null;
         KeyIsKept = false;
         _api?.Dispose();
         _api = null;
