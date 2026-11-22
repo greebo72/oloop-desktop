@@ -1001,6 +1001,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         public AgentsViewModel? CreateAgentsViewModel()
             => main.Session.Agents is { } agents ? new AgentsViewModel(agents, () => [.. main.Projects]) : null;
 
+        public ImportFolderViewModel? CreateImportViewModel()
+            => main.Session.Agents is not null && main.Session.Store is { } store ? new ImportFolderViewModel(store) : null;
+
         public async Task ForgetRevisionsAsync()
         {
             main.Session.ForgetSeenRevisions();

@@ -6,7 +6,13 @@ using Sodium;
 
 namespace OloopApp.Core.Server;
 
+/// <summary>One rotation of the key pair of an agent: the new public key and the statement that vouches for it.</summary>
+public sealed record AgentKeyChainEntry(byte[] PublicKey, byte[] Statement);
+
 /// <summary>An agent as the server lists it for its owner (AGENTS.md, "API").</summary>
+/// <param name="PublicKey">The current public key the server shows for the agent. Not to be trusted before <see cref="AgentService.VerifyKeyChain"/>.</param>
+/// <param name="Registration">The registration made when the agent was created.</param>
+/// <param name="KeyChain">The rotations since, oldest first.</param>
 public sealed record AgentInfo(
     Guid Id,
     string Name,
@@ -14,12 +20,21 @@ public sealed record AgentInfo(
     DateTimeOffset? ExpiresAt,
     DateTimeOffset? RenewUntil,
     DateTimeOffset? LastUsedAt,
-    bool Revoked)
+    bool Revoked,
+    byte[]? PublicKey = null,
+    byte[]? Registration = null,
+    IReadOnlyList<AgentKeyChainEntry>? KeyChain = null)
 {
     /// <summary>"active", "expired" or "revoked", for the list.</summary>
     public string StatusAt(DateTimeOffset now)
         => Revoked ? "revoked" : ExpiresAt is { } end && end <= now ? "expired" : "active";
 }
+
+/// <summary>
+/// What came of giving an existing agent more projects: the ones it has now, and for each of the
+/// others the reason. A failure of one project does not undo the others (each hand-over is complete).
+/// </summary>
+public sealed record GrantResult(IReadOnlyList<Guid> Granted, IReadOnlyList<(Guid ProjectId, string Reason)> Failed);
 
 /// <summary>What the user asks for when an agent is created.</summary>
 public sealed record NewAgent(
@@ -154,6 +169,116 @@ public sealed class AgentService
             DateTimeOffset.Parse(Text(answer, "expiresAt"), System.Globalization.CultureInfo.InvariantCulture));
     }
 
+    // ---------------- More projects for an existing agent ----------------
+
+    /// <summary>
+    /// Checks that the public key the server shows for the agent is the one the user's own key vouches
+    /// for (AGENTS.md, "Rotating the key pair"): the registration opens with the user's keys and names
+    /// this agent, every statement opens with the key before it, names this agent and counts one more,
+    /// and the chain ends at the key the server shows. Without this a server could put its own key in
+    /// place of the agent's and so receive every project key that is handed over.
+    /// </summary>
+    /// <returns>The verified public key of the agent.</returns>
+    /// <exception cref="OloopCryptoException">The chain does not check out.</exception>
+    public byte[] VerifyKeyChain(AgentInfo agent)
+    {
+        if (agent.PublicKey is null || agent.Registration is null)
+            throw new OloopCryptoException("the server did not send the keys of the agent");
+
+        var (key, registeredId) = AgentCrypto.OpenRegistration(agent.Registration, _user.SecretKey, _user.PublicKey);
+        if (registeredId != agent.Id)
+            throw new OloopCryptoException("the registration names another agent");
+
+        var number = 1;
+        foreach (var entry in agent.KeyChain ?? [])
+        {
+            var (next, statedId, statedNumber) = AgentCrypto.OpenStatement(entry.Statement, _user.SecretKey, key);
+            if (statedId != agent.Id)
+                throw new OloopCryptoException("a statement of the key chain names another agent");
+            if (statedNumber != number + 1)
+                throw new OloopCryptoException("the key chain of the agent skips a key");
+            if (!next.AsSpan().SequenceEqual(entry.PublicKey))
+                throw new OloopCryptoException("a statement of the key chain vouches for another key than the one listed");
+
+            key = next;
+            number = statedNumber;
+        }
+
+        if (!key.AsSpan().SequenceEqual(agent.PublicKey))
+            throw new OloopCryptoException("the key the server shows for the agent is not the end of its key chain");
+
+        return key;
+    }
+
+    /// <summary>
+    /// The role the agent has in each of the given projects, for those it is a member of. One request
+    /// per project (<c>GET /v1/projects/{id}/members</c>, owner only).
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, string>> RolesOfAsync(
+        Guid agentId, IEnumerable<Guid> projectIds, CancellationToken ct = default)
+    {
+        var roles = new Dictionary<Guid, string>();
+        foreach (var projectId in projectIds.Distinct())
+        {
+            var members = (await _api.SendAsync(HttpMethod.Get, $"v1/projects/{projectId:D}/members", ct: ct)
+                .ConfigureAwait(false)).Json();
+            foreach (var member in members.EnumerateArray())
+            {
+                if (Guid.TryParse(Text(member, "principalId"), out var id) && id == agentId)
+                    roles[projectId] = Text(member, "role");
+            }
+        }
+
+        return roles;
+    }
+
+    /// <summary>
+    /// Gives an existing agent more projects. The key chain is checked first and the keys of all
+    /// projects are opened before the first hand-over, so nothing happens when one of them cannot be
+    /// handed over. The keys are wrapped for the verified key of the agent. Each project is a request
+    /// of its own and can be repeated; a failed one does not undo the ones before it.
+    /// </summary>
+    /// <exception cref="OloopCryptoException">The key chain of the agent does not check out; nothing was handed over.</exception>
+    /// <exception cref="OloopFormatException">The agent is revoked, no project was named, or a project cannot be handed over.</exception>
+    public async Task<GrantResult> GrantProjectsAsync(
+        AgentInfo agent, IReadOnlyList<Guid> projectIds, bool readOnly, CancellationToken ct = default)
+    {
+        if (agent.Revoked)
+            throw new OloopFormatException("the agent is revoked");
+        if (projectIds.Count == 0)
+            throw new OloopFormatException("choose at least one project");
+
+        var agentKey = VerifyKeyChain(agent);
+        var projects = await OpenProjectKeysAsync(projectIds, ct).ConfigureAwait(false);
+
+        var role = readOnly ? "read" : "write";
+        var granted = new List<Guid>();
+        var failed = new List<(Guid, string)>();
+        for (var i = 0; i < projects.Count; i++)
+        {
+            var (projectId, keys) = projects[i];
+            try
+            {
+                await GrantAsync(projectId, agent.Id, agentKey, role, keys, ct).ConfigureAwait(false);
+                granted.Add(projectId);
+            }
+            catch (ServerApiException ex) when (ex.Status == 404)
+            {
+                // The agent is gone (revoked meanwhile) or the project is not the user's: none of the
+                // rest can work either.
+                foreach (var (restId, _) in projects.Skip(i))
+                    failed.Add((restId, "the agent was revoked or the project is gone"));
+                break;
+            }
+            catch (IOException ex)
+            {
+                failed.Add((projectId, ex.Message));
+            }
+        }
+
+        return new GrantResult(granted, failed);
+    }
+
     // ---------------- Hand-over of the project keys ----------------
 
     private async Task<List<(Guid ProjectId, Dictionary<int, byte[]> Keys)>> OpenProjectKeysAsync(
@@ -261,7 +386,28 @@ public sealed class AgentService
         Moment(e, "expiresAt"),
         Moment(e, "renewUntil"),
         Moment(e, "lastUsedAt"),
-        e.TryGetProperty("revoked", out var revoked) && revoked.ValueKind == JsonValueKind.True);
+        e.TryGetProperty("revoked", out var revoked) && revoked.ValueKind == JsonValueKind.True,
+        Bytes(e, "publicKey"),
+        Bytes(e, "registration"),
+        e.TryGetProperty("keyChain", out var chain) && chain.ValueKind == JsonValueKind.Array
+            ? [.. chain.EnumerateArray().Select(c => new AgentKeyChainEntry(
+                Bytes(c, "publicKey") ?? [], Bytes(c, "statement") ?? []))]
+            : []);
+
+    private static byte[]? Bytes(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
+            return null;
+
+        try
+        {
+            return Base64Url.Decode(value.GetString()!);
+        }
+        catch (OloopCryptoException)
+        {
+            return null;
+        }
+    }
 
     private static DateTimeOffset? Moment(JsonElement e, string name)
         => e.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String

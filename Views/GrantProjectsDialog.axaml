@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.GrantProjectsDialog"
+        x:DataType="vm:GrantProjectsViewModel"
+        Title="Projects of the agent"
+        Width="520"
+        SizeToContent="Height"
+        MinWidth="440"
+        MaxHeight="720"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
+        <StackPanel Spacing="16">
+
+            <StackPanel Spacing="6">
+                <TextBlock Classes="TitleLarge">
+                    <Run Text="Projects for " /><Run Text="{Binding AgentName}" />
+                </TextBlock>
+                <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                           Text="The agent sees only the projects you hand over. Its credentials file does not change." />
+                <TextBlock Classes="Muted" TextWrapping="Wrap" IsVisible="{Binding TokenExpired}"
+                           Text="The token of this agent has ended. It can be given projects, but needs a new token to use them." />
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <TextBlock Classes="LabelMedium" Text="Projects" />
+                <TextBlock Classes="Muted" TextWrapping="Wrap" IsVisible="{Binding NothingToGrant}"
+                           Text="This agent has all your projects already." />
+                <Border Classes="Field" Padding="8,4" MaxHeight="220">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Projects}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GrantProjectChoice">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  IsEnabled="{Binding CanSelect}" Content="{Binding Name}" />
+                                        <TextBlock Grid.Column="1" Classes="Muted" VerticalAlignment="Center"
+                                                   Text="{Binding RoleText}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+                <CheckBox IsChecked="{Binding ReadOnly, Mode=TwoWay}"
+                          Content="Read only (the agent cannot change tasks in the projects you tick now)" />
+            </StackPanel>
+
+            <TextBlock Classes="BodyMedium" TextWrapping="Wrap" Text="{Binding Result}"
+                       IsVisible="{Binding Result, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <Border Classes="Field" Padding="12,8"
+                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource StatusOpenBrush}" />
+                    <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="420" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Classes="Text" Click="OnCloseClick" Content="Close" />
+                <Button Classes="Primary" Click="OnGrantClick" Content="Give access"
+                        IsEnabled="{Binding CanGrant}" />
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</Window>

@@ -10,6 +10,9 @@ public interface IAgentUi
     /// <summary>Shows the dialog that makes an agent. True when an agent was made.</summary>
     Task<bool> ShowNewAgentAsync(NewAgentViewModel viewModel);
 
+    /// <summary>Shows the dialog that gives an existing agent more projects.</summary>
+    Task ShowGrantProjectsAsync(GrantProjectsViewModel viewModel);
+
     /// <summary>Asks a question that is answered with the confirm button or by cancelling.</summary>
     Task<bool> ConfirmAsync(string title, string message, string confirmText);
 

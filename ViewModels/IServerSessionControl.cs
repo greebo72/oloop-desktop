@@ -41,4 +41,10 @@ public interface IServerSessionControl
     /// an agent needs the secret key. A control that does not know agents has none.
     /// </summary>
     AgentsViewModel? CreateAgentsViewModel() => null;
+
+    /// <summary>
+    /// The view model that imports a folder into the server, or null while the keys are not open: the
+    /// import writes with the key of the user. A control that does not know the import has none.
+    /// </summary>
+    ImportFolderViewModel? CreateImportViewModel() => null;
 }

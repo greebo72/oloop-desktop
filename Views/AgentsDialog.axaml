@@ -4,7 +4,7 @@
         x:Class="OloopApp.Views.AgentsDialog"
         x:DataType="vm:AgentsViewModel"
         Title="Agents"
-        Width="720"
+        Width="840"
         Height="480"
         MinWidth="560"
         MinHeight="320"
@@ -71,6 +71,10 @@
                                             <TextBlock Grid.Column="2" Text="{Binding ExpiresText}" Classes="BodyMedium" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="3" Text="{Binding LastUsedText}" Classes="BodyMedium" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6">
+                                                <Button Classes="Outlined" Content="Projects…"
+                                                        IsEnabled="{Binding CanGrant}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:AgentsViewModel)DataContext).GrantProjectsCommand}"
+                                                        CommandParameter="{Binding}" />
                                                 <Button Classes="Outlined" Content="New token"
                                                         IsEnabled="{Binding CanIssueToken}"
                                                         Command="{Binding $parent[ItemsControl].((vm:AgentsViewModel)DataContext).NewTokenCommand}"

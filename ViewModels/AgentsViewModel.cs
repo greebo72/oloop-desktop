@@ -29,6 +29,9 @@ public sealed class AgentRowViewModel(AgentInfo info, DateTimeOffset now)
 
     public bool CanRevoke => !Info.Revoked;
 
+    /// <summary>A revoked agent has no projects and answers 404 as a member.</summary>
+    public bool CanGrant => !Info.Revoked;
+
     private static string Date(DateTimeOffset? moment)
         => moment is null ? "–" : moment.Value.ToLocalTime().ToString("yyyy-MM-dd");
 }
@@ -120,6 +123,20 @@ public partial class AgentsViewModel : ViewModelBase
         Notice = null;
         var dialog = new NewAgentViewModel(_service, _projects(), Ui);
         await Ui.ShowNewAgentAsync(dialog);
+        await RefreshRowsAsync();
+    }
+
+    /// <summary>Opens the dialog that gives the agent more projects (SPEC-agent-grant-projects.md).</summary>
+    [RelayCommand]
+    private async Task GrantProjectsAsync(AgentRowViewModel row)
+    {
+        Notice = null;
+        Error = null;
+        if (!row.CanGrant)
+            return;
+
+        var dialog = new GrantProjectsViewModel(_service, row.Info, _projects(), _now);
+        await Ui.ShowGrantProjectsAsync(dialog);
         await RefreshRowsAsync();
     }
 

@@ -133,6 +133,35 @@ public sealed class OloopTask
            && Comments.Zip(other.Comments).All(p => p.First.Body == p.Second.Body && p.First.CreatedAt == p.Second.CreatedAt)
            && ProjectName == other.ProjectName;
 
+    /// <summary>
+    /// The same task in another project: only <c>projectId</c> (and the name the store fills in)
+    /// changes. The import of a folder uses it to put tasks into the project of the server that has
+    /// the same name.
+    /// </summary>
+    public OloopTask InProject(string projectId, string projectName)
+    {
+        return new OloopTask
+        {
+            FormatVersion = FormatVersion,
+            Id = Id,
+            ProjectId = projectId,
+            Type = Type,
+            Title = Title,
+            Status = Status,
+            ImagePath = ImagePath,
+            DueDate = DueDate,
+            Labels = Labels,
+            CreatedAt = CreatedAt,
+            CreatedBy = CreatedBy,
+            UpdatedAt = UpdatedAt,
+            UpdatedBy = UpdatedBy,
+            Comments = Comments,
+            Description = Description,
+            ExtraFields = ExtraFields,
+            ProjectName = projectName,
+        };
+    }
+
     public OloopTask With(
         string? title = null,
         string? description = null,

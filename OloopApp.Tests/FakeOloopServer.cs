@@ -173,7 +173,12 @@ internal sealed class FakeOloopServer : HttpMessageHandler
                         ? Json(DocumentJson(Shown.GetValueOrDefault(id) ?? doc))
                         : Error(HttpStatusCode.NotFound, "not_found", "no such document");
                 if (request.Method == HttpMethod.Put)
+                {
+                    DocumentPuts++;
+                    if (DocumentPuts == FailDocumentPutNumber)
+                        return Error(HttpStatusCode.InternalServerError, "internal", "the server failed");
                     return Put(id, request, body);
+                }
             }
 
             if (path == "/v1/agents")
@@ -183,6 +188,13 @@ internal sealed class FakeOloopServer : HttpMessageHandler
                 var parts = path["/v1/agents/".Length..].Split('/');
                 if (parts.Length == 2 && Guid.TryParse(parts[0], out var agentId) && request.Method == HttpMethod.Post)
                     return parts[1] == "revoke" ? RevokeAgent(agentId) : parts[1] == "token" ? NewAgentToken(agentId) : Error(HttpStatusCode.NotFound, "not_found", "no such route");
+            }
+
+            if (path.StartsWith("/v1/projects/", StringComparison.Ordinal) && request.Method == HttpMethod.Get)
+            {
+                var parts = path["/v1/projects/".Length..].Split('/');
+                if (parts.Length == 2 && parts[1] == "members" && Guid.TryParse(parts[0], out var membersOf))
+                    return Members(membersOf);
             }
 
             if (path.StartsWith("/v1/projects/", StringComparison.Ordinal) && request.Method == HttpMethod.Put)
@@ -265,12 +277,15 @@ internal sealed class FakeOloopServer : HttpMessageHandler
     {
         public Guid Id { get; init; }
         public string Name { get; init; } = "";
-        public byte[] PublicKey { get; init; } = [];
-        public byte[] Registration { get; init; } = [];
+        public byte[] PublicKey { get; set; } = [];
+        public byte[] Registration { get; set; } = [];
         public DateTimeOffset ExpiresAt { get; set; }
         public DateTimeOffset RenewUntil { get; init; }
         public bool Revoked { get; set; }
         public string Token { get; set; } = "";
+
+        /// <summary>The rotations of the key pair as the list shows them: <c>{ publicKey, statement }</c>, oldest first.</summary>
+        public JsonArray KeyChain { get; } = [];
 
         /// <summary>The projects of the agent: role and the keys that were handed over, by project.</summary>
         public Dictionary<Guid, (string Role, JsonArray Keys)> Members { get; } = [];
@@ -293,6 +308,12 @@ internal sealed class FakeOloopServer : HttpMessageHandler
 
     /// <summary>The n-th request to hand a project to an agent (counting from 1) fails with a 500.</summary>
     public int FailMemberPutNumber { get; set; }
+
+    /// <summary>How many requests to write a document (<c>PUT /v1/documents/{id}</c>) came in so far.</summary>
+    public int DocumentPuts { get; private set; }
+
+    /// <summary>The write of a document with this number (counting from 1, see <see cref="DocumentPuts"/>) fails with a 500.</summary>
+    public int FailDocumentPutNumber { get; set; }
 
     private HttpResponseMessage CreateAgent(byte[] body)
     {
@@ -347,7 +368,7 @@ internal sealed class FakeOloopServer : HttpMessageHandler
                 ["name"] = a.Name,
                 ["publicKey"] = Base64Url.Encode(a.PublicKey),
                 ["registration"] = Base64Url.Encode(a.Registration),
-                ["keyChain"] = new JsonArray(),
+                ["keyChain"] = JsonNode.Parse(a.KeyChain.ToJsonString()),
                 ["createdAt"] = "2026-11-01T10:00:00Z",
                 ["expiresAt"] = a.ExpiresAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture),
                 ["renewUntil"] = a.RenewUntil.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture),
@@ -403,6 +424,38 @@ internal sealed class FakeOloopServer : HttpMessageHandler
 
         agent.Members[projectId] = (role, JsonNode.Parse(keys.ToJsonString())!.AsArray());
         return new HttpResponseMessage(HttpStatusCode.NoContent);
+    }
+
+    /// <summary>The members of a project as the owner sees them: the user and the agents that were handed the project.</summary>
+    private HttpResponseMessage Members(Guid projectId)
+    {
+        if (!_projectKeys.ContainsKey(projectId))
+            return Error(HttpStatusCode.NotFound, "not_found", "not found");
+
+        var array = new JsonArray
+        {
+            new JsonObject
+            {
+                ["principalId"] = UserId.ToString("D"),
+                ["kind"] = "user",
+                ["name"] = "timo",
+                ["role"] = "owner",
+                ["publicKey"] = Base64Url.Encode(UserKeys.PublicKey),
+            },
+        };
+        foreach (var agent in _agents.Where(a => !a.Revoked && a.Members.ContainsKey(projectId)))
+        {
+            array.Add(new JsonObject
+            {
+                ["principalId"] = agent.Id.ToString("D"),
+                ["kind"] = "agent",
+                ["name"] = agent.Name,
+                ["role"] = agent.Members[projectId].Role,
+                ["publicKey"] = Base64Url.Encode(agent.PublicKey),
+            });
+        }
+
+        return Json(array);
     }
 
     private HttpResponseMessage Projects()

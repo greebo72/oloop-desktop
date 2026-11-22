@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Import a folder into the server.** Settings, Security, "Import folder…"
+  copies the projects and tasks of a folder of Markdown files to the server,
+  with their ids, times, authors and comments. You see a plan first, the
+  folder is never changed, and a second run writes only what is missing. A
+  project of the same name on the server can be chosen as the target.
+- **More projects for an existing agent.** In the list of agents, "Projects…"
+  hands more projects to an agent, after checking its key chain. The
+  credentials file of the agent does not change.
+
 ## [0.6.0] - 2026-11-22
 
 This release adds the optional server backend: projects and tasks can live on
