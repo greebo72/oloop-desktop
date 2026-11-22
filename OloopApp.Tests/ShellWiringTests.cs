@@ -75,7 +75,7 @@ public class ShellWiringTests : IDisposable
         return shell;
     }
 
-    private async Task<OloopProject> ProjectAsync(OloopStore store)
+    private async Task<OloopProject> ProjectAsync(FileOloopStore store)
         => await store.CreateProjectAsync("My Project");
 
     // ---------------- The dialogs are reachable ----------------
@@ -83,7 +83,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task NewTask_Dialog_Creates_The_Task()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = Shell();
 
@@ -101,7 +101,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task NewTask_Dialog_Cancelled_Writes_Nothing()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = Shell();
 
@@ -117,7 +117,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task SaveTaskEdit_Writes_The_Change()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var task = await store.CreateTaskAsync(
             project, TaskType.todo, "Old title", "Old description", ["old"], "claude");
@@ -141,7 +141,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task Close_Task_Writes_The_Status()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var task = await store.CreateTaskAsync(
             project, TaskType.todo, "A task", "", [], "claude");
@@ -161,7 +161,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task Add_Comment_Appends_It()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var task = await store.CreateTaskAsync(
             project, TaskType.todo, "A task", "", [], "claude");
@@ -184,7 +184,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task A_Conflict_Asks_The_User_And_Overwrites_On_Request()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var task = await store.CreateTaskAsync(
             project, TaskType.todo, "A task", "", [], "claude");
@@ -216,7 +216,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task A_Conflict_Reloads_On_Request()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var task = await store.CreateTaskAsync(
             project, TaskType.todo, "A task", "", [], "claude");
@@ -248,7 +248,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task A_Conflict_Cancelled_Writes_Nothing()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var task = await store.CreateTaskAsync(
             project, TaskType.todo, "A task", "", [], "claude");
@@ -294,7 +294,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task A_Write_Without_Actor_Asks_For_The_Name_And_Writes_Afterwards()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();
@@ -323,7 +323,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task A_Write_Without_Actor_Writes_Nothing_When_The_Dialog_Is_Cancelled()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();
@@ -340,7 +340,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task A_Write_Without_Actor_Writes_Nothing_When_No_Name_Is_Entered()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();
@@ -358,7 +358,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task A_Write_With_Actor_Does_Not_Open_The_Settings()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = Shell();
         await shell.RefreshAsync();
@@ -373,7 +373,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task Closing_A_Task_Without_Actor_Asks_For_The_Name()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var task = await store.CreateTaskAsync(
             project, TaskType.todo, "A task", "", [], "claude");
@@ -399,7 +399,7 @@ public class ShellWiringTests : IDisposable
     {
         // The user should not type a whole task first and only then be asked
         // who they are.
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();
@@ -417,7 +417,7 @@ public class ShellWiringTests : IDisposable
     [Fact]
     public async Task The_New_Task_Dialog_Stays_Closed_Without_A_Name()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await ProjectAsync(store);
         var shell = ShellWithoutActor();
         await shell.RefreshAsync();

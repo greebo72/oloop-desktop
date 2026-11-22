@@ -13,20 +13,21 @@ namespace OloopApp.Core.Io;
 /// to <c>.backup/&lt;name&gt;.bak</c> (one generation), then write atomically
 /// via a temp file in the same directory.
 /// </summary>
-public sealed class OloopStore
+public sealed class FileOloopStore : OloopStoreBase
 {
-    /// <summary>The only <c>formatVersion</c> this client knows.</summary>
-    public const int SupportedFormatVersion = 1;
-
     private readonly string _root;
 
-    public OloopStore(string dataRoot)
+    public FileOloopStore(string dataRoot)
     {
         _root = dataRoot;
     }
 
     /// <summary>The data root this store works on.</summary>
     public string Root => _root;
+
+    /// <inheritdoc />
+    public override string? CheckAvailable()
+        => Directory.Exists(_root) ? null : $"The data folder '{_root}' does not exist.";
 
     // ---------------- Scanning ----------------
 
@@ -41,7 +42,7 @@ public sealed class OloopStore
     /// app's own writes (which it has already reloaded) do not reload the
     /// view a second time.
     /// </summary>
-    public string Fingerprint()
+    public override string Fingerprint()
     {
         if (!Directory.Exists(_root))
             return "";
@@ -81,7 +82,7 @@ public sealed class OloopStore
     /// the scan: they come back as <see cref="OloopSnapshot.Unreadable"/> and
     /// are never written to.
     /// </summary>
-    public async Task<OloopSnapshot> LoadAsync(CancellationToken ct = default)
+    public override async Task<OloopSnapshot> LoadAsync(CancellationToken ct = default)
     {
         var projects = new List<OloopProject>();
         var tasks = new List<OloopTask>();
@@ -238,134 +239,38 @@ public sealed class OloopStore
         return full;
     }
 
-    // ---------------- Mutations ----------------
-
-    /// <summary>
-    /// Creates a task: fresh UUID4, status open, imagePath null,
-    /// createdAt = updatedAt = now, createdBy = updatedBy = actor.
-    /// </summary>
-    public async Task<OloopTask> CreateTaskAsync(
-        OloopProject project,
-        TaskType type,
-        string title,
-        string description,
-        IEnumerable<string>? labels,
-        string actor,
-        CancellationToken ct = default,
-        string? dueDate = null)
+    /// <inheritdoc />
+    public override ImageOpenResult OpenImage(OloopProject project, string? imagePath)
     {
-        var trimmedTitle = title.Trim();
-        if (trimmedTitle.Length == 0)
-            throw new OloopFormatException("title must not be empty");
+        var path = ResolveImagePath(project, imagePath);
+        if (path is null)
+            return new ImageOpenResult(null, "The image path of the task is not valid.");
 
-        var now = NowUtc();
-        var task = new OloopTask
+        if (!File.Exists(path))
+            return new ImageOpenResult(null, "The image of the task is missing.");
+
+        try
         {
-            FormatVersion = SupportedFormatVersion,
-            Id = Guid.NewGuid().ToString("D"),
-            ProjectId = project.Id,
-            Type = type,
-            Title = trimmedTitle,
-            Status = TaskStatus.open,
-            ImagePath = null,
-            DueDate = dueDate,
-            Labels = NormalizeLabels(labels),
-            CreatedAt = now,
-            CreatedBy = actor,
-            UpdatedAt = now,
-            UpdatedBy = actor,
-            Comments = [],
-            Description = description ?? "",
-            ProjectName = project.Name,
-        };
-
-        await WriteTaskAsync(project, task, expectedUpdatedAt: null, ct).ConfigureAwait(false);
-        return task;
+            return new ImageOpenResult(File.OpenRead(path), null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new ImageOpenResult(null, "The image of the task could not be read.");
+        }
     }
 
-    /// <summary>
-    /// Edits type, title, description, labels and the due date. Never touches
-    /// id, createdAt, createdBy or the file name.
-    ///
-    /// The due date is only changed when <paramref name="setDueDate"/> is set:
-    /// then null removes it, otherwise the given date is written.
-    /// </summary>
-    public async Task<OloopTask> EditTaskAsync(
-        OloopTask task,
-        OloopProject project,
-        string? title,
-        string? description,
-        IEnumerable<string>? labels,
-        string actor,
-        CancellationToken ct = default,
-        bool setDueDate = false,
-        string? dueDate = null,
-        TaskType? type = null)
-    {
-        var updated = task.With(
-            type: type,
-            title: title is null ? null : title.Trim(),
-            description: description,
-            labels: labels is null ? null : NormalizeLabels(labels),
-            updatedAt: NowUtc(),
-            updatedBy: actor,
-            setDueDate: setDueDate,
-            dueDate: dueDate);
+    /// <inheritdoc />
+    public override IChangeSource CreateChangeSource(TimeSpan debounce)
+        => new DataFolderWatcher(_root, debounce);
 
-        await WriteTaskAsync(project, updated, task.UpdatedAt, ct).ConfigureAwait(false);
-        return updated;
-    }
-
-    /// <summary>
-    /// Flips the status open ↔ closed. Closing is the only completion
-    /// mechanism — there is no delete anywhere.
-    /// </summary>
-    public async Task<OloopTask> SetStatusAsync(
-        OloopTask task,
-        OloopProject project,
-        bool closed,
-        string actor,
-        CancellationToken ct = default)
-    {
-        var updated = task.With(
-            status: closed ? TaskStatus.closed : TaskStatus.open,
-            updatedAt: NowUtc(),
-            updatedBy: actor);
-
-        await WriteTaskAsync(project, updated, task.UpdatedAt, ct).ConfigureAwait(false);
-        return updated;
-    }
-
-    /// <summary>Appends a comment (append-only, no edits, no deletes).</summary>
-    public async Task<OloopTask> AddCommentAsync(
-        OloopTask task,
-        OloopProject project,
-        string body,
-        string actor,
-        CancellationToken ct = default)
-    {
-        var trimmed = body.Trim();
-        if (trimmed.Length == 0)
-            throw new OloopFormatException("comment body must not be empty");
-
-        var comments = task.Comments.ToList();
-        comments.Add(new TaskComment { Body = trimmed, CreatedAt = NowUtc() });
-
-        var updated = task.With(
-            comments: comments,
-            updatedAt: NowUtc(),
-            updatedBy: actor);
-
-        await WriteTaskAsync(project, updated, task.UpdatedAt, ct).ConfigureAwait(false);
-        return updated;
-    }
+    // ---------------- Mutations ----------------
 
     /// <summary>
     /// Creates <c>&lt;slug&gt;/project.md</c> and the empty <c>&lt;slug&gt;/tasks/</c>
     /// folder. Refuses when the name (case-insensitive) or the slug folder is
     /// already taken.
     /// </summary>
-    public async Task<OloopProject> CreateProjectAsync(
+    public override async Task<OloopProject> CreateProjectAsync(
         string name,
         string? referencePath = null,
         string? referenceHost = null,
@@ -439,7 +344,7 @@ public sealed class OloopStore
     /// Writes a task file: re-read and compare <c>updatedAt</c>, back up the
     /// old file, then write atomically.
     /// </summary>
-    public async Task WriteTaskAsync(
+    public override async Task WriteTaskAsync(
         OloopProject project,
         OloopTask task,
         string? expectedUpdatedAt,
@@ -509,30 +414,6 @@ public sealed class OloopStore
         => await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
 
     // ---------------- Helpers ----------------
-
-    /// <summary>The current time as ISO 8601 UTC with a trailing Z.</summary>
-    public static string NowUtc()
-        => DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Trims labels, drops empty ones and removes duplicates (first wins).
-    /// </summary>
-    public static IReadOnlyList<string> NormalizeLabels(IEnumerable<string>? labels)
-    {
-        if (labels is null)
-            return [];
-
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        var result = new List<string>();
-        foreach (var label in labels)
-        {
-            var trimmed = label.Trim();
-            if (trimmed.Length == 0 || !seen.Add(trimmed))
-                continue;
-            result.Add(trimmed);
-        }
-        return result;
-    }
 
     /// <summary>
     /// The folder name of a project: lowercase, ASCII letters, digits and

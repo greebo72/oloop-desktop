@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using OloopApp.ViewModels;
 
 namespace OloopApp.Views;
@@ -22,9 +23,9 @@ public partial class SettingsDialog : Window
     }
 
     /// <summary>
-    /// Puts the cursor into the actor field when the name is missing. The
-    /// user is asked for the name then, so the field is where the typing
-    /// has to go.
+    /// Opens the tab of the actor and puts the cursor into the field when the
+    /// name is missing. The user is asked for the name then, so the field is
+    /// where the typing has to go.
     /// </summary>
     protected override void OnOpened(EventArgs e)
     {
@@ -33,7 +34,10 @@ public partial class SettingsDialog : Window
         if (DataContext is not SettingsViewModel vm || !vm.HasNoActor)
             return;
 
-        this.FindControl<TextBox>("ActorBox")?.Focus();
+        Tabs.SelectedItem = TasksTab;
+
+        // The tab is only part of the window once it is selected and laid out.
+        Dispatcher.UIThread.Post(() => ActorBox.Focus(), DispatcherPriority.Loaded);
     }
 
     /// <summary>
@@ -44,6 +48,16 @@ public partial class SettingsDialog : Window
     {
         var dialog = new SettingsDialog(viewModel);
         return await dialog.ShowDialog<bool>(owner);
+    }
+
+    /// <summary>
+    /// Opens the agents of the signed-in user on top of this dialog. The view model is asked for here
+    /// and not earlier, so it belongs to the session as it is now (keys open or not).
+    /// </summary>
+    private async void OnManageAgentsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm && vm.CreateAgentsViewModel() is { } agents)
+            await AgentsDialog.ShowAsync(this, agents);
     }
 
     /// <summary>

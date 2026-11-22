@@ -121,7 +121,7 @@ public class DueFilterTests : IDisposable
 
     private async Task<MainViewModel> SeededShell()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Alpha");
         await store.CreateTaskAsync(project, TaskType.todo, "late report", "", [], "claude", dueDate: Day(-3));
         await store.CreateTaskAsync(project, TaskType.todo, "today report", "", [], "claude", dueDate: Day(0));

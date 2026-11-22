@@ -322,7 +322,7 @@ public class ShortcutTests
 
         try
         {
-            var store = new Core.Io.OloopStore(root);
+            var store = new Core.Io.FileOloopStore(root);
             var project = await store.CreateProjectAsync("Example Project");
             await store.CreateTaskAsync(
                 project, TaskType.todo, "Write the docs", "", [], "claude");

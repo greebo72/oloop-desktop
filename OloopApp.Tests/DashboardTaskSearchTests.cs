@@ -36,9 +36,9 @@ public class DashboardTaskSearchTests : IDisposable
         Actor = "claude",
     };
 
-    private async Task<(OloopStore store, OloopProject alpha, OloopProject beta)> Seed()
+    private async Task<(FileOloopStore store, OloopProject alpha, OloopProject beta)> Seed()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var alpha = await store.CreateProjectAsync("Alpha");
         var beta = await store.CreateProjectAsync("Beta");
         await store.CreateTaskAsync(alpha, TaskType.todo, "Fix the parser", "", ["core"], "claude");
@@ -171,7 +171,7 @@ public class DashboardTaskSearchTests : IDisposable
     [Fact]
     public async Task The_Result_List_Is_Limited()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Big");
         for (var i = 0; i < DashboardViewModel.MaxTaskResults + 5; i++)
             await store.CreateTaskAsync(project, TaskType.todo, $"Item {i}", "", [], "claude");

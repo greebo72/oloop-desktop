@@ -16,7 +16,7 @@ namespace OloopApp.Core.Io;
 ///
 /// <see cref="Changed"/> is raised on a thread pool thread.
 /// </summary>
-public sealed class DataFolderWatcher : IDisposable
+public sealed class DataFolderWatcher : IChangeSource
 {
     /// <summary>The default length of the debounce window.</summary>
     public static readonly TimeSpan DefaultDebounce = TimeSpan.FromMilliseconds(400);

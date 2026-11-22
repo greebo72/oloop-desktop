@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using OloopApp.Core.Models;
+using OloopApp.Core.Server;
 using OloopApp.ViewModels;
 
 namespace OloopApp.Views;
@@ -76,5 +77,26 @@ public sealed class DialogService : IDialogService
 
         var dialog = new DiscardChangesDialog(taskTitles);
         return await dialog.ShowDialog<bool>(owner);
+    }
+
+    /// <inheritdoc />
+    public async Task<UnlockedUser?> ShowKeySetupAsync(KeySetupViewModel viewModel)
+    {
+        var owner = _owner();
+        return owner is null ? null : await KeySetupDialog.ShowAsync(owner, viewModel);
+    }
+
+    /// <inheritdoc />
+    public async Task<UnlockedUser?> ShowKeyUnlockAsync(KeyUnlockViewModel viewModel)
+    {
+        var owner = _owner();
+        return owner is null ? null : await KeyUnlockDialog.ShowAsync(owner, viewModel);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ShowLoginAsync(LoginViewModel viewModel)
+    {
+        var owner = _owner();
+        return owner is not null && await LoginDialog.ShowAsync(owner, viewModel);
     }
 }

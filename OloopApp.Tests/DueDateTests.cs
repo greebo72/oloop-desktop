@@ -131,7 +131,7 @@ public class DueDateTests : IDisposable
     [Fact]
     public async Task A_New_Task_Can_Have_A_Due_Date()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Due");
 
         var created = await store.CreateTaskAsync(
@@ -144,7 +144,7 @@ public class DueDateTests : IDisposable
     [Fact]
     public async Task An_Edit_Sets_Changes_And_Removes_The_Date_And_An_Edit_Without_It_Keeps_It()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("Due");
         var task = await store.CreateTaskAsync(project, TaskType.todo, "T", "", [], "alice");
 

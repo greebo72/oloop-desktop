@@ -1,4 +1,5 @@
 using OloopApp.Core.Models;
+using OloopApp.Core.Server;
 
 namespace OloopApp.ViewModels;
 
@@ -36,4 +37,10 @@ public sealed class NullDialogService : IDialogService
     /// <inheritdoc />
     public Task<bool> ShowDiscardChangesAsync(IReadOnlyList<string> taskTitles)
         => Task.FromResult(false);
+
+    /// <inheritdoc />
+    public Task<UnlockedUser?> ShowKeySetupAsync(KeySetupViewModel viewModel) => Task.FromResult<UnlockedUser?>(null);
+
+    /// <inheritdoc />
+    public Task<UnlockedUser?> ShowKeyUnlockAsync(KeyUnlockViewModel viewModel) => Task.FromResult<UnlockedUser?>(null);
 }

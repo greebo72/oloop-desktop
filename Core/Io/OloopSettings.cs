@@ -24,6 +24,24 @@ public sealed class OloopSettings
     /// <summary>The data root. Falls back to the OLOOP_ROOT environment variable.</summary>
     public string? DataRoot { get; set; }
 
+    /// <summary>
+    /// Where the data lives: "folder" (the default) or "server". An unknown
+    /// value counts as the folder, so a file of a newer version still opens.
+    /// </summary>
+    public string Backend { get; set; } = "folder";
+
+    /// <summary>The address of the oloop server. Only used by the server backend.</summary>
+    public string? ServerUrl { get; set; }
+
+    /// <summary>The user name on the oloop server. The password is never stored here.</summary>
+    public string? ServerUser { get; set; }
+
+    /// <summary>The backend named by <see cref="Backend"/>.</summary>
+    public StorageBackend ResolveBackend()
+        => string.Equals(Backend?.Trim(), "server", StringComparison.OrdinalIgnoreCase)
+            ? StorageBackend.Server
+            : StorageBackend.Folder;
+
     /// <summary>The actor written into createdBy/updatedBy. Falls back to OLOOP_ACTOR, then the OS user.</summary>
     public string Actor { get; set; } = "";
 
@@ -134,7 +152,14 @@ public sealed class OloopSettings
     /// The path of the settings file: %APPDATA%/oloop/settings.json on Windows,
     /// ~/.config/oloop/settings.json elsewhere.
     /// </summary>
-    public static string DefaultPath => Path.Combine(AppDataFolder(), "oloop", "settings.json");
+    public static string DefaultPath => PathOverride ?? Path.Combine(AppDataFolder(), "oloop", "settings.json");
+
+    /// <summary>
+    /// Another file in place of the settings of the user. The tests set it before anything else
+    /// runs: a view model that is made without settings reads the default file, and a test must
+    /// never see the real settings (the server, the user) or act on them.
+    /// </summary>
+    public static string? PathOverride { get; set; }
 
     /// <summary>The folder the app keeps its data in.</summary>
     public static string AppDataFolder()

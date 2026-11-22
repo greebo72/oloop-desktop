@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OloopApp.Core.Grouping;
 using OloopApp.Core.Io;
 
@@ -13,6 +14,128 @@ public partial class SettingsViewModel : ViewModelBase
 {
     private readonly OloopSettings _settings;
     private string? _error;
+
+    /// <summary>Where the data lives.</summary>
+    [ObservableProperty]
+    private StorageBackend _backend;
+
+    /// <summary>The address of the oloop server.</summary>
+    [ObservableProperty]
+    private string _serverUrl = "";
+
+    /// <summary>The user name on the oloop server.</summary>
+    [ObservableProperty]
+    private string _serverUser = "";
+
+    /// <summary>
+    /// Whether this build can talk to a server. As long as it cannot, the
+    /// dialog does not offer the choice. A test switches it on.
+    /// </summary>
+    public bool ServerBackendAvailable { get; init; }
+
+    /// <summary>
+    /// What the dialog may do with the open session: show where it stands, lock the keys, sign out.
+    /// Null where there is no session (a test of the plain settings).
+    /// </summary>
+    public IServerSessionControl? ServerControl { get; init; }
+
+    /// <summary>Whether the session can be looked at and controlled from here.</summary>
+    public bool HasServerControl => ServerControl is not null;
+
+    private ServerSessionState ServerState => ServerControl?.State ?? ServerSessionState.SignedOut;
+
+    /// <summary>Where the session stands, in words.</summary>
+    public string ServerStatus => ServerState switch
+    {
+        ServerSessionState.OpenKeyKept => "Signed in. The keys are kept on this computer, so the passphrase is not asked again.",
+        ServerSessionState.Open => "Signed in. The keys are not kept: this computer has no safe place for them, so the passphrase is asked at every start.",
+        ServerSessionState.Locked => "Signed in, keys locked. The passphrase is asked at the next load.",
+        _ => "Not signed in on this computer.",
+    };
+
+    /// <summary>Whether there are keys to lock.</summary>
+    public bool CanLockKeys => ServerState is ServerSessionState.Open or ServerSessionState.OpenKeyKept;
+
+    /// <summary>Whether there is a sign-in to end.</summary>
+    public bool CanSignOut => ServerState != ServerSessionState.SignedOut;
+
+    /// <summary>Whether there is a session whose seen revisions can be forgotten.</summary>
+    public bool CanForgetRevisions => ServerState != ServerSessionState.SignedOut;
+
+    /// <summary>
+    /// Forgets the highest revisions seen, for a server that was restored from a backup on purpose.
+    /// </summary>
+    [RelayCommand]
+    private async Task ForgetRevisionsAsync()
+    {
+        if (ServerControl is null)
+            return;
+
+        await ServerControl.ForgetRevisionsAsync();
+        RaiseServerState();
+    }
+
+    /// <summary>Forgets the keys on this computer; the sign-in stays.</summary>
+    [RelayCommand]
+    private async Task LockKeysAsync()
+    {
+        if (ServerControl is null)
+            return;
+
+        await ServerControl.LockAsync();
+        RaiseServerState();
+    }
+
+    /// <summary>Whether the keys are open, which making and revoking agents needs.</summary>
+    public bool CanManageAgents => CanLockKeys;
+
+    /// <summary>The view model for the dialog of the agents, or null when the keys are not open.</summary>
+    public AgentsViewModel? CreateAgentsViewModel() => ServerControl?.CreateAgentsViewModel();
+
+    /// <summary>Cuts this computer off at the server and forgets everything kept here.</summary>
+    [RelayCommand]
+    private async Task SignOutAsync()
+    {
+        if (ServerControl is null)
+            return;
+
+        await ServerControl.SignOutAsync();
+        RaiseServerState();
+    }
+
+    private void RaiseServerState()
+    {
+        OnPropertyChanged(nameof(ServerStatus));
+        OnPropertyChanged(nameof(CanLockKeys));
+        OnPropertyChanged(nameof(CanManageAgents));
+        OnPropertyChanged(nameof(CanSignOut));
+        OnPropertyChanged(nameof(CanForgetRevisions));
+    }
+
+    /// <summary>Whether the data lives in a folder, so the folder is asked for.</summary>
+    public bool IsFolderBackend => Backend == StorageBackend.Folder;
+
+    /// <summary>Whether the data lives on a server, so the server is asked for.</summary>
+    public bool IsServerBackend => Backend == StorageBackend.Server;
+
+    /// <summary>The names of the backends, in the order of the combo box.</summary>
+    public IReadOnlyList<string> BackendNames { get; } = ["Folder", "Server"];
+
+    /// <summary>
+    /// The backend as the index of the combo box; -1 while nothing is
+    /// selected is ignored, like for the grouping.
+    /// </summary>
+    public int BackendIndex
+    {
+        get => (int)Backend;
+        set
+        {
+            if (value < 0 || value >= BackendNames.Count)
+                return;
+
+            Backend = (StorageBackend)value;
+        }
+    }
 
     /// <summary>The data root the app reads the projects from.</summary>
     [ObservableProperty]
@@ -52,6 +175,9 @@ public partial class SettingsViewModel : ViewModelBase
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
+        Backend = settings.ResolveBackend();
+        ServerUrl = settings.ServerUrl ?? "";
+        ServerUser = settings.ServerUser ?? "";
         DataRoot = settings.ResolveDataRoot() ?? "";
         Actor = settings.ResolveActor();
         ShowClosed = settings.ShowClosed;
@@ -78,7 +204,10 @@ public partial class SettingsViewModel : ViewModelBase
     /// because there is nothing to show without it.
     /// </summary>
     public bool CanSave
-        => !string.IsNullOrWhiteSpace(Actor) && !string.IsNullOrWhiteSpace(DataRoot);
+        => !string.IsNullOrWhiteSpace(Actor)
+           && (IsServerBackend
+               ? !string.IsNullOrWhiteSpace(ServerUrl) && !string.IsNullOrWhiteSpace(ServerUser)
+               : !string.IsNullOrWhiteSpace(DataRoot));
 
     /// <summary>All grouping modes, in the order of the combo box.</summary>
     public IReadOnlyList<GroupingMode> GroupingModes { get; } = Enum.GetValues<GroupingMode>();
@@ -152,7 +281,13 @@ public partial class SettingsViewModel : ViewModelBase
         if (Error is not null)
             return;
 
+        _settings.Backend = Backend == StorageBackend.Server ? "server" : "folder";
         _settings.DataRoot = DataRoot?.Trim();
+        if (Backend == StorageBackend.Server)
+        {
+            _settings.ServerUrl = ServerEndpoint.Normalize(ServerUrl, out _);
+            _settings.ServerUser = ServerUser.Trim();
+        }
         _settings.Actor = Actor?.Trim() ?? "";
         _settings.ShowClosed = ShowClosed;
         _settings.Grouping = Grouping.ToString();
@@ -194,6 +329,19 @@ public partial class SettingsViewModel : ViewModelBase
             return;
         }
 
+        if (IsServerBackend)
+        {
+            ServerEndpoint.Normalize(ServerUrl, out var urlError);
+            if (urlError is not null)
+            {
+                Error = urlError;
+                return;
+            }
+
+            Error = string.IsNullOrWhiteSpace(ServerUser) ? "The user name on the server is required." : null;
+            return;
+        }
+
         var root = DataRoot?.Trim() ?? "";
         if (root.Length == 0)
         {
@@ -211,6 +359,27 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     partial void OnDataRootChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSave));
+        UpdateValidation();
+    }
+
+    partial void OnBackendChanged(StorageBackend value)
+    {
+        OnPropertyChanged(nameof(BackendIndex));
+        OnPropertyChanged(nameof(IsFolderBackend));
+        OnPropertyChanged(nameof(IsServerBackend));
+        OnPropertyChanged(nameof(CanSave));
+        UpdateValidation();
+    }
+
+    partial void OnServerUrlChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSave));
+        UpdateValidation();
+    }
+
+    partial void OnServerUserChanged(string value)
     {
         OnPropertyChanged(nameof(CanSave));
         UpdateValidation();

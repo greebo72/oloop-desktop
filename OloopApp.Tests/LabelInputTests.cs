@@ -117,10 +117,10 @@ public class LabelInputTests : IDisposable
 
     // ---------------- Saving ----------------
 
-    private async Task<(MainViewModel Shell, OloopStore Store, OloopProject Project)> OpenAsync(
+    private async Task<(MainViewModel Shell, FileOloopStore Store, OloopProject Project)> OpenAsync(
         params (string Title, string[] Labels)[] tasks)
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("My Project");
         foreach (var (title, labels) in tasks)
             await store.CreateTaskAsync(project, TaskType.todo, title, "", labels, "claude");

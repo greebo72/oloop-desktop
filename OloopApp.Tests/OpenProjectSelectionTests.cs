@@ -39,7 +39,7 @@ public class OpenProjectSelectionTests : IDisposable
     [Fact]
     public async Task Opening_A_Project_Selects_The_First_Task_Of_The_List()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("My Project");
         await store.CreateTaskAsync(project, TaskType.todo, "Older", "", [], "claude");
         await Task.Delay(1100);
@@ -62,7 +62,7 @@ public class OpenProjectSelectionTests : IDisposable
     [Fact]
     public async Task Opening_A_Project_Without_Tasks_Selects_Nothing()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         await store.CreateProjectAsync("Empty Project");
 
         var shell = Shell();
@@ -77,7 +77,7 @@ public class OpenProjectSelectionTests : IDisposable
     [Fact]
     public async Task A_Project_With_Only_Closed_Tasks_Selects_Nothing()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("My Project");
         var task = await store.CreateTaskAsync(project, TaskType.todo, "Done", "", [], "claude");
         await store.SetStatusAsync(task, project, closed: true, "claude");
@@ -94,7 +94,7 @@ public class OpenProjectSelectionTests : IDisposable
     [Fact]
     public async Task A_Refresh_Keeps_The_Choice_Of_The_User()
     {
-        var store = new OloopStore(_root);
+        var store = new FileOloopStore(_root);
         var project = await store.CreateProjectAsync("My Project");
         await store.CreateTaskAsync(project, TaskType.todo, "One", "", [], "claude");
         await store.CreateTaskAsync(project, TaskType.todo, "Two", "", [], "claude");

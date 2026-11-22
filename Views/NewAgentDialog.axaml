@@ -1,0 +1,119 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.NewAgentDialog"
+        x:DataType="vm:NewAgentViewModel"
+        Title="New agent"
+        Width="520"
+        SizeToContent="Height"
+        MinWidth="440"
+        MaxHeight="720"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
+        <Grid>
+
+            <!-- The form -->
+            <StackPanel Spacing="16" IsVisible="{Binding IsForm}">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="New agent" Classes="TitleLarge" />
+                    <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                               Text="An agent lets the command line work in chosen projects without your identity, for example for an LLM. It gets its own key and a credentials file." />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="LabelMedium" Text="Name" />
+                    <TextBox Name="NameBox" Text="{Binding Name, Mode=TwoWay}" MaxLength="100" Watermark="claude" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="LabelMedium" Text="Projects" />
+                    <TextBlock Classes="Muted" TextWrapping="Wrap"
+                               Text="The agent sees only the projects you tick. Tick what it needs." />
+                    <Border Classes="Field" Padding="8,4" MaxHeight="160">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Projects}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ProjectChoice">
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Content="{Binding Name}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                    <CheckBox IsChecked="{Binding ReadOnly, Mode=TwoWay}" Content="Read only (the agent cannot change tasks)" />
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <StackPanel Grid.Column="0" Spacing="6">
+                        <TextBlock Classes="LabelMedium" Text="Token valid for" />
+                        <ComboBox ItemsSource="{Binding Validities}" SelectedIndex="{Binding ValidityIndex, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AgentPeriod">
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Classes="LabelMedium" Text="Renewable for" />
+                        <ComboBox ItemsSource="{Binding Renewals}" SelectedIndex="{Binding RenewalIndex, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AgentPeriod">
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+
+                <Border Classes="Field" Padding="12,8"
+                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                                  VerticalAlignment="Center"
+                                  Foreground="{StaticResource StatusOpenBrush}" />
+                        <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="420" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Classes="Text" Click="OnCancelClick" Content="Cancel" />
+                    <Button Classes="Primary" Click="OnCreateClick" Content="Create and save file…"
+                            IsEnabled="{Binding CanCreate}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- The result -->
+            <StackPanel Spacing="16" IsVisible="{Binding IsDone}">
+                <TextBlock Text="Agent created" Classes="TitleLarge" />
+                <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                           Text="The credentials file is the only copy of the agent's secret key. Anyone who can read it can act as the agent in the projects you gave it." />
+
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="LabelMedium" Text="File" />
+                    <TextBox Text="{Binding FilePath, Mode=OneWay}" IsReadOnly="True" />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="LabelMedium" Text="Use it with the command line" />
+                    <TextBox Text="{Binding UseCommand, Mode=OneWay}" IsReadOnly="True" />
+                </StackPanel>
+
+                <TextBlock Classes="Muted" TextWrapping="Wrap">
+                    <Run Text="The token is valid until " /><Run Text="{Binding ExpiresText}" /><Run Text=". The agent renews it itself with: oloop agent renew" />
+                </TextBlock>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Classes="Primary" Click="OnDoneClick" Content="Done" />
+                </StackPanel>
+            </StackPanel>
+
+        </Grid>
+    </Border>
+</Window>

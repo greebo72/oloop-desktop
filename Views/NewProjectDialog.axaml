@@ -20,7 +20,7 @@
             <!-- ============================================================
                  Header
                  ============================================================ -->
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="6">
                 <TextBlock Text="New project" Classes="TitleLarge" />
                 <TextBlock Classes="BodyMedium"
                            Text="A project gets its own folder in the data folder. Its tasks live there." />

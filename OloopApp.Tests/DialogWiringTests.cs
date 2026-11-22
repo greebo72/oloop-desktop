@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.VisualTree;
+using OloopApp.Core.Io;
 using OloopApp.Core.Models;
 using OloopApp.ViewModels;
 using OloopApp.Views;
@@ -90,9 +91,18 @@ public class DialogWiringTests
     [Fact]
     public async Task The_Dashboard_Has_A_New_Project_Button()
     {
+        // The button is there when there is a data folder; this test brings its own.
+        var folder = Path.Combine(Path.GetTempPath(), "oloop-wiring-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+
         await OnUiThread(() =>
         {
-            var shell = new MainViewModel();
+            var shell = new MainViewModel(new OloopSettings
+            {
+                FilePath = Path.Combine(folder, "settings.json"),
+                DataRoot = folder,
+                Actor = "claude",
+            });
             var window = new MainWindow { DataContext = shell };
             window.Show();
 

@@ -9,10 +9,11 @@
 
     <!-- The version of the app. The release workflow overrides it with the
          tag it builds (-p:Version=...), so the package and the binary
-         cannot disagree. The other version numbers follow it. -->
+         cannot disagree. The other version numbers follow it; a suffix such as
+         -rc1 is cut off where a plain number is needed. -->
     <Version>0.5.1</Version>
-    <AssemblyVersion>$(Version).0</AssemblyVersion>
-    <FileVersion>$(Version).0</FileVersion>
+    <AssemblyVersion>$([System.Text.RegularExpressions.Regex]::Match($(Version), '^\d+\.\d+\.\d+').Value).0</AssemblyVersion>
+    <FileVersion>$([System.Text.RegularExpressions.Regex]::Match($(Version), '^\d+\.\d+\.\d+').Value).0</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
     <Product>oloop</Product>
     <AssemblyTitle>oloop</AssemblyTitle>
@@ -20,7 +21,9 @@
     <!-- The executable is called oloop, not OloopApp — the name shows up in
          the task bar, in the app bundle and in the file manager. -->
     <AssemblyName>oloop</AssemblyName>
-    <!-- The app has no network access, so the default is fine. -->
+    <!-- Invariant mode: no ICU is needed, so the Linux package runs on every
+         distribution. Mind that string.Normalize() then leaves non-ASCII text
+         unchanged without a word; see Core/Crypto/Passphrase.cs. -->
     <InvariantGlobalization>true</InvariantGlobalization>
     <!-- No debug symbols in a release: they double the size of the
          package and nobody needs them without a matching build. -->
@@ -61,5 +64,12 @@
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
     <!-- Markdown rendering for the task description (incl. code blocks). -->
     <PackageReference Include="Markdig" Version="0.41.3" />
+    <!-- Libsodium for the optional server backend: the data is encrypted on this computer.
+         It brings libsodium (1.0.22 or newer, after the fix of CVE-2025-69277). -->
+    <PackageReference Include="Sodium.Core" Version="1.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OloopApp.Tests" />
   </ItemGroup>
 </Project>

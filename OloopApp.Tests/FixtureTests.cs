@@ -26,7 +26,7 @@ public class FixtureTests
     public async Task Valid_Fixture_Matches_ExpectedJson(string caseName)
     {
         var root = FixturePath($"valid/{caseName}/root");
-        var store = new OloopStore(root);
+        var store = new FileOloopStore(root);
 
         var snapshot = await store.LoadAsync(CancellationToken.None);
 
@@ -52,7 +52,7 @@ public class FixtureTests
     public async Task Invalid_Fixture_Fails_With_Expected_Message(string caseName, string expectedSubstring)
     {
         var root = FixturePath($"invalid/{caseName}/root");
-        var store = new OloopStore(root);
+        var store = new FileOloopStore(root);
 
         var snapshot = await store.LoadAsync(CancellationToken.None);
 
@@ -67,7 +67,7 @@ public class FixtureTests
     public async Task Round_Trip_Changes_No_Value(string caseName)
     {
         var root = FixturePath($"valid/{caseName}/root");
-        var store = new OloopStore(root);
+        var store = new FileOloopStore(root);
 
         var snapshot = await store.LoadAsync(CancellationToken.None);
         Assert.Empty(snapshot.Unreadable);

@@ -1,0 +1,86 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.AgentsDialog"
+        x:DataType="vm:AgentsViewModel"
+        Title="Agents"
+        Width="720"
+        Height="480"
+        MinWidth="560"
+        MinHeight="320"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+
+            <StackPanel Grid.Row="0" Spacing="6">
+                <TextBlock Text="Agents" Classes="TitleLarge" />
+                <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                           Text="Agents work in chosen projects through the command line, without your identity. A revoked agent stays in the list." />
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Spacing="8">
+                <Border Classes="Field" Padding="12,8"
+                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                                  VerticalAlignment="Center"
+                                  Foreground="{StaticResource StatusOpenBrush}" />
+                        <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="620" />
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="{Binding Notice}" Classes="BodyMedium" TextWrapping="Wrap"
+                           IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
+            <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                <Grid Grid.Row="0" ColumnDefinitions="2*,*,*,*,Auto" ColumnSpacing="8" Margin="8,0,8,4">
+                    <TextBlock Grid.Column="0" Classes="LabelMedium" Text="Name" />
+                    <TextBlock Grid.Column="1" Classes="LabelMedium" Text="Status" />
+                    <TextBlock Grid.Column="2" Classes="LabelMedium" Text="Token until" />
+                    <TextBlock Grid.Column="3" Classes="LabelMedium" Text="Last used" />
+                </Grid>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Classes="Muted" Margin="8,8" Text="No agents yet."
+                                   IsVisible="{Binding IsEmpty}" />
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AgentRowViewModel">
+                                    <Border Classes="Field" Padding="8,6" Margin="0,0,0,4">
+                                        <Grid ColumnDefinitions="2*,*,*,*,Auto" ColumnSpacing="8">
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" Classes="BodyMedium"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="BodyMedium" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding ExpiresText}" Classes="BodyMedium" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="{Binding LastUsedText}" Classes="BodyMedium" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6">
+                                                <Button Classes="Outlined" Content="New token"
+                                                        IsEnabled="{Binding CanIssueToken}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:AgentsViewModel)DataContext).NewTokenCommand}"
+                                                        CommandParameter="{Binding}" />
+                                                <Button Classes="Outlined" Content="Revoke"
+                                                        IsEnabled="{Binding CanRevoke}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:AgentsViewModel)DataContext).RevokeCommand}"
+                                                        CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="Primary" Content="New agent…" Command="{Binding NewAgentCommand}"
+                        IsEnabled="{Binding !IsBusy}" />
+                <Button Grid.Column="2" Classes="Text" Content="Close" Click="OnCloseClick" />
+            </Grid>
+
+        </Grid>
+    </Border>
+</Window>

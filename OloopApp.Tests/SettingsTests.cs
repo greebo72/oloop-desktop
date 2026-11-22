@@ -175,7 +175,7 @@ public class SettingsTests : IDisposable
             .ToList();
 
         Assert.Equal(
-            ["actor", "dataRoot", "grouping", "recentTypes", "showClosed", "staleDays", "uiScalePercent"],
+            ["actor", "backend", "dataRoot", "grouping", "recentTypes", "serverUrl", "serverUser", "showClosed", "staleDays", "uiScalePercent"],
             keys);
     }
 

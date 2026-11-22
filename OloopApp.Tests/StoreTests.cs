@@ -16,7 +16,7 @@ public class StoreTests : IDisposable
             Directory.Delete(_root, recursive: true);
     }
 
-    private OloopStore Store => new(_root);
+    private FileOloopStore Store => new(_root);
 
     [Fact]
     public async Task CreateProject_Writes_ProjectMd_And_Tasks_Folder()
@@ -202,15 +202,15 @@ public class StoreTests : IDisposable
     [Fact]
     public void Slugify_Folds_To_Lowercase_Ascii()
     {
-        Assert.Equal("my-project", OloopStore.Slugify("My Project"));
-        Assert.Equal("server-haus", OloopStore.Slugify("Server-Haus"));
-        Assert.Equal("strasse", OloopStore.Slugify("Straße"));
+        Assert.Equal("my-project", FileOloopStore.Slugify("My Project"));
+        Assert.Equal("server-haus", FileOloopStore.Slugify("Server-Haus"));
+        Assert.Equal("strasse", FileOloopStore.Slugify("Straße"));
     }
 
     [Fact]
     public void NormalizeLabels_Trims_Drops_Empty_And_Deduplicates()
     {
-        var labels = OloopStore.NormalizeLabels([" a ", "", "a", "b"]);
+        var labels = FileOloopStore.NormalizeLabels([" a ", "", "a", "b"]);
 
         Assert.Equal(["a", "b"], labels);
     }
