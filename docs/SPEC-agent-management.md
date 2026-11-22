@@ -173,7 +173,7 @@ Differences from the plan above:
 
 Resolved: the agent id is chosen by the client and sent as `id` (`AGENTS.md`, "Creating an agent" and "API"). This needs the matching change in `oloop-server` (`CreateAgentIn.id`) before step 4 works against a real server.
 
-1. **Projects of an existing agent.** Adding or removing a project later is possible with the same `PUT` and a `DELETE` on the member, but the spec has no UI for it. Proposal: out of scope for the first version; the user creates a new agent.
+1. **Projects of an existing agent.** Adding or removing a project later is possible with the same `PUT` and a `DELETE` on the member, but the spec has no UI for it. Proposal: out of scope for the first version; the user creates a new agent. Adding projects is now specified in `SPEC-agent-grant-projects.md`; taking one away is still open.
 2. **Role per project.** The first version has one role for all projects. A role per project is a small extension of the dialog and needs no protocol change.
 3. **Project list in the table.** Whether the server exposes the members of an agent to its owner in one call is not clear from `AGENTS.md`. If not, the column is left out.
 4. **Where the CLI documentation lives.** `oloop-cli/docs/CLI_SERVER_BACKEND.md` points to this file for creating the credentials. Keep the two in step.
