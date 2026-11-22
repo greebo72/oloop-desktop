@@ -1,6 +1,6 @@
 # SPEC: Give an existing agent more projects
 
-**Status:** draft (2026-11-22). Builds on `docs/SPEC-agent-management.md`, `spec/AGENTS.md` and `spec/SERVER.md`, which stay authoritative for the protocol. This document only says what the desktop app has to do. It closes "Open questions", item 1, of the agent management spec.
+**Status:** implemented (2026-11-22), with the differences listed under "As built". Builds on `docs/SPEC-agent-management.md`, `spec/AGENTS.md` and `spec/SERVER.md`, which stay authoritative for the protocol. This document only says what the desktop app has to do. It closes "Open questions", item 1, of the agent management spec.
 
 ## Purpose
 
@@ -111,3 +111,17 @@ Unit tests in `OloopApp.Tests`, in the style of `AgentServiceTests` with `FakeOl
 1. **Projects in the list of agents.** With the members call per project, the list of agents could show a "Projects" column. It costs one request per project of the user each time the list loads. Proposal: not in this version; the dialog loads the members only when it opens.
 2. **Taking a project away.** Needs `POST .../revoke` and the choice whether to rotate the project key. Proposal: its own spec.
 3. **Role change.** `PUT` with another role works for a project the agent has. Proposal: not offered here, to keep "give access" free of changes to what exists.
+
+## As built
+
+Differences from the plan above (`Core/Server/AgentService.cs`, `ViewModels/GrantProjectsViewModel.cs`, `Views/GrantProjectsDialog`):
+
+- The entry is a button "Projects…" in each row of the list of agents; it is disabled for a revoked agent. The agents window is a little wider for it.
+- `AgentService.VerifyKeyChain`, `RolesOfAsync` and `GrantProjectsAsync` are public; `OpenProjectKeysAsync` and `GrantAsync` stay private and are shared with `CreateAsync`. `AgentInfo` has the new fields `PublicKey`, `Registration` and `KeyChain` with defaults, so older code that makes an `AgentInfo` still compiles.
+- A `404` during the hand-over ends the run: the project it hit and all that follow are reported as failed ("the agent was revoked or the project is gone"). Other errors fail only their project.
+- The dialog reads which projects the agent has when it opens. If that read fails, the error is shown and nothing can be ticked.
+- A project that the user does not own cannot occur in the app (a single user), so the "not owner" test is a test for a project that does not exist on the server: the run stops before any hand-over (`OloopFormatException`).
+- Not tested: a project with several key versions (the fake server has one version). The code hands over every version the user can open, as `CreateAsync` does.
+- Tests: `GrantProjectsTests` (16). The tests for an invalid chain were checked by switching the check off: all six fail then.
+- The dialog was not looked at by a person on screen, and there is no headless test of it.
+

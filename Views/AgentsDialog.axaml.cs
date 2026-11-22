@@ -35,6 +35,9 @@ public partial class AgentsDialog : Window, IAgentUi
     public Task<bool> ShowNewAgentAsync(NewAgentViewModel viewModel)
         => NewAgentDialog.ShowAsync(this, viewModel);
 
+    public Task ShowGrantProjectsAsync(GrantProjectsViewModel viewModel)
+        => GrantProjectsDialog.ShowAsync(this, viewModel);
+
     public async Task<bool> ConfirmAsync(string title, string message, string confirmText)
         => await new ConfirmDialog(title, message, confirmText).ShowDialog<bool>(this);
 

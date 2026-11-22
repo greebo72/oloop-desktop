@@ -24,6 +24,14 @@ internal sealed class FakeAgentUi : IAgentUi
         return viewModel.IsDone;
     }
 
+    public Func<GrantProjectsViewModel, Task>? OnGrantProjects;
+
+    public async Task ShowGrantProjectsAsync(GrantProjectsViewModel viewModel)
+    {
+        if (OnGrantProjects is not null)
+            await OnGrantProjects(viewModel);
+    }
+
     public Task<bool> ConfirmAsync(string title, string message, string confirmText)
     {
         Questions.Add(title + "|" + confirmText);
