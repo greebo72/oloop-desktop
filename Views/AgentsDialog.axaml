@@ -35,8 +35,15 @@
                            IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
 
-            <Grid Grid.Row="2" RowDefinitions="Auto,*">
-                <Grid Grid.Row="0" ColumnDefinitions="2*,*,*,*,Auto" ColumnSpacing="8" Margin="8,0,8,4">
+            <Grid Grid.Row="2" RowDefinitions="Auto,*" Grid.IsSharedSizeScope="True">
+                <Grid Grid.Row="0" ColumnSpacing="8" Margin="9,0,9,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="AgentActions" />
+                    </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Classes="LabelMedium" Text="Name" />
                     <TextBlock Grid.Column="1" Classes="LabelMedium" Text="Status" />
                     <TextBlock Grid.Column="2" Classes="LabelMedium" Text="Token until" />
@@ -50,7 +57,14 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:AgentRowViewModel">
                                     <Border Classes="Field" Padding="8,6" Margin="0,0,0,4">
-                                        <Grid ColumnDefinitions="2*,*,*,*,Auto" ColumnSpacing="8">
+                                        <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="AgentActions" />
+                    </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="{Binding Name}" Classes="BodyMedium"
                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="BodyMedium" VerticalAlignment="Center" />
