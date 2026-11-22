@@ -173,7 +173,12 @@ internal sealed class FakeOloopServer : HttpMessageHandler
                         ? Json(DocumentJson(Shown.GetValueOrDefault(id) ?? doc))
                         : Error(HttpStatusCode.NotFound, "not_found", "no such document");
                 if (request.Method == HttpMethod.Put)
+                {
+                    DocumentPuts++;
+                    if (DocumentPuts == FailDocumentPutNumber)
+                        return Error(HttpStatusCode.InternalServerError, "internal", "the server failed");
                     return Put(id, request, body);
+                }
             }
 
             if (path == "/v1/agents")
@@ -293,6 +298,12 @@ internal sealed class FakeOloopServer : HttpMessageHandler
 
     /// <summary>The n-th request to hand a project to an agent (counting from 1) fails with a 500.</summary>
     public int FailMemberPutNumber { get; set; }
+
+    /// <summary>How many requests to write a document (<c>PUT /v1/documents/{id}</c>) came in so far.</summary>
+    public int DocumentPuts { get; private set; }
+
+    /// <summary>The write of a document with this number (counting from 1, see <see cref="DocumentPuts"/>) fails with a 500.</summary>
+    public int FailDocumentPutNumber { get; set; }
 
     private HttpResponseMessage CreateAgent(byte[] body)
     {

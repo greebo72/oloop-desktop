@@ -64,6 +64,7 @@ Action per project:
 | No project with this id and none with this name (compared without regard to case) on the server | **Create** the project with this id, then write its tasks. |
 | A project with this id is on the server | **Add missing**: write the tasks whose id the server does not have; the project is left as it is. |
 | No project with this id, but one with the same name | **Conflict**: nothing is written for this project. The plan names the server project. The user renames one of the two and runs the plan again. |
+| The folder has tasks, but none of them is to be written (all exist, or are skipped) | **Nothing to do**: no empty project is made. This is the case of a folder that was imported before under another project id. |
 
 Skipped tasks, with the reason shown in the plan and the report:
 
@@ -73,7 +74,8 @@ Skipped tasks, with the reason shown in the plan and the report:
 | Exists elsewhere | A task with this id is on the server in **another** project. This happens when a project was imported earlier under a new id. The plan names that project. Document ids are global (`SERVER.md`), so writing it would fail. |
 | Has an image | `imagePath` is not `null`. |
 | Too large | The text is larger than the server accepts (`MAX_DOCUMENT_BYTES`, 256 KiB by default; the plan uses the limit the server reports if it does, otherwise the default). |
-| Unreadable | The file did not parse; the reason of the parser is shown. |
+
+Files that cannot be read are not tied to a project: the plan lists them separately, with the path and the reason of the parser, and does not import them.
 
 The user can untick projects in the plan. A project that is unticked is not written. The button "Import" is enabled when at least one project has something to write, and says how many projects and tasks.
 
@@ -160,3 +162,13 @@ Unit tests in `OloopApp.Tests`, with a temp folder as source and `FakeOloopServe
 2. **Importing into an existing project of another id.** The server already has a project (`oloop-desktop`) with the same tasks as a folder (`OloopApp`) under another project id. "Exists elsewhere" skips all its tasks. Whether to offer "move the tasks to the project of the folder" is open; it would need a new revision of each task with a changed `projectId`, which the server forbids (`SERVER.md`). Proposal: not supported; the user keeps the server project.
 3. **Images.** A later version could upload the blob after the task is written (`SERVER.md`, "Blobs": an image is added to a task that exists). Proposal: its own spec.
 4. **Many folders.** The app supports one data root at a time. Importing several folders is several runs. Proposal: enough for the first version.
+
+## As built
+
+Differences from the plan above, for the part that exists (`Core/Server/FolderImport.cs`, the overload of `CreateProjectAsync`, `OloopApp.Tests/FolderImportTests.cs`):
+
+- Unreadable files are a list of the plan, not a reason of a task (see "The plan").
+- A folder whose tasks all exist elsewhere gets the action "Nothing to do".
+- A project is selected by default only when its action is "Create" or "Add missing".
+- Of the tests listed, the ones for the core are written (items 1 to 14 and the cancel); the tests of the view model (item 15) come with the dialog.
+- The dialog, the entry in the settings and the report as a file are not built yet.

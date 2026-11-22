@@ -460,11 +460,33 @@ public sealed class ServerOloopStore : OloopStoreBase
         string? referenceHost = null,
         CancellationToken ct = default)
     {
-        var trimmed = name.Trim();
+        var project = new OloopProject
+        {
+            FormatVersion = SupportedFormatVersion,
+            Id = Guid.NewGuid().ToString("D"),
+            Name = name,
+            CreatedAt = NowUtc(),
+            ReferencePath = referencePath,
+            ReferenceHost = referenceHost,
+        };
+
+        return await CreateProjectAsync(project, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Writes the given project as it is: its id, <c>createdAt</c>, reference fields and unknown
+    /// fields stay, so that the tasks that name the project in <c>projectId</c> still fit. The
+    /// import of a folder uses it. Refuses an id or a name that the server has already.
+    /// </summary>
+    public async Task<OloopProject> CreateProjectAsync(OloopProject given, CancellationToken ct = default)
+    {
+        var trimmed = given.Name.Trim();
         if (trimmed.Length == 0)
             throw new OloopFormatException("project name must not be empty");
         if (trimmed.EnumerateRunes().Count() > 200)
             throw new OloopFormatException("project name must be at most 200 characters");
+        if (!Guid.TryParseExact(given.Id, "D", out var id))
+            throw new OloopFormatException("project id must be a UUID");
 
         // The server cannot compare names: it does not know them. Two devices that create
         // the same name at the same moment make two projects (SERVER.md, "What is stored where").
@@ -473,16 +495,18 @@ public sealed class ServerOloopStore : OloopStoreBase
             known = (await LoadAsync(ct).ConfigureAwait(false)).Projects;
         if (known.Any(p => string.Equals(p.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
             throw new OloopFormatException($"project already exists: {trimmed}");
+        if (known.Any(p => string.Equals(p.Id, given.Id, StringComparison.OrdinalIgnoreCase)))
+            throw new OloopFormatException($"a project with this id exists already: {given.Id}");
 
-        var id = Guid.NewGuid();
         var project = new OloopProject
         {
             FormatVersion = SupportedFormatVersion,
             Id = id.ToString("D"),
             Name = trimmed,
-            CreatedAt = NowUtc(),
-            ReferencePath = referencePath,
-            ReferenceHost = referenceHost,
+            CreatedAt = given.CreatedAt,
+            ReferencePath = given.ReferencePath,
+            ReferenceHost = given.ReferenceHost,
+            ExtraFields = given.ExtraFields,
         };
 
         var text = ProjectIo.Write(project);
