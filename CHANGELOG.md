@@ -5,8 +5,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-22
+
+This release adds the optional server backend: projects and tasks can live on
+an `oloop-server`, encrypted on this device, instead of in a folder.
+
 ### Added
 
+- **Server backend.** In the settings you choose between the folder and a
+  server. Sign in to a server, and the projects, tasks and images are stored
+  there, encrypted before they leave the device. The folder backend works as
+  before.
+- **Keys and recovery code.** The first sign-in sets up the keys with a
+  passphrase and shows a recovery code. Later starts ask for the passphrase to
+  unlock. "Lock" and "Sign out" are in the settings. The secrets are kept in
+  the macOS keychain and in the Windows Credential Manager.
+- **Settings in three tabs**, so the dialog fits the screen.
+- **Images of tasks on the server** are shown like those in a folder.
+- **Revisions seen.** The app keeps the highest revision it has seen of each
+  document, so a server that hands back an older state is noticed.
 - **Agents for the server backend.** Settings, tab "Security", "Manage agents…"
   lists the agents of the signed-in user and makes new ones. An agent lets the
   command line work in chosen projects without your identity, for example for an
@@ -15,6 +32,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reads. "New token" puts a new token into the file of an agent; "Revoke" ends
   its token and its projects. Needs the keys to be open and a server that takes
   the agent id from the client (`oloop-server` from 2026-11-21).
+- **Task type can be edited** after a task is made.
+- **Tables in task text** are drawn as tables by the Markdown renderer.
+- **macOS menu.** Copy and paste work through the menu, and there is an About
+  entry.
 
 ## [0.5.1] - 2026-10-23
 
