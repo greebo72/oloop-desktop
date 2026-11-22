@@ -135,20 +135,49 @@ public sealed class ImportFolderViewModelTests : IDisposable
     {
         var store = await OpenStoreAsync();
         WriteProject("alpha", 1);
-        await store.CreateProjectAsync(new OloopProject
-        {
-            FormatVersion = 1, Id = Guid.NewGuid().ToString("D"), Name = "ALPHA", CreatedAt = "2026-10-16T19:18:14Z",
-        });
-        var vm = NewViewModel(store, _folder);
+        var vm0 = NewViewModel(store, _folder);
+        await vm0.ChooseFolderCommand.ExecuteAsync(null);
+        await vm0.ImportCommand.ExecuteAsync(null);
+        var vm = NewViewModel(await OpenStoreAsync(), _folder);
 
-        await vm.ChooseFolderCommand.ExecuteAsync(null);
+        await vm.ChooseFolderCommand.ExecuteAsync(null); // everything is there now
 
         var row = Assert.Single(vm.Rows);
         Assert.False(row.CanSelect);
         row.Selected = true;
         Assert.False(row.Selected);
-        Assert.Contains("Conflict", row.ActionText);
+        Assert.Equal("Nothing to do", row.ActionText);
         Assert.False(vm.CanImport);
+    }
+
+    [Fact]
+    public async Task A_Project_Of_The_Same_Name_Is_Not_Ticked_Until_The_User_Ticks_It_And_Then_Gets_The_Tasks()
+    {
+        var store = await OpenStoreAsync();
+        var onServer = await store.CreateProjectAsync(new OloopProject
+        {
+            FormatVersion = 1, Id = Guid.NewGuid().ToString("D"), Name = "ALPHA", CreatedAt = "2026-10-16T19:18:14Z",
+        });
+        WriteProject("alpha", 2);
+        var vm = NewViewModel(store, _folder);
+
+        await vm.ChooseFolderCommand.ExecuteAsync(null);
+
+        var row = Assert.Single(vm.Rows);
+        Assert.True(row.CanSelect);
+        Assert.False(row.Selected);
+        Assert.Contains("Same name on the server", row.ActionText);
+        Assert.False(vm.CanImport);
+
+        row.Selected = true;
+        Assert.Equal("Import 1 project, 2 tasks", vm.Summary);
+        await vm.ImportCommand.ExecuteAsync(null);
+
+        var loaded = await (await OpenStoreAsync()).LoadAsync();
+        Assert.Equal(onServer.Id, Assert.Single(loaded.Projects).Id);
+        Assert.All(loaded.Tasks, t => Assert.Equal(onServer.Id, t.ProjectId));
+        Assert.Equal(2, loaded.Tasks.Count);
+        Assert.Contains("tasks added to the project of the server with the same name", vm.ReportText);
     }
 
     [Fact]

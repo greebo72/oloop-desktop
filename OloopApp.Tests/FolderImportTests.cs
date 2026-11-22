@@ -199,22 +199,89 @@ public class FolderImportTests : IDisposable
     [Theory]
     [InlineData("oloop-spec")]
     [InlineData("OLOOP-SPEC")]
-    public async Task Another_Project_Id_With_The_Same_Name_Is_A_Conflict_And_Nothing_Is_Written(string name)
+    public async Task Another_Project_Id_With_The_Same_Name_Is_A_Conflict_That_The_User_Has_To_Choose(string name)
     {
         var onServer = Project("oloop-spec");
         var store = await OpenStoreAsync();
         await store.CreateProjectAsync(onServer);
         var project = Project(name);
-        Write("spec", project, Task_(project, "one"));
+        var task = Task_(project, "one");
+        Write("spec", project, task);
 
         var plan = await FolderImport.PlanAsync(_folder, store);
 
         var row = Assert.Single(plan.Projects);
         Assert.Equal(ImportAction.Conflict, row.Action);
         Assert.Contains(onServer.Id, row.ConflictWith);
-        Assert.Empty(row.ToWrite);
+        Assert.Equal(onServer.Id, row.MergeInto!.Id);
+        // The tasks are ready for the project of the server, with its id.
+        var ready = Assert.Single(row.ToWrite);
+        Assert.Equal(task.Id, ready.Id);
+        Assert.Equal(onServer.Id, ready.ProjectId);
+        Assert.True(row.HasWork);
+        // Never chosen by itself: the same name may be another project.
         Assert.False(row.Selected);
         Assert.Equal(0, plan.TasksToWrite);
+        Assert.Equal(0, plan.ProjectsToWrite);
+    }
+
+    [Fact]
+    public async Task A_Conflict_That_The_User_Chooses_Adds_The_Tasks_To_The_Project_Of_The_Server_And_Is_Idempotent()
+    {
+        var onServer = Project("oloop-android");
+        var store = await OpenStoreAsync();
+        await store.CreateProjectAsync(onServer);
+        var project = Project("oloop-android");
+        var tasks = new[] { Task_(project, "one"), Task_(project, "two") };
+        Write("oloop-android", project, tasks);
+
+        var plan = await FolderImport.PlanAsync(_folder, store);
+        plan.Projects.Single().Selected = true;
+        Assert.Equal(2, plan.TasksToWrite);
+
+        var report = await FolderImport.RunAsync(plan, store);
+
+        Assert.Equal(2, report.Written);
+        Assert.False(report.Projects.Single().Created);
+        var onServerNow = await (await OpenStoreAsync()).LoadAsync();
+        Assert.Single(onServerNow.Projects);
+        Assert.Equal(onServer.Id, Assert.Single(onServerNow.Projects).Id);
+        foreach (var task in tasks)
+        {
+            var back = Assert.Single(onServerNow.Tasks, t => t.Id == task.Id);
+            Assert.Equal(onServer.Id, back.ProjectId);
+            Assert.Equal(task.CreatedAt, back.CreatedAt);
+            Assert.Equal(task.CreatedBy, back.CreatedBy);
+            Assert.Equal(task.Comments.Single().Body, back.Comments.Single().Body);
+        }
+
+        // A second run finds everything in the project of the server: nothing to do, nothing written.
+        var again = await FolderImport.PlanAsync(_folder, await OpenStoreAsync());
+        Assert.Equal(ImportAction.NothingToDo, again.Projects.Single().Action);
+        Assert.All(again.Projects.Single().Skipped, x => Assert.Equal(SkipReason.Exists, x.Reason));
+    }
+
+    [Fact]
+    public async Task A_Conflict_Skips_A_Task_That_The_Server_Has_In_A_Third_Project()
+    {
+        var onServer = Project("oloop-android");
+        var third = Project("somewhere-else");
+        var store = await OpenStoreAsync();
+        await store.CreateProjectAsync(onServer);
+        await store.CreateProjectAsync(third);
+        var project = Project("oloop-android");
+        var elsewhere = Task_(third, "lives in a third project");
+        await store.WriteTaskAsync(third, elsewhere, null);
+        var fresh = Task_(project, "new");
+        Write("oloop-android", project, fresh, elsewhere.InProject(project.Id, project.Name));
+
+        var plan = await FolderImport.PlanAsync(_folder, store);
+
+        var row = Assert.Single(plan.Projects);
+        Assert.Equal(fresh.Id, Assert.Single(row.ToWrite).Id);
+        var skipped = Assert.Single(row.Skipped);
+        Assert.Equal(SkipReason.ExistsElsewhere, skipped.Reason);
+        Assert.Contains("somewhere-else", skipped.Detail);
     }
 
     [Fact]

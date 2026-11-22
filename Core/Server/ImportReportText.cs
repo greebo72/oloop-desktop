@@ -22,7 +22,7 @@ public static class ImportReportText
     {
         ImportAction.Create => "Create",
         ImportAction.AddMissing => "Add missing tasks",
-        ImportAction.Conflict => $"Conflict: the server has a project of this name, {plan.ConflictWith}",
+        ImportAction.Conflict => $"Same name on the server ({plan.ConflictWith}): tick to add the tasks to that project",
         _ => "Nothing to do",
     };
 
@@ -54,6 +54,8 @@ public static class ImportReportText
             text.AppendLine($"{project.Name} ({project.ProjectId})");
             if (project.Action == ImportAction.Create)
                 text.AppendLine(project.Created ? "  project created" : $"  project NOT created: {project.ProjectError}");
+            else if (project.Action == ImportAction.Conflict)
+                text.AppendLine("  tasks added to the project of the server with the same name");
             text.AppendLine($"  {project.Written} tasks written, {project.AlreadyThere} were already there, {project.Failed.Count} failed, {project.Skipped.Count} skipped");
             foreach (var failed in project.Failed)
                 text.AppendLine($"  FAILED {failed.TaskId} {failed.Title}: {failed.Reason}");

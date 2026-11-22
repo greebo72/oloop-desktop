@@ -14,7 +14,10 @@ public enum ImportAction
     /// <summary>The server has the project: write the tasks it lacks.</summary>
     AddMissing,
 
-    /// <summary>The server has a project of the same name under another id. Nothing is written.</summary>
+    /// <summary>
+    /// The server has a project of the same name under another id. The user can choose to add the
+    /// tasks to that project (<see cref="ImportProjectPlan.MergeInto"/>); it is never chosen by itself.
+    /// </summary>
     Conflict,
 
     /// <summary>There is nothing to write: every task exists or has to be skipped.</summary>
@@ -51,13 +54,24 @@ public sealed class ImportProjectPlan
     public required IReadOnlyList<OloopTask> ToWrite { get; init; }
     public required IReadOnlyList<SkippedTask> Skipped { get; init; }
 
-    /// <summary>For a conflict: the project of the server that has the name.</summary>
+    /// <summary>For a conflict: the project of the server that has the name, as text.</summary>
     public string? ConflictWith { get; init; }
+
+    /// <summary>
+    /// For a conflict: the project of the server that the tasks go to. <see cref="ToWrite"/> then
+    /// holds the tasks with its id in <c>projectId</c>.
+    /// </summary>
+    public OloopProject? MergeInto { get; init; }
 
     /// <summary>The user can untick a project; it is then not written.</summary>
     public bool Selected { get; set; } = true;
 
-    public bool HasWork => Action is ImportAction.Create or ImportAction.AddMissing;
+    public bool HasWork => Action switch
+    {
+        ImportAction.Create or ImportAction.AddMissing => true,
+        ImportAction.Conflict => ToWrite.Count > 0,
+        _ => false,
+    };
 }
 
 /// <summary>The plan of an import: made before anything is written.</summary>
@@ -146,11 +160,20 @@ public static class FolderImport
             var toWrite = new List<OloopTask>();
             var skipped = new List<SkippedTask>();
 
-            foreach (var task in tasks)
+            // Where the tasks would go: the project of this id, or else the one of the same name.
+            var sameId = serverProjectById.GetValueOrDefault(project.Id);
+            var sameName = sameId is not null
+                ? null
+                : server.Projects.FirstOrDefault(p =>
+                    string.Equals(p.Name, project.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+            var goesTo = sameId ?? sameName;
+
+            foreach (var original in tasks)
             {
+                var task = sameName is null ? original : original.InProject(sameName.Id, sameName.Name);
                 if (serverTaskById.TryGetValue(task.Id, out var there))
                 {
-                    if (string.Equals(there.ProjectId, project.Id, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(there.ProjectId, goesTo?.Id ?? project.Id, StringComparison.OrdinalIgnoreCase))
                     {
                         skipped.Add(new SkippedTask(task.Id, task.Title, SkipReason.Exists));
                     }
@@ -178,16 +201,14 @@ public static class FolderImport
 
             ImportAction action;
             string? conflictWith = null;
-            if (serverProjectById.ContainsKey(project.Id))
+            if (sameId is not null)
             {
                 action = toWrite.Count > 0 ? ImportAction.AddMissing : ImportAction.NothingToDo;
             }
-            else if (server.Projects.FirstOrDefault(p =>
-                         string.Equals(p.Name, project.Name.Trim(), StringComparison.OrdinalIgnoreCase)) is { } sameName)
+            else if (sameName is not null)
             {
-                action = ImportAction.Conflict;
+                action = toWrite.Count > 0 ? ImportAction.Conflict : ImportAction.NothingToDo;
                 conflictWith = $"{sameName.Name} ({sameName.Id})";
-                toWrite.Clear();
             }
             else
             {
@@ -203,6 +224,8 @@ public static class FolderImport
                 ToWrite = toWrite,
                 Skipped = skipped,
                 ConflictWith = conflictWith,
+                MergeInto = sameName,
+                // A conflict is the user's choice: the same name may be another project.
                 Selected = action is ImportAction.Create or ImportAction.AddMissing,
             });
         }
@@ -262,6 +285,7 @@ public static class FolderImport
                 }
             }
 
+            var into = item.MergeInto ?? item.Project;
             foreach (var task in item.ToWrite)
             {
                 if (ct.IsCancellationRequested)
@@ -273,7 +297,7 @@ public static class FolderImport
                 progress?.Report(new ImportProgress(item.Project.Name, done, total));
                 try
                 {
-                    await target.WriteTaskAsync(item.Project, task, expectedUpdatedAt: null, ct).ConfigureAwait(false);
+                    await target.WriteTaskAsync(into, task, expectedUpdatedAt: null, ct).ConfigureAwait(false);
                     entry.Written++;
                 }
                 catch (OperationCanceledException)

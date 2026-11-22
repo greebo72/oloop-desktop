@@ -63,7 +63,7 @@ Action per project:
 | --- | --- |
 | No project with this id and none with this name (compared without regard to case) on the server | **Create** the project with this id, then write its tasks. |
 | A project with this id is on the server | **Add missing**: write the tasks whose id the server does not have; the project is left as it is. |
-| No project with this id, but one with the same name | **Conflict**: nothing is written for this project. The plan names the server project. The user renames one of the two and runs the plan again. |
+| No project with this id, but one with the same name (compared without regard to case) | **Conflict**: the plan names the server project. The row is **not ticked**: the same name may be another project, and a project cannot be deleted or renamed afterwards. If the user ticks it, the tasks are added to the project of the server (see "Adding to the project of the server"); no project is made. |
 | The folder has tasks, but none of them is to be written (all exist, or are skipped) | **Nothing to do**: no empty project is made. This is the case of a folder that was imported before under another project id. |
 
 Skipped tasks, with the reason shown in the plan and the report:
@@ -80,6 +80,12 @@ Files that cannot be read are not tied to a project: the plan lists them separat
 The user can untick projects in the plan. A project that is unticked is not written. The button "Import" is enabled when at least one project has something to write, and says how many projects and tasks.
 
 An empty plan (everything exists) says so and offers only "Close".
+
+### Adding to the project of the server
+
+For a conflict the plan keeps the tasks that the server does not have and gives each of them the id of the **project of the server** in `projectId` (`OloopTask.InProject`); everything else of the task stays: id, times, authors, comments, labels, due date. The `project.md` of the folder is not written; the project of the server stays as it is. The skip rules compare with that project: a task the server has in it is "Exists", one it has in a third project is "Exists elsewhere".
+
+A second run finds the tasks in the project of the server and has nothing to do, so this is as repeatable as the others.
 
 ## The import
 
@@ -140,7 +146,7 @@ Unit tests in `OloopApp.Tests`, with a temp folder as source and `FakeOloopServe
 2. **Run twice.** The second plan has nothing to write, and the second run changes nothing.
 3. **Add missing.** The project exists with two of three tasks: only the third is written.
 4. **Exists elsewhere.** A task id that the server has in another project is skipped with that project named; no write is tried.
-5. **Name conflict.** Another project id with the same name (also in another case) gives "Conflict" and writes nothing.
+5. **Name conflict.** Another project id with the same name (also in another case) gives "Conflict", not ticked, with the tasks ready for the project of the server; ticked, the import adds them there, keeps ids and fields, makes no project, and a second plan has nothing to do.
 6. **Image.** A task with `imagePath` is skipped with the reason; the other tasks of the project are written.
 7. **Legacy files.** A project and a task without `formatVersion` are imported and read back as version 1.
 8. **Unreadable file.** A broken task file is listed with its reason and does not stop the others.
@@ -161,7 +167,7 @@ Unit tests in `OloopApp.Tests`, with a temp folder as source and `FakeOloopServe
 ## Open questions
 
 1. **Project names that differ.** The task folder `oloop-cli` holds a project named `lagebericht`. The import goes by the name in `project.md`, not by the folder name. Proposal: show both in the plan, so the user can see why a folder has another name.
-2. **Importing into an existing project of another id.** The server already has a project (`oloop-desktop`) with the same tasks as a folder (`OloopApp`) under another project id. "Exists elsewhere" skips all its tasks. Whether to offer "move the tasks to the project of the folder" is open; it would need a new revision of each task with a changed `projectId`, which the server forbids (`SERVER.md`). Proposal: not supported; the user keeps the server project.
+2. **Tasks that the server has in another project.** The server has a project (`oloop-desktop`) with the same tasks as a folder (`OloopApp`) under another project id. "Exists elsewhere" skips all its tasks. Moving them to another project would need a new revision of each task with a changed `projectId`, which the server forbids (`SERVER.md`). Not supported; the user keeps the server project.
 3. **Images.** A later version could upload the blob after the task is written (`SERVER.md`, "Blobs": an image is added to a task that exists). Proposal: its own spec.
 4. **Many folders.** The app supports one data root at a time. Importing several folders is several runs. Proposal: enough for the first version.
 
@@ -176,4 +182,5 @@ Differences from the plan above (`Core/Server/FolderImport.cs`, `Core/Server/Imp
 - The window services are `IImportUi` (folder chooser, save chooser); the view model reaches nothing else.
 - The labels are English, like the rest of the app.
 - Tests: `FolderImportTests` (core, 18) and `ImportFolderViewModelTests` (pages, buttons, saving, headless dialog, 9).
+- A conflict can be chosen: the tasks go to the project of the server with the same name (added after a project of that name was made by hand and could not be deleted or renamed; neither exists, see `SERVER.md`, "no `DELETE`").
 - The dialog was checked headless (it opens and shows the plan and the buttons) but not looked at by a person on screen.
