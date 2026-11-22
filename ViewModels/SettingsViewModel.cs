@@ -92,6 +92,12 @@ public partial class SettingsViewModel : ViewModelBase
     /// <summary>The view model for the dialog of the agents, or null when the keys are not open.</summary>
     public AgentsViewModel? CreateAgentsViewModel() => ServerControl?.CreateAgentsViewModel();
 
+    /// <summary>Whether the keys are open, which the import of a folder needs.</summary>
+    public bool CanImportFolder => CanLockKeys;
+
+    /// <summary>The view model for the import of a folder, or null when the keys are not open.</summary>
+    public ImportFolderViewModel? CreateImportViewModel() => ServerControl?.CreateImportViewModel();
+
     /// <summary>Cuts this computer off at the server and forgets everything kept here.</summary>
     [RelayCommand]
     private async Task SignOutAsync()
@@ -108,6 +114,7 @@ public partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(ServerStatus));
         OnPropertyChanged(nameof(CanLockKeys));
         OnPropertyChanged(nameof(CanManageAgents));
+        OnPropertyChanged(nameof(CanImportFolder));
         OnPropertyChanged(nameof(CanSignOut));
         OnPropertyChanged(nameof(CanForgetRevisions));
     }

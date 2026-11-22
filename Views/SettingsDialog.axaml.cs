@@ -60,6 +60,13 @@ public partial class SettingsDialog : Window
             await AgentsDialog.ShowAsync(this, agents);
     }
 
+    /// <summary>Opens the import of a folder into the server on top of this dialog.</summary>
+    private async void OnImportFolderClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm && vm.CreateImportViewModel() is { } import)
+            await ImportFolderDialog.ShowAsync(this, import);
+    }
+
     /// <summary>
     /// Opens the folder picker and puts the chosen folder into the data root.
     /// A platform without a storage provider (the headless tests) simply does

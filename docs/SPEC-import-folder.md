@@ -114,7 +114,9 @@ The report contains task ids and titles, no keys, no tokens and no file contents
 
 ## Entry in the app
 
-Settings, tab "Data" (next to the choice of the backend): the button "Import folder…". It opens a folder chooser, then the plan. The button is disabled while the keys are locked, and for the folder backend.
+Settings, tab "Security" (the tab of the server backend), below "Agents": the button "Import folder…". It opens the dialog. The button is disabled while the keys are locked. The tab only exists for the server backend, so the folder backend has no entry.
+
+The dialog has four pages: the choice of the folder, the plan (one row per project with a tick box, a summary on the button), the progress with "Stop after this task", and the report. "Save as text…" saves the plan or the report. Closing the window while it writes stops the import after the current task.
 
 ## Code
 
@@ -165,10 +167,13 @@ Unit tests in `OloopApp.Tests`, with a temp folder as source and `FakeOloopServe
 
 ## As built
 
-Differences from the plan above, for the part that exists (`Core/Server/FolderImport.cs`, the overload of `CreateProjectAsync`, `OloopApp.Tests/FolderImportTests.cs`):
+Differences from the plan above (`Core/Server/FolderImport.cs`, `Core/Server/ImportReportText.cs`, `ViewModels/ImportFolderViewModel.cs`, `Views/ImportFolderDialog`):
 
 - Unreadable files are a list of the plan, not a reason of a task (see "The plan").
 - A folder whose tasks all exist elsewhere gets the action "Nothing to do".
-- A project is selected by default only when its action is "Create" or "Add missing".
-- Of the tests listed, the ones for the core are written (items 1 to 14 and the cancel); the tests of the view model (item 15) come with the dialog.
-- The dialog, the entry in the settings and the report as a file are not built yet.
+- A project is selected by default only when its action is "Create" or "Add missing"; a project without work cannot be ticked.
+- The entry is in the tab "Security", not in a tab "Data" (there is none), because it needs the open keys.
+- The window services are `IImportUi` (folder chooser, save chooser); the view model reaches nothing else.
+- The labels are English, like the rest of the app.
+- Tests: `FolderImportTests` (core, 18) and `ImportFolderViewModelTests` (pages, buttons, saving, headless dialog, 9).
+- The dialog was checked headless (it opens and shows the plan and the buttons) but not looked at by a person on screen.

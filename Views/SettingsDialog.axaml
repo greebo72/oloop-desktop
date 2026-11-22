@@ -141,6 +141,12 @@
                                 <Button Name="ManageAgentsButton" Classes="Outlined" Content="Manage agents…" HorizontalAlignment="Left"
                                         Click="OnManageAgentsClick" IsEnabled="{Binding CanManageAgents}" />
 
+                                <TextBlock Text="Import" Classes="LabelMedium" Margin="0,8,0,0" />
+                                <TextBlock Classes="Muted" TextWrapping="Wrap"
+                                           Text="Copies the projects of a folder of Markdown files to the server, with their ids. The folder is not changed. Needs your keys to be open." />
+                                <Button Name="ImportFolderButton" Classes="Outlined" Content="Import folder…" HorizontalAlignment="Left"
+                                        Click="OnImportFolderClick" IsEnabled="{Binding CanImportFolder}" />
+
                                 <TextBlock Text="Seen revisions" Classes="LabelMedium" Margin="0,8,0,0" />
                                 <TextBlock Classes="Muted" TextWrapping="Wrap"
                                            Text="This computer remembers the newest version it has seen of every task, and warns when the server shows an older one. Forget this only if the server was restored from a backup on purpose." />

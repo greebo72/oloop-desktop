@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OloopApp.ViewModels"
+        x:Class="OloopApp.Views.ImportFolderDialog"
+        x:DataType="vm:ImportFolderViewModel"
+        Title="Import folder"
+        Width="860"
+        Height="560"
+        MinWidth="640"
+        MinHeight="400"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Border Background="{StaticResource SurfaceContainerHighBrush}" Padding="24,20,24,20">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+
+            <StackPanel Grid.Row="0" Spacing="6">
+                <TextBlock Text="Import folder" Classes="TitleLarge" />
+                <TextBlock Classes="BodyMedium" TextWrapping="Wrap"
+                           Text="Copies the projects and tasks of a folder of Markdown files to the server, with their ids, times, authors and comments. The folder is not changed. What the server has already is left alone, so you can run the import again." />
+            </StackPanel>
+
+            <Border Grid.Row="1" Classes="Field" Padding="12,8"
+                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16"
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource StatusOpenBrush}" />
+                    <TextBlock Text="{Binding Error}" Classes="BodyMedium" TextWrapping="Wrap" MaxWidth="760" />
+                </StackPanel>
+            </Border>
+
+            <!-- First page: nothing chosen yet. -->
+            <StackPanel Grid.Row="2" Spacing="8" IsVisible="{Binding IsStart}">
+                <TextBlock Classes="Muted" TextWrapping="Wrap"
+                           Text="Choose the folder that has one subfolder per project. You see what would happen before anything is written." />
+            </StackPanel>
+
+            <!-- Second page: the plan. -->
+            <Grid Grid.Row="2" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8" IsVisible="{Binding IsPlanned}">
+                <TextBlock Grid.Row="0" Classes="BodyMedium" TextTrimming="CharacterEllipsis"
+                           Text="{Binding Folder}" ToolTip.Tip="{Binding Folder}" />
+                <Border Grid.Row="1" Classes="Field" Padding="12,8"
+                        IsVisible="{Binding UnreadableText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="LabelMedium" Text="Files that could not be read (not imported)" />
+                        <TextBlock Classes="Muted" TextWrapping="Wrap" Text="{Binding UnreadableText}" />
+                    </StackPanel>
+                </Border>
+                <Grid Grid.Row="2" ColumnSpacing="8" Margin="9,0,9,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Tick" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="60" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="50" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Classes="LabelMedium" Text="Project" />
+                    <TextBlock Grid.Column="2" Classes="LabelMedium" Text="Tasks" />
+                    <TextBlock Grid.Column="3" Classes="LabelMedium" Text="What happens" />
+                    <TextBlock Grid.Column="4" Classes="LabelMedium" Text="New" />
+                    <TextBlock Grid.Column="5" Classes="LabelMedium" Text="Skipped" />
+                </Grid>
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ImportRowViewModel">
+                                <Border Classes="Field" Padding="8,6" Margin="0,0,0,4">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="Tick" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="50" />
+                                            <ColumnDefinition Width="2*" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding Selected, Mode=TwoWay}"
+                                                  IsEnabled="{Binding CanSelect}" MinWidth="0" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" Classes="BodyMedium" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Id}" Classes="Muted" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding TasksText}" Classes="BodyMedium" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="3" Text="{Binding ActionText}" Classes="BodyMedium"
+                                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                                        <TextBlock Grid.Column="4" Text="{Binding NewText}" Classes="BodyMedium" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="5" Text="{Binding SkippedText}" Classes="Muted"
+                                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Third page: writing. -->
+            <StackPanel Grid.Row="2" Spacing="10" IsVisible="{Binding IsRunning}">
+                <ProgressBar Minimum="0" Maximum="{Binding ProgressTotal}" Value="{Binding ProgressDone}" />
+                <TextBlock Classes="BodyMedium" Text="{Binding ProgressText}" />
+            </StackPanel>
+
+            <!-- Fourth page: the report. -->
+            <TextBox Grid.Row="2" IsVisible="{Binding IsDone}" IsReadOnly="True" AcceptsReturn="True"
+                     TextWrapping="NoWrap" FontFamily="Menlo, Consolas, monospace"
+                     Text="{Binding ReportText, Mode=OneWay}" />
+
+            <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
+                <Button Grid.Column="0" Classes="Primary" Content="Choose folder…"
+                        Command="{Binding ChooseFolderCommand}" IsVisible="{Binding IsStart}" />
+                <Button Grid.Column="0" Classes="Primary" Content="{Binding Summary}"
+                        Command="{Binding ImportCommand}" IsVisible="{Binding IsPlanned}"
+                        IsEnabled="{Binding CanImport}" />
+                <Button Grid.Column="0" Classes="Outlined" Content="Stop after this task"
+                        Command="{Binding CancelRunCommand}" IsVisible="{Binding IsRunning}" />
+                <Button Grid.Column="1" Classes="Outlined" Content="Another folder…"
+                        Command="{Binding RestartCommand}" IsVisible="{Binding IsPlanned}" />
+                <Button Grid.Column="3" Classes="Outlined" Content="Save as text…"
+                        Command="{Binding SaveTextCommand}">
+                    <Button.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                            <Binding Path="IsPlanned" />
+                            <Binding Path="IsDone" />
+                        </MultiBinding>
+                    </Button.IsVisible>
+                </Button>
+                <Button Grid.Column="4" Classes="Text" Content="Close" Click="OnCloseClick"
+                        IsEnabled="{Binding CanClose}" />
+            </Grid>
+
+        </Grid>
+    </Border>
+</Window>
