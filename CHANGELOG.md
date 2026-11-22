@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-22
+
+This release helps you move folder projects to a server and gives agents more
+projects without a new credentials file.
+
 ### Added
 
 - **Import a folder into the server.** Settings, Security, "Import folder…"
@@ -139,5 +144,7 @@ an `oloop-server`, encrypted on this device, instead of in a folder.
 - The README shows the performance measurements, the macOS installation
   instructions are revised, and there is a security policy.
 
+[0.6.1]: https://github.com/greebo72/oloop-desktop/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/greebo72/oloop-desktop/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/greebo72/oloop-desktop/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/greebo72/oloop-desktop/releases/tag/v0.5.0
